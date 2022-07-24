@@ -1,0 +1,30 @@
+*.swp
+*.pyc
+*./idea/*
+*.lprof
+*.png
+/tmp
+/data
+*.prof
+*.txt
+/logs
+*.DS_Store
+/.idea
+/data_tmp
+/log
+/reproduce_WayPtNavResults
+/reachability/data_tmp
+/reproduce_WayptNavResults
+/reproduce_WayptNavResults_v3
+
+# Tara's generated datasets(old and new)
+
+LB_WayPtNav_Data.tar.gz
+Database
+/WayPtNav-reachability-master
+/log - Copy- home
+/LB_WayPtNav_Data
+obstacle_grid_2d.npy
+/log - copy - home
+myGeneratedData.mat
+obstacle_grid_4d_ver2.npy

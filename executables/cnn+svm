@@ -1,0 +1,22 @@
+
+
+X_train, X_test, y_train, y_test = train_test_split(x, y, random_state=42)
+
+# X_train (2250, 200, 200, 3)
+# resnet_model = ResNet50(input_shape=(200, 200, 3), weights='imagenet', include_top=False)
+resnet_model = ResNet50(input_shape=(200, 200, 3), weights='imagenet', include_top=False)
+resnet_op = AveragePooling2D((7, 7), name='avg_pool_app')(resnet_model.output)
+resnet_model = Model(resnet_model.input, resnet_op, name="ResNet")
+
+features_array = resnet_model.predict(X_train)
+feature_array = np.reshape(features_array, (-1, 2048))
+# features_array (2250, 7, 7, 2048)
+pca = PCA(svd_solver='randomized', n_components=450, whiten=True, random_state=42)
+svc = SVC(kernel='rbf', class_weight='balanced')
+model = make_pipeline(pca, svc)
+model.save()
+
+param_grid = {'svc__C': [1, 5, 10, 50], 'svc__gamma': [0.0001, 0.0005, 0.001, 0.005]}
+grid = GridSearchCV(model, param_grid)
+grid.fit(features_array, y_train)
+# grid.fit(X_train, y_train)
