@@ -124,7 +124,7 @@ def create_params():
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k'] #they have training data as well
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area4 / full_episode_random_v1_100k',
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area5a / full_episode_random_v1_100k']
-    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp3']
+    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4']
 
     p.data_creation.data_points = int(1e3/2)
     p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

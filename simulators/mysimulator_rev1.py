@@ -589,10 +589,12 @@ class Simulator(SimulatorHelper):
         dataForAnImage={'start_pose':np.array(start_pose),
             'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
 
-    # episode_counter=self.episode_counter
+        dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
+
+        # episode_counter=self.episode_counter
 
 
-        return dataForAnImage
+        return dataForAnImage, dataForAnImage_TF
 
 
     # plt.scatter(start[0], start[1], marker='*', color='green',s=200, label='start')
