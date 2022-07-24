@@ -62,7 +62,6 @@ class TrainerHelper(object):
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation, model,
                                          callback_fn)
-            # geoff is sexy
             
     def restore_checkpoint(self, model):
         """
