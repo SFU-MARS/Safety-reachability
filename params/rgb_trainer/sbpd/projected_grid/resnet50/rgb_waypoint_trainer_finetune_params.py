@@ -71,18 +71,18 @@ def create_params():
 
     # Change the learning rate and num_samples
     # p.trainer.lr = 1e-4
-    p.trainer.lr = 1e-5
-    # p.trainer.batch_size = 36 #48 original, changed after error 36
-    p.trainer.batch_size = 180
-
+    p.trainer.lr = 1e-6
+    p.trainer.batch_size = 48 #48 original, changed after error 36
+    # p.trainer.batch_size =240
+    #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
-    p.trainer.num_samples = int(2400)
+    p.trainer.num_samples = int(2400/10)#int(2400)
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 20
+    p.trainer.num_epochs = 100
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -124,7 +124,7 @@ def create_params():
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k'] #they have training data as well
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area4 / full_episode_random_v1_100k',
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area5a / full_episode_random_v1_100k']
-    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4']
+    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp6-shuffle']
 
     p.data_creation.data_points = int(1e3/2)
     p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

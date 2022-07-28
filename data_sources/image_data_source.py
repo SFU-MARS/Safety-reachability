@@ -132,7 +132,7 @@ class ImageDataSource(DataSource):
             file_number = {:d}
         """
         filename = os.path.relpath(filename, data_dir)  # file{:d}.pkl
-        file_number = filename.split('.')[0].split('file')[-1]  # '{:d}'
+        file_number = filename.split('.')[0].split('sample')[-1]  # '{:d}'
         file_number = int(file_number)  # {:d}
         return filename, file_number
 
@@ -467,7 +467,7 @@ class ImageDataSource(DataSource):
         vs = self.p.trainer.num_samples - self.num_training_samples
 
         # Find the file index for the training and validation sets
-        idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] + 1
+        idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] +1
         # idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0]
         try:
             idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1

@@ -9,6 +9,7 @@ from systems.dubins_car import DubinsCar
 from utils import utils
 from sbpd.sbpd_renderer import SBPDRenderer
 import glob
+from collections import defaultdict
 
 class VisualNavigationDataSource(ImageDataSource):
 
@@ -78,32 +79,49 @@ class VisualNavigationDataSource(ImageDataSource):
         # if num_points less than total set up
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
-
+        d2 = {}
         self.num_episode = 20
         self.episode_counter=0
         while self.episode_counter<self.num_episode:
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
-            # Reset the simulator
             # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
             simulator.reset()
             # Run the planner for one step
             # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
             # its corresponding image
             dataForAnImage=simulator.simulate()
+            self.episode_counter+=1
 
+            # if self.episode_counter%4!=0:
+            #
+            #
+            #     d1 = dataForAnImage
+            #
+            #     dd = defaultdict(list)
+            #
+            #     for d in (d1, d2):  # you can list as many input dicts as you want here
+            #         for key, value in d.items():
+            #             dd[key].append(value)
+            #     d2=dd
+            #
+            # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp3'
+
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp6'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
             with open(os.path.join(here, file_name), "wb") as f:
                 pickle.dump(dataForAnImage, f)
+                # pickle.dump(dd, f)
+                # dd={}
+
 
         # Ensure that the episode simulated is valid
         # if simulator.valid_episode:
             # Append the data to the current data dictionary
             # self.append_data_to_dictionary(dataForAnImage, simulator)
-            self.episode_counter += 1
+            # self.episode_counter += 1
 
             end = time.time()
             elapsed = end - start

@@ -48,7 +48,7 @@ def create_params(simulator_params):
                         num_samples=int(1e3),
         
                         # The percentage of the dataset that corresponds to the training set
-                        training_set_size=0.8,
+                        training_set_size=0.7,
         
                         # Batch size
                         batch_size=64,

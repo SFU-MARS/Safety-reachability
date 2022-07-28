@@ -159,6 +159,7 @@ class Simulator(SimulatorHelper):
 
 
 
+
     @staticmethod
     def parse_params(p):
         """
@@ -241,6 +242,8 @@ class Simulator(SimulatorHelper):
         # for episode in range(num_episode):
 
 ##my simulate code
+
+
         config = self.start_config
 
 
@@ -289,6 +292,11 @@ class Simulator(SimulatorHelper):
         global_pts = []
         local_pts = []
         local_pts_camera=[]
+        num_images=range (4)
+        counter_images=0
+        self.labels=[]
+
+
 
         for xf in actions_waypoints:
 
@@ -300,6 +308,7 @@ class Simulator(SimulatorHelper):
                 # t = np.arange(0, 10, f*)
                 # p.dt=0.05
                 t = np.arange(0, 1*f, 0.05 )
+
 
                 traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, goal_state, uf,basis=fs.PolyFamily(8))# constraints=constraints,
 
@@ -568,33 +577,35 @@ class Simulator(SimulatorHelper):
                     robot = [0, (crop_size[0] - 1) / 2]
                     import matplotlib.pyplot as plt
 
-                    fig = plt.figure(figsize=(30, 10))
-                    ax1 = fig.add_subplot(1, 3, 1)
-                    ax2 = fig.add_subplot(1, 3, 2)
-                    ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
-
-                    ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
-                    ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
-                    start=[ 0, (crop_size[0]-1)/2]
-                    local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
-                    local_pts_camera.append(local_point_camera)
+                    # fig = plt.figure(figsize=(30, 10))
+                    # ax1 = fig.add_subplot(1, 3, 1)
+                    # ax2 = fig.add_subplot(1, 3, 2)
+                    # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
+                    #
+                    # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
+                    # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
+                    # start=[ 0, (crop_size[0]-1)/2]
+                    # local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
+                    # local_pts_camera.append(local_point_camera)
 
 
                     start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
                     waypointAction.append(np.array(goal_state))
                     image.append(rgb_image_1mk3)
 
-        # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
-        #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
+
+                # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
+                #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
         dataForAnImage={'start_pose':np.array(start_pose),
-            'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+                'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
 
-        dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
+                # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 
-        # episode_counter=self.episode_counter
+            # episode_counter=self.episode_counter
 
 
-        return dataForAnImage, dataForAnImage_TF
+        return dataForAnImage
+            # , dataForAnImage_TF
 
 
     # plt.scatter(start[0], start[1], marker='*', color='green',s=200, label='start')
