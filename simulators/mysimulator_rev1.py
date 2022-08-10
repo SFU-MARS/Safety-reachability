@@ -261,14 +261,16 @@ class Simulator(SimulatorHelper):
                  [0.4, 0.1, 0.7], [0.4, -0.1, -.7], [0.45, -0.1, -0.2], [0.45, 0.1, 0.2], [.5, 0, 0.1],
                  [.5, 0, -0.1],
                  [.55, 0.1, 0.05], [.55, -0.1, -0.05]]
+
         f=6
 
-        actions_waypoints=[[ f * i for i in inner ] for inner in actions_waypoints]
+        # actions_waypoints=[[ f * i for i in inner ] for inner in actions_waypoints]
 
         # actions_waypoints =[[10, 5, .8]]
 
 
-        speedf = np.float16(np.linspace(0.1, 0.6, num=6))
+        # speedf = np.float16(np.linspace(0, 0.6, num=3))
+        speedf =np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
 
         v0 = config.speed_nk1()[0][0][0].numpy()
         start_state = [0, 0, 0, v0]
@@ -324,7 +326,7 @@ class Simulator(SimulatorHelper):
                 if abs(u[0]).max()<=max_val_w and abs(u[1]).max()<=max_val_a and abs(x[3]).max()<=max_val_v and x[3].min()>=0 :
 
 
-                    print('from',x0,'can reach to', goal_state)
+                    print('it can reach to', goal_state)
 
                     local_point=x
                     ttc = []
@@ -351,13 +353,18 @@ class Simulator(SimulatorHelper):
                             [local_point[0][k], local_point[1][k], 1])
                         goal_heading_nk1 = local_point[2][k] + \
                                            config.heading_nk1()[0][0][0]
+                        if goal_heading_nk1<-np.pi:
+                            goal_heading_nk1=goal_heading_nk1 + 2*np.pi
+                        if goal_heading_nk1 >np.pi:
+                            goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
                         global_point = np.array(
                             [target_state[0], target_state[1], goal_heading_nk1, (local_point[3][k]) .astype (np.float16)])
 
                         V.append(my_interpolating_functionV(global_point))
                         ttc.append(my_interpolating_function(global_point))
 
-                    print("final state in world: ", global_point)
+                    #print("final state in world: ", global_point)
+                    # print("final state in world: ", local_point[:][])
                     self.TTCmin = min(ttc)
                     print("min of TTC is: ", self.TTCmin)
                     self.discount = 0.90
@@ -405,7 +412,7 @@ class Simulator(SimulatorHelper):
                     ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
                     ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
                     start=[ 0, (crop_size[0]-1)/2]
-                    local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
+                    local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
                     local_pts_camera.append(local_point_camera)
 
 
@@ -523,8 +530,8 @@ class Simulator(SimulatorHelper):
                         self.gamma = 1.0
                         # self.theta = 1e-10
                     # print(global_pts)
-                        print("It reaches ", global_point)
-
+                        #print("It reaches ", global_point)
+                    print("realistic waypoint", local_point)
                     local_pts.append(local_point)
 
                     global_pts.append(global_point)
@@ -598,6 +605,8 @@ class Simulator(SimulatorHelper):
                 #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
         dataForAnImage={'start_pose':np.array(start_pose),
                 'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+        # plt.hist(np.array(self.labels))
+        # plt.show()
 
                 # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 

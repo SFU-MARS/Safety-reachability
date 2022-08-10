@@ -8,6 +8,7 @@ from training_utils.architecture.resnet50.resnet_50 import ResNet50
 def resnet50_cnn(image_size=[224, 224, 3], num_inputs=4, num_outputs=3, dtype=tf.float32):
     # Input layers
     input_image = layers.Input(shape=(image_size[0], image_size[1], image_size[2]), dtype=dtype)
+    # input_image = layers.Input(shape=(image_size[0], image_size[1], image_size[2]), dtype=dtype)
     x = input_image
 
     # Load the ResNet50 and restore the imagenet weights

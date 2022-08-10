@@ -6,7 +6,7 @@ def create_params():
     # Model parameters
     p = DotMap(
                  # Number of inputs to the model
-                 num_inputs=DotMap(image_size=[64, 64, 1],
+                 num_inputs=DotMap(image_size=[ 64, 64, 1],
                                    # num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                                               # angular speed
                                    num_state_features = 0 + 2
@@ -14,7 +14,7 @@ def create_params():
                  
                  # Number of the outputs to the model
                  # num_outputs=3,  # (x, y, theta) waypoint
-                 num_outputs=4,
+                 num_outputs= 4,
                  # Occupancy grid discretization
                  occupancy_grid_dx=[0.05, 0.05],
                  

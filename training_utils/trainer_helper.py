@@ -2,7 +2,8 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 import os
-
+import utils
+from tensorflow.python.util.tf_export import tf_export
 
 class TrainerHelper(object):
     
@@ -44,7 +45,9 @@ class TrainerHelper(object):
                 training_batch = data_source.generate_training_batch(j)
 
                 validation_batch = data_source.generate_validation_batch()
-                
+                # utils.train(training_batch, validation_batch, model, self.optimizer, loss_type='svml1loss2',
+                #             C=1, start_epoch=0, stop_epoch=100)
+                # utils.save(model, '../checkpoint/vgg16_epoch={}.t7'.format(100))
                 # Compute the loss and gradients
                 with tf.GradientTape() as tape:
                     loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
@@ -108,6 +111,10 @@ class TrainerHelper(object):
         Create an optimizer for the training and initialize the learning rate variable.
         """
         self.lr = tfe.Variable(self.p.lr, dtype=tf.float64)
+        # @tf_export(v1=["train.exponential_decay"])
+        # self.lr = tfe.Variable(tf.compat.v1.train.cosine_decay(self.p.lr, 100, 100, alpha=0.0, name=None))
+
+
         return self.p.optimizer(learning_rate=self.lr)
     
     def record_average_loss_for_batch(self, model, training_batch, validation_batch, training_loss_metric,

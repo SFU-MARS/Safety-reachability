@@ -132,7 +132,7 @@ class ImageDataSource(DataSource):
             file_number = {:d}
         """
         filename = os.path.relpath(filename, data_dir)  # file{:d}.pkl
-        file_number = filename.split('.')[0].split('sample')[-1]  # '{:d}'
+        file_number = filename.split('.')[0].split('file')[-1]  # '{:d}'
         file_number = int(file_number)  # {:d}
         return filename, file_number
 
@@ -406,10 +406,11 @@ class ImageDataSource(DataSource):
         """
         Get a sorted list of all the data files in the data directory.
         """
-        file_list = super().get_file_list(file_type)
+        file_list1, file_list2 = super().get_file_list(file_type)
         # Remove any metadata files from the data file list
-        file_list = list(filter(lambda x: 'metadata' not in x, file_list))
-        return file_list
+        # file_list = list(filter(lambda x: 'metadata' not in x, file_list))
+        # file_list.sort()
+        return file_list1, file_list2
 
     def _load_data_into_info_dict(self, data, file_idx, info_dict):
         """
@@ -458,7 +459,7 @@ class ImageDataSource(DataSource):
         """
         return [np.random.permutation(num_samples[0]) for num_samples in data['num_samples_n1']]
 
-    def split_data_into_training_and_validation(self, data):
+    def split_data_into_training_and_validation(self, data_train,data_eval):
         """
         Split data intro training and validation sets.
         """
@@ -467,19 +468,23 @@ class ImageDataSource(DataSource):
         vs = self.p.trainer.num_samples - self.num_training_samples
 
         # Find the file index for the training and validation sets
-        idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] +1
+        idx_train = np.where(np.cumsum(data_train['num_samples_n1']) >= ts)[0][0] +1
         # idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0]
         try:
-            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
-            idx_valid += idx_train
+            # idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
+            idx_valid = np.where(np.cumsum(data_eval['num_samples_n1']) >= vs)[0][0] + 1
+            # idx_valid += (idx_train)
+            # idx_valid += (60)
         except IndexError:  # There is not enough data to create a validation set:
             assert False, 'Desired Validation Set: {:d}, Available Number of Samples for Validation: {:d}'.format(vs, np.sum(data['num_samples_n1'][idx_train:]))
 
-        training_dataset = {'filename': data['filename'][:idx_train],
-                            'num_samples_n1': data['num_samples_n1'][:idx_train]}
+        training_dataset = {'filename': data_train['filename'][:idx_train],
+                            'num_samples_n1': data_train['num_samples_n1'][:idx_train]}
 
-        validation_dataset = {'filename': data['filename'][idx_train: idx_valid],
-                              'num_samples_n1': data['num_samples_n1'][idx_train: idx_valid]}
+        # validation_dataset = {'filename': data['filename'][idx_train: idx_valid],
+        #                       'num_samples_n1': data['num_samples_n1'][idx_train: idx_valid]}
+        validation_dataset = {'filename': data_eval['filename'][: idx_valid],
+                              'num_samples_n1': data_eval['num_samples_n1'][: idx_valid]}
 
         # Make sure there is enough training and validation data
         assert(np.sum(training_dataset['num_samples_n1']) >= ts)

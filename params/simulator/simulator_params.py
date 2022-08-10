@@ -30,11 +30,11 @@ def create_params():
     # Define the Objectives
 
     # Obstacle Avoidance Objective
-    p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.1,
-                                        obstacle_margin1=0.3,
+    p.avoid_obstacle_objective = DotMap(#obstacle_margin0=0.25,
+                                        #obstacle_margin1=0.45,
 
-                                        # obstacle_margin0=0.3,
-                                        # obstacle_margin1=0.5,
+                                        obstacle_margin0=0.3,
+                                        obstacle_margin1=0.5,
 
                                         power=3,
                                         obstacle_cost=1.0)
@@ -85,8 +85,8 @@ def create_params():
                                                 ),
                                                 ang_speed=DotMap(
                                                     # For description of reset types see heading parameters above.
-                                                    reset_type='zero',
-                                                    # reset_type='random',
+                                                    # reset_type='zero',
+                                                    reset_type='random',
                                                     bounds=[-0.5, 0.5],
                                                     gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )

@@ -80,7 +80,7 @@ class VisualNavigationDataSource(ImageDataSource):
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
         d2 = {}
-        self.num_episode = 20
+        self.num_episode = 1000
         self.episode_counter=0
         while self.episode_counter<self.num_episode:
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
@@ -108,7 +108,7 @@ class VisualNavigationDataSource(ImageDataSource):
             # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp6'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0803'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
             with open(os.path.join(here, file_name), "wb") as f:

@@ -4,7 +4,7 @@ X_train, X_test, y_train, y_test = train_test_split(x, y, random_state=42)
 
 # X_train (2250, 200, 200, 3)
 # resnet_model = ResNet50(input_shape=(200, 200, 3), weights='imagenet', include_top=False)
-resnet_model = ResNet50(input_shape=(200, 200, 3), weights='imagenet', include_top=False)
+resnet_model = ResNet50(input_shape=(200, 200, 3, weights='imagenet', include_top=False)
 resnet_op = AveragePooling2D((7, 7), name='avg_pool_app')(resnet_model.output)
 resnet_model = Model(resnet_model.input, resnet_op, name="ResNet")
 

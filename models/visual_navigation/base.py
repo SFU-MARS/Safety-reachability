@@ -75,7 +75,14 @@ class VisualNavigationModelBase(BaseModel):
         # img_nmkd = raw_data['img_nmkd']
         # raw_data['flatted']=data
         img_nmkd = raw_data['image']
-
+        img_nmkd1=np.expand_dims(img_nmkd, axis=0)
+        # x=[]
+        # frames = np.empty( [1, 50,224,224,3])
+        #
+        # for i in range(50):
+        #     x=img_nmkd[i]
+        #     frames[:,i, :, :, :]= x
+            # y = np.expand_dims(img_nmkd, axis=0)
 
         # ###
 
@@ -133,18 +140,33 @@ class VisualNavigationModelBase(BaseModel):
         # goal_position = self._goal_position(raw_data)
         # vehicle_controls = self._vehicle_controls(raw_data)
         waypointAction = raw_data['waypointAction']
+        waypointAction1 = np.expand_dims(waypointAction, axis=0)
+        # x=[]
+        # frames = np.empty( [1, 50,224,224,3])
+        #
+        # for i in range(50):
+        #     x=waypointAction[i]
+        #     frames[:,i, :, :, :]= x
 
         vehicle_state = raw_data['start_pose']
+
         # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
         # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
         # state_features_n4 = np.array(vehicle_state)
         state_features_n2= np.squeeze(vehicle_state)
+        state_features_n21=np.expand_dims(state_features_n2, axis=0)
         # Optimal Supervision
         # optimal_labels_n = self._optimal_labels(raw_data)
         optimal_labels_n = raw_data['labels']
+        optimal_labels_n1=np.expand_dims(img_nmkd, axis=0)
+
         # Prepare and return the data dictionary
         data = {}
+
+        # normalized_img = img_nmkd /255
+
         data['inputs'] = [img_nmkd, state_features_n2]
+
         data['labels'] = optimal_labels_n
         data['Action_waypoint'] = np.squeeze(waypointAction)
 

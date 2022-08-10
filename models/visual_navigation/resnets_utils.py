@@ -154,6 +154,8 @@ def convolutional_block(X, f, filters, stage, block, s=2):
 
     ##### MAIN PATH #####
     # First component of main path
+
+
     X = Conv2D(F1, (1, 1), strides=(s, s), name=conv_name_base + '2a', kernel_initializer=glorot_uniform(seed=0))(X)
     X = BatchNormalization(axis=3, name=bn_name_base + '2a')(X)
     X = Activation('relu')(X)

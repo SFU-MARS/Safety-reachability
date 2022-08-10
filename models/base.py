@@ -51,6 +51,7 @@ class BaseModel(object):
         #
 
         # # Predict the NN output
+
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
         
         # Compute the regularization loss, prediction loss and the total loss
@@ -67,9 +68,24 @@ class BaseModel(object):
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
         elif self.p.loss.loss_type == 'hinge':
             import numpy as np
+
+            epochs=10
+            rate=1
+            for epoch in range(1, epochs):
+                for n, data in enumerate(processed_data['inputs']):
+                    if (processed_data['labels'] * np.dot(processed_data['inputs'], np.array(nn_output))) < 1:
+                        nn_output = np.array(nn_output) + rate * ((processed_data['inputs'] * processed_data['labels']) + (-2 * (1 / epoch) * np.array(nn_output)))
+                    else:
+                        nn_output= np.array(nn_output) + rate * (-2 * (1 / epoch) * np.array(nn_output))
+
+            return nn_output
         # prediction_loss = tf.math.maximum(0, 1- processed_data['labels']*(nn_output[1:3]* Action_waypoint -nn_output[0]) )
         #     prediction_loss = tf.math.maximum(0, 1 - processed_data['labels'] *np.dot(np.concatenate(processed_data['Action_waypoint'],np.ones((self.p.trainer.batch_size,1)), np.transpose(np.array(nn_output)))))
-            prediction_loss = tf.math.maximum(0, 1 - processed_data['labels'] * np.dot( processed_data['Action_waypoint'],np.transpose(np.array(nn_output))))
+            prediction_loss = tf.reduce_mean(tf.math.maximum(0.,  1.-processed_data['labels']* (np.dot(processed_data['Action_waypoint'],np.transpose(np.array(nn_output))))))
+        #     prediction_loss = tf.math.maximum(1, np.transpose(processed_data['labels']) * np.dot(processed_data['Action_waypoint'],
+        #                                                                            np.transpose(np.array(nn_output))))
+
+
             prediction_loss1=np.sum(np.array(prediction_loss))
 
             regularization_loss = tf.nn.l2_loss(nn_output)

@@ -6,9 +6,11 @@ layers = tf.keras.layers
 
 def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Input layers
+
     input_image = layers.Input(shape=(image_size[0], image_size[1], image_size[2]), dtype=dtype)
     input_flat = layers.Input(shape=(num_inputs,), dtype=dtype)
     x = input_image
+
 
     # Load the ResNet50 and restore the imagenet weights
     # Note (Somil): We are initializing ResNet model in this fashion because directly setting the layers.trainable to

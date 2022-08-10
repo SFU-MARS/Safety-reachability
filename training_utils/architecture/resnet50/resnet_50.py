@@ -151,6 +151,7 @@ class _ConvBlock(tf.keras.Model):
         axis=bn_axis, name=bn_name_base + '1')
 
   def __call__(self, input_tensor, training=False):
+
     x = self.conv2a(input_tensor)
     x = self.bn2a(x, training=training)
     x = layers.Activation('relu')(x)
@@ -209,7 +210,8 @@ class ResNet50(tf.keras.Model):
                trainable=True,
                include_top=True,
                pooling=None,
-               classes=1000):
+               classes=1000,
+               ):
     super(ResNet50, self).__init__(name=name)
 
     valid_channel_values = ('channels_first', 'channels_last')
@@ -227,9 +229,21 @@ class ResNet50(tf.keras.Model):
           data_format=data_format,
           strides=strides)
 
+
+
     def id_block(filters, stage, block):
       return _IdentityBlock(
           3, filters, stage=stage, block=block, data_format=data_format)
+
+    # self.zp0 = layers.ZeroPadding2D(padding=(3, 3), name='conv0_pad')
+    # self.conv0 = layers.Conv3D(
+    #     32, (7, 7, 50),
+    #     strides=(2, 2, 1),
+    #     data_format=data_format,
+    #     padding='valid',
+    #     name='conv0')
+
+
 
     # Note(Somil): The zero padding layers have been added and the padding for the conv1 layer has been changed to
     # match the architecture with Keras API.
@@ -292,6 +306,8 @@ class ResNet50(tf.keras.Model):
     # 1-5. output_layer=-1 signifies the whole
     # resnet50 model
     assert output_layer in [-1, 1, 2, 3, 4, 5]
+    # x = self.zp0(inputs)
+    # x = self.conv0(inputs)
     x = self.zp1(inputs)
     x = self.conv1(x)
     x = self.bn_conv1(x, training=training)
