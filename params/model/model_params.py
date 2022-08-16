@@ -9,9 +9,12 @@ def create_params():
                  num_inputs=DotMap(image_size=[ 64, 64, 1],
                                    # num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                                               # angular speed
-                                   num_state_features = 0 + 2
-                 ),
-                 
+                                   # num_state_features = 0 + 2
+                                    num_state_features = 120
+
+
+    ),
+
                  # Number of the outputs to the model
                  # num_outputs=3,  # (x, y, theta) waypoint
                  num_outputs= 4,
@@ -19,7 +22,7 @@ def create_params():
                  occupancy_grid_dx=[0.05, 0.05],
                  
                  # Architecture parameters
-                 arch=DotMap(
+                 arch=DotMap(num_conv_layers=5,
                      
                              # Number of fully connected hidden layers
                              num_hidden_layers=5,

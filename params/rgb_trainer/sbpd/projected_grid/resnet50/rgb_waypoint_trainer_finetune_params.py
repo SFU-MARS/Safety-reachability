@@ -65,16 +65,16 @@ def create_params():
 
 
     # Image size to [224, 224, 3]
-    p.model.num_inputs.image_size = [224, 224,3]
+    p.model.num_inputs.image_size = [224, 224,180]
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
 
     # Change the learning rate and num_samples
-    p.trainer.lr = 1e-4
+    p.trainer.lr = 1e-6
     # p.trainer.lr = 1e-8
     # p.trainer.batch_size = 1#48 original, changed after error 36
-    p.trainer.batch_size =60
+    p.trainer.batch_size =5
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
@@ -128,9 +128,9 @@ def create_params():
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k'] #they have training data as well
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area4 / full_episode_random_v1_100k',
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area5a / full_episode_random_v1_100k']
-    # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-1each']
+    # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4-seperate4']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729']
+        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-stack3-1']
 
     p.data_creation.data_points = int(1e3/2)
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

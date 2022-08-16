@@ -325,7 +325,7 @@ class ImageDataSource(DataSource):
         start_index += -self.training_info_dict['num_samples'] + n
 
         # The whole batch can be loaded from one data file
-        if start_index + self.p.trainer.batch_size < n:
+        if start_index + self.p.trainer.batch_size <= n:
             
             # Get the training batch
             training_batch = self.get_data_from_indices(self.training_info_dict['data'],

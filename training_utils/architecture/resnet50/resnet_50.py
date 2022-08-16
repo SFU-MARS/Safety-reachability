@@ -247,6 +247,13 @@ class ResNet50(tf.keras.Model):
 
     # Note(Somil): The zero padding layers have been added and the padding for the conv1 layer has been changed to
     # match the architecture with Keras API.
+    # self.input1=layers.InputLayer(input_shape=(224, 224, 180), name="input_layer1")
+    # self.conv0 =layers.Conv2D(
+    #     (4, 64), (7, 7),
+    #     strides=2,
+    #     data_format=data_format,
+    #     padding='valid',
+    #     name='conv0')
     self.zp1 = layers.ZeroPadding2D(padding=(3, 3), name='conv1_pad')
     self.conv1 = layers.Conv2D(
         64, (7, 7),
@@ -307,8 +314,9 @@ class ResNet50(tf.keras.Model):
     # resnet50 model
     assert output_layer in [-1, 1, 2, 3, 4, 5]
     # x = self.zp0(inputs)
-    # x = self.conv0(inputs)
-    x = self.zp1(inputs)
+    x = self.input1(inputs)
+    x = self.zp1(x)
+    # x = self.conv0(x)
     x = self.conv1(x)
     x = self.bn_conv1(x, training=training)
     x = layers.Activation('relu')(x)

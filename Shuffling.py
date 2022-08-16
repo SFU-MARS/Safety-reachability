@@ -19,28 +19,30 @@ for data_file in data_files:
     with open(data_file, 'rb') as f:
         data = pickle.load(f)
         listofdict.append(data)
-each=1
+
+each=60
 m=int(60/each)              #60 muber of samles in each pkl file 
 # print (len(listofdict))
 for k1 in range(0,m):
 # for k1 in range(1):
 
-  posez = []
-  imagez = []
-  waypointActionz = []
-  labelz = []
-  train_size=50
 
-  for i in range(train_size):
+    train_size=50
+
+    for i in range(train_size):
   # for i in range(2):
     # print(listofdict[i]['start_pose'][each*k1:each*(k1+1)])
     # print (k1)
     # print (i)
     #
-    posez.append(np.squeeze(listofdict[i]['start_pose'][each*k1:each*(k1+1)]))
-    imagez.append(np.squeeze(listofdict[i]['image'][each*k1:each*(k1+1)]))
-    waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][each*k1:each*(k1+1)]))
-    labelz.append(np.squeeze(listofdict[i]['labels'][each*k1:each*(k1+1)]))
+        posez = []
+        imagez = []
+        waypointActionz = []
+        labelz = []
+        posez.append(np.squeeze(listofdict[i]['start_pose'][each*k1:each*(k1+1)]))
+        imagez.append(np.squeeze(listofdict[i]['image'][each*k1:each*(k1+1)]))
+        waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][each*k1:each*(k1+1)]))
+        labelz.append(np.squeeze(listofdict[i]['labels'][each*k1:each*(k1+1)]))
 
 
 
@@ -63,29 +65,34 @@ for k1 in range(0,m):
 
  # I had to change the size to (240,3D) when originally they were array of (20, 12, 3D) , 20 is the number of files, and 12  length of slice from each of them
  #  dictionary = {'start_pose': np.array(posez).reshape((train_size*each,2,1,1)),'image':np.array(imagez).reshape((train_size*each,224,224,3)),'waypointAction':np.array(waypointActionz).reshape((train_size*each,1,1,4)),'labels':np.array(labelz).reshape(((train_size*each,1))) }
-  dictionary = {'start_pose': np.stack(posez).reshape(2,1,1,50),
-                'image': np.stack(imagez).reshape(224,224,3,50),
-                'waypointAction': np.stack(waypointActionz).reshape(1,1,4,50),
-                'labels': np.stack(labelz).reshape(1,50)}
-  # dictionaries.append(dictionary)
-  f  = open("sample"+str(1)+str(k1)+'.pkl', "wb")
-  pickle.dump(dictionary, f)
-  f.close()
+ #  dictionary = {'start_pose': np.stack(posez).reshape(2,1,1,50),
+ #                'image': np.stack(imagez).reshape(224,224,3,50),
+ #                'waypointAction': np.stack(waypointActionz).reshape(1,1,4,50),
+ #                'labels': np.stack(labelz).reshape(1,50)}
+        dictionary = {'start_pose': np.stack(posez).reshape(2, 1, 60),
+                  'image': np.stack(imagez).reshape(224, 224, 180),
+                  'waypointAction': np.stack(waypointActionz).reshape(1, 1, 240),
+                  'labels': np.stack(labelz).reshape(1, 60)}
+      # dictionaries.append(dictionary)
+        f  = open("sample"+str(1)+str(i)+'.pkl', "wb")
+        pickle.dump(dictionary, f)
+        f.close()
 
 for k in range(0,m):
 
-  posez1 = []
-  imagez1 = []
-  waypointActionz1 = []
-  labelz1 = []
-  dictionaries1 = []
+    for i in range(train_size,train_size+50,1):
 
-  for i in range(train_size,train_size+50,1):
 
-    posez1.append(np.squeeze(listofdict[i]['start_pose'][each*k:each*(k+1)]))
-    imagez1.append(np.squeeze(listofdict[i]['image'][each*k:each*(k+1)]))
-    waypointActionz1.append(np.squeeze(listofdict[i]['waypointAction'][each*k:each*(k+1)]))
-    labelz1.append(np.squeeze(listofdict[i]['labels'][each*k:each*(k+1)]))
+        posez1 = []
+        imagez1 = []
+        waypointActionz1 = []
+        labelz1 = []
+        dictionaries1 = []
+
+        posez1.append(np.squeeze(listofdict[i]['start_pose'][each*k:each*(k+1)]))
+        imagez1.append(np.squeeze(listofdict[i]['image'][each*k:each*(k+1)]))
+        waypointActionz1.append(np.squeeze(listofdict[i]['waypointAction'][each*k:each*(k+1)]))
+        labelz1.append(np.squeeze(listofdict[i]['labels'][each*k:each*(k+1)]))
 
 # import matplotlib.pyplot as plt
 #
@@ -108,13 +115,17 @@ for k in range(0,m):
 #                 'image': imagez_merged1,
 #                 'waypointAction': waypointActionz_merged1,
 #                 'labels': labelz_merged1}
-  dictionary1 = {'start_pose': np.stack(posez1).reshape(2,1,1,50),
-                'image': np.stack(imagez1).reshape(224,224,3,50),
-                'waypointAction': np.stack(waypointActionz1).reshape(1,1,4,50),
-                'labels': np.stack(labelz1).reshape(1,1,50)}
-  # dictionaries.append(dictionary)
-  f = open("sample"+str(20)+str(k)+'.pkl', "wb")
-  #200
-  pickle.dump(dictionary1, f)
-  f.close()
+#   dictionary1 = {'start_pose': np.stack(posez1).reshape(2,1,1,50),
+#                 'image': np.stack(imagez1).reshape(224,224,3,50),
+#                 'waypointAction': np.stack(waypointActionz1).reshape(1,1,4,50),
+#                 'labels': np.stack(labelz1).reshape(1,1,50)}
+        dictionary1 = {'start_pose': np.stack(posez1).reshape(2, 1, 60),
+                    'image': np.stack(imagez1).reshape(224, 224, 180),
+                    'waypointAction': np.stack(waypointActionz1).reshape(1, 1, 240),
+                    'labels': np.stack(labelz1).reshape(1, 60)}
+        # dictionaries.append(dictionary)
+        f = open("sample"+str(20)+str(i)+'.pkl', "wb")
+        #200
+        pickle.dump(dictionary1, f)
+        f.close()
 

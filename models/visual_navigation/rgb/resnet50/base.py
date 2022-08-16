@@ -1,5 +1,6 @@
 from models.visual_navigation.base import VisualNavigationModelBase
 from training_utils.architecture.resnet50_cnn import resnet50_cnn
+# from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
 
 
