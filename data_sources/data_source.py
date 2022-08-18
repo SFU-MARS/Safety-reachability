@@ -103,9 +103,9 @@ class DataSource(object):
         file_list2 = []
         for i in range(len(self.p.data_creation.data_dir)):
             file_list1.extend([os.path.join(self.p.data_creation.data_dir[i], f)
-                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('file1')])
+                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample1')])
             file_list2.extend([os.path.join(self.p.data_creation.data_dir[i], f)
-                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('file2')])
+                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample2')])
 
         return file_list1, file_list2
 
@@ -181,7 +181,8 @@ class DataSource(object):
         for tag in self.data_tags:
             try:
                 # if tag!='labels':
-                data[tag] = data_dictionary[tag][indices]
+                # data[tag] = data_dictionary[tag][indices]
+                data[tag] = data_dictionary[tag]
                 # else:
                 #     data[tag] = np.transpose(data_dictionary[tag])[indices]
             except KeyError:

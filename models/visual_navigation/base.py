@@ -158,7 +158,7 @@ class VisualNavigationModelBase(BaseModel):
         # Optimal Supervision
         # optimal_labels_n = self._optimal_labels(raw_data)
         optimal_labels_n = raw_data['labels']
-        optimal_labels_n1=np.expand_dims(img_nmkd, axis=0)
+        optimal_labels_n1=np.expand_dims(optimal_labels_n, axis=0)
 
         # Prepare and return the data dictionary
         data = {}
@@ -168,7 +168,8 @@ class VisualNavigationModelBase(BaseModel):
         data['inputs'] = [img_nmkd, state_features_n2]
 
         data['labels'] = optimal_labels_n
-        data['Action_waypoint'] = np.squeeze(waypointAction)
+        data['Action_waypoint'] = waypointAction
+        # data['Action_waypoint'] = np.expand_dims((np.squeeze(waypointAction)), axis=0)
 
         return data
     

@@ -100,7 +100,8 @@ class ImageDataSource(DataSource):
 
                     # Add {Absolute file path: number of samples} to the
                     # metadata dictionary
-                    metadata[img_filename] = self._get_n(data)
+                    # metadata[img_filename] = self._get_n(data)
+                    metadata[img_filename] = 1
 
                 # Save metadata
                 metadata_filename = os.path.join(new_data_dirs[-1], 'metadata.pkl')
@@ -132,7 +133,7 @@ class ImageDataSource(DataSource):
             file_number = {:d}
         """
         filename = os.path.relpath(filename, data_dir)  # file{:d}.pkl
-        file_number = filename.split('.')[0].split('file')[-1]  # '{:d}'
+        file_number = filename.split('.')[0].split('sample')[-1]  # '{:d}'
         file_number = int(file_number)  # {:d}
         return filename, file_number
 
@@ -333,8 +334,10 @@ class ImageDataSource(DataSource):
         else:  # The batch is split over two data_files
             
             # Get the remaining data from the first data_file
+            # training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
+            #                                              data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
             training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
-                                                         data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
+                                                         data_shuffle_idxs[start_index: start_index+1])
 
             remaining_num_samples = self.p.trainer.batch_size - self._get_n(training_batch0)
            

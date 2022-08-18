@@ -10,7 +10,7 @@ def create_params():
                                    # num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                                               # angular speed
                                    # num_state_features = 0 + 2
-                                    num_state_features = 120
+                                    num_state_features = 2
 
 
     ),

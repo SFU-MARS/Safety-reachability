@@ -50,7 +50,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         # return data['vehicle_state_nk3'].shape[0]
 
-        return data['start_pose'].shape[0]
+        return data['start_pose'].shape[2]
     
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
