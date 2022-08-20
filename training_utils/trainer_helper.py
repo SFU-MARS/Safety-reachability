@@ -29,7 +29,9 @@ class TrainerHelper(object):
         # Instantiate one figure and axis object for plotting losses over training
         self.losses_fig = plt.figure()
         self.losses_ax = self.losses_fig.add_subplot(111)
-
+        init = tf.global_variables_initializer()
+    # with tf.Session() as sess:
+    #     sess.run(init)
         # Begin the training
         for epoch in range(self.p.num_epochs):
             # Shuffle the dataset
@@ -38,30 +40,29 @@ class TrainerHelper(object):
             # Define the metrics to keep a track of average loss over the epoch.
             training_loss_metric = tfe.metrics.Mean()
             validation_loss_metric = tfe.metrics.Mean()
-            
+
             # For loop over the training samples
             for j in range(0, num_training_samples, self.p.batch_size):
                 # Get a training and a validation batch
                 training_batch = data_source.generate_training_batch(j)
 
                 validation_batch = data_source.generate_validation_batch()
-                # utils.train(training_batch, validation_batch, model, self.optimizer, loss_type='svml1loss2',
-                #             C=1, start_epoch=0, stop_epoch=100)
-                # utils.save(model, '../checkpoint/vgg16_epoch={}.t7'.format(100))
-                # Compute the loss and gradients
-                with tf.GradientTape() as tape:
-                    loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
 
+                with tf.GradientTape() as tape:
+                    regularization_loss, prediction_loss, loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=True)
+                    print('prediction loss :{0}'.format(prediction_loss))
+                    print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
+                    print(' loss :{0}'.format(loss.numpy()))
                     # tape.watch(loss)
                 # Take an optimization step
                 grads = tape.gradient(loss, model.get_trainable_vars())
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
-                
+
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
                                                    validation_loss_metric)
-                
+
             # Do all the things required at the end of epochs including saving the checkpoints
             epoch_performance_training.append(training_loss_metric.result().numpy())
             epoch_performance_validation.append(validation_loss_metric.result().numpy())

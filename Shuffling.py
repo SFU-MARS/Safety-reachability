@@ -69,7 +69,7 @@ for k1 in range(0,m):
  #                'image': np.stack(imagez).reshape(224,224,3,50),
  #                'waypointAction': np.stack(waypointActionz).reshape(1,1,4,50),
  #                'labels': np.stack(labelz).reshape(1,50)}
-        dictionary = {'start_pose': np.stack(posez).reshape(2, 1, 60),
+        dictionary = {'start_pose': np.stack(posez).reshape(1, 1, 120),#(2, 1, 60)
                   'image': np.stack(imagez).reshape(224, 224, 180),
                   'waypointAction': np.stack(waypointActionz).reshape(4, 1, 60),
                   'labels': np.stack(labelz).reshape(1, 60)}
@@ -119,7 +119,7 @@ for k in range(0,m):
 #                 'image': np.stack(imagez1).reshape(224,224,3,50),
 #                 'waypointAction': np.stack(waypointActionz1).reshape(1,1,4,50),
 #                 'labels': np.stack(labelz1).reshape(1,1,50)}
-        dictionary1 = {'start_pose': np.stack(posez1).reshape(2, 1, 60),
+        dictionary1 = {'start_pose': np.stack(posez1).reshape(1, 1, 120),
                     'image': np.stack(imagez1).reshape(224, 224, 180),
                     'waypointAction': np.stack(waypointActionz1).reshape(4, 1, 60),
                     'labels': np.stack(labelz1).reshape(1, 60)}

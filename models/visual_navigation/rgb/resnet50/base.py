@@ -56,7 +56,8 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 tf.assign(self.is_batchnorm_training, False)
                 # model1, is_training_flag = resnet50_cnn()
                 # preds= model1.predict_on_batch(data)
-            preds = self.arch.predict_on_batch(data)
+            # preds = self.arch.predict_on_batch(data)
+            preds=self.arch(data)
         else:
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)

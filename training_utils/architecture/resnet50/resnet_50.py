@@ -31,7 +31,7 @@ import tensorflow as tf
 layers = tf.keras.layers
 
 
-class _IdentityBlock(tf.keras.Model):
+class IdentityBlock(tf.keras.Model):
   """_IdentityBlock is the block that has no conv layer at shortcut.
 
   Args:
@@ -44,7 +44,7 @@ class _IdentityBlock(tf.keras.Model):
   """
 
   def __init__(self, kernel_size, filters, stage, block, data_format):
-    super(_IdentityBlock, self).__init__(name='')
+    super(IdentityBlock, self).__init__(name='')
     filters1, filters2, filters3 = filters
 
     conv_name_base = 'res' + str(stage) + block + '_branch'
@@ -91,7 +91,7 @@ class _IdentityBlock(tf.keras.Model):
     return x
 
 
-class _ConvBlock(tf.keras.Model):
+class ConvBlock(tf.keras.Model):
   """_ConvBlock is the block that has a conv layer at shortcut.
 
   Args:
@@ -113,7 +113,7 @@ class _ConvBlock(tf.keras.Model):
                block,
                data_format,
                strides=(2, 2)):
-    super(_ConvBlock, self).__init__(name='')
+    super(ConvBlock, self).__init__(name='')
     filters1, filters2, filters3 = filters
 
     conv_name_base = 'res' + str(stage) + block + '_branch'
@@ -221,7 +221,7 @@ class ResNet50(tf.keras.Model):
     self.include_top = include_top
 
     def conv_block(filters, stage, block, strides=(2, 2)):
-      return _ConvBlock(
+      return ConvBlock(
           3,
           filters,
           stage=stage,
@@ -232,7 +232,7 @@ class ResNet50(tf.keras.Model):
 
 
     def id_block(filters, stage, block):
-      return _IdentityBlock(
+      return IdentityBlock(
           3, filters, stage=stage, block=block, data_format=data_format)
 
     # self.zp0 = layers.ZeroPadding2D(padding=(3, 3), name='conv0_pad')
@@ -304,7 +304,7 @@ class ResNet50(tf.keras.Model):
       else:
         self.global_pooling = None
 
-  def call(self, inputs, training=True, output_layer=-1):
+  def call(self, inputs, training=True, output_layer=5):
     
     # Make sure the desired output layer is a layer
     # 1-5. output_layer=-1 signifies the whole
