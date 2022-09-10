@@ -60,18 +60,35 @@ class BaseModel(object):
 
             # return nn_output1
 
-        for i in range(0, 60):
-            prediction_loss1[i]  = np.maximum(0.,1-np.dot(np.concatenate((np.transpose(processed_data['Action_waypoint'][0])[i], tf.ones(1)),axis=0), np.transpose(nn_output)))
+        # for i in range(0, 60):
+        #     prediction_loss1[i]  = np.maximum(0.,1-np.dot(tf.transpose(np.transpose(processed_data['Action_waypoint'][0])[i], tf.ones(1)),axis=0), np.transpose(nn_output)))
+        import numpy as np
+        ywxmax=tf.zeros(8,1)
+        output_list=[]
+        for i in range(8):
+            x = tf.contrib.eager.Variable(tf.random_normal([4, 60], mean=1.0, stddev=0.35))
+            tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
+            x_trans = tf.transpose(x)
+            x_conc = tf.concat((x_trans, tf.ones((60, 1))), axis=1)
+            w = tf.transpose(nn_output)[:, i]
+            z = tf.matmul(tf.reshape(w, (1, 5)), tf.transpose(x_conc))
+            y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
+            y1 = tf.cast(y,tf.float32)
+            output_list.append(tf.maximum(0,1-tf.matmul(z, y1)))
 
-        prediction_loss11=tf.reduce_sum(prediction_loss1)
+        ywxmax=tf.stack(output_list)
+
+        # x=tf.ones((60,1))-tf.matmul(tf.matmul(tf.concat([tf.transpose(processed_data['Action_waypoint'][0]), tf.ones((60,1))],axis=1), tf.transpose(nn_output)), processed_data['labels'][0])
+        # y=tf.maximum(tf.zeros((60,1)),x)
+        prediction_loss1=tf.reduce_sum(ywxmax)
 
         regularization_loss = tf.nn.l2_loss(nn_output)
 
         C=1 #Penalty parameter of the error term
-        total_loss = C*(prediction_loss11)+ 0.5 * regularization_loss
+        total_loss = C*(prediction_loss1)+ 0.5 * regularization_loss
        
         if return_loss_components_and_output:
-            return regularization_loss, prediction_loss11, total_loss, nn_output
+            return regularization_loss, prediction_loss1, total_loss, nn_output
         elif return_loss_components:
             return regularization_loss, prediction_loss1, total_loss
         else:

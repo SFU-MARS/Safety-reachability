@@ -302,10 +302,7 @@ class Simulator(SimulatorHelper):
 
         for xf in actions_waypoints:
 
-            # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
-            # speedf = np.random.uniform(low=0, high=0.6, size=(3,))
-            speedf = [v0]
-            # print('speedf is' ,v0)
+            speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(1,)))
 
             for vf in speedf:
 
@@ -315,275 +312,172 @@ class Simulator(SimulatorHelper):
                 # t = np.arange(0, 10, f*)
                 # p.dt=0.05
                 t = np.arange(0, 1*f, 0.05 )
+                # Define the maximum speed, angular speed and maximum horizon
+                max_speed = 0.6
+                max_angular_speed = 1.1
+                acceleration_max_system = 0.4
+                n = 1
+                dt = .05
+                k = 10
+                final_times_n1 = tf.constant([[6.]])
+
+                # Goal states and initial speeds
+                goal_posx_n11 = tf.ones((n, 1, 1), dtype=tf.float32) * goal_state[0]
+                goal_posy_n11 = tf.ones((n, 1, 1), dtype=tf.float32) * goal_state[1]
+                goal_heading_n11 = tf.ones((n, 1, 1), dtype=tf.float32) * goal_state[2]
+                start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * goal_state[3]
+
+                # Define start and goal configurations
+                start_config = SystemConfig(dt, n, 1, speed_nk1=start_speed_nk1, variable=False)
+                goal_config = SystemConfig(dt, n,
+                                           k=1,
+                                           position_nk2=tf.concat([goal_posx_n11, goal_posy_n11], axis=2),
+                                           heading_nk1=goal_heading_n11,
+                                           variable=True)
+
+                p = DotMap(spline_params=DotMap(epsilon=1e-5))
+                spline_trajs = Spline3rdOrder(dt=dt, k=k, n=n, params=p.spline_params)
+                spline_trajs.fit(start_config, goal_config, final_times_n1, factors=None)
+
+                # # Evaluate the splines
+                # ts_nk = tf.stack([
+                #                   tf.linspace(0., final_times_n1[1, 0], 100)], axis=0)
+                ts_nk = tf.linspace(0., final_times_n1[0, 0], 100)
+                spline_trajs.eval_spline(ts_nk, calculate_speeds=True)
+
+                # Compute the required horizon
+                # required_horizon_n1 = spline_trajs.compute_dynamically_feasible_horizon(max_speed, max_angular_speed, acceleration_max_system)
+                required_horizon_n1 = spline_trajs.compute_dynamically_feasible_horizon(max_speed, max_angular_speed)
+                # assert required_horizon_n1[1, 0] > final_times_n1[1, 0]
+
+                # Compute the maximum speed and angular speed
+                max_speed_n1 = tf.reduce_max(spline_trajs.speed_nk1(), axis=1)
+                max_angular_speed_n1 = tf.reduce_max(tf.abs(spline_trajs.angular_speed_nk1()), axis=1)
+                assert max_speed_n1[0, 0] < max_speed
+                assert max_angular_speed_n1[0, 0] < max_angular_speed
+                # assert max_speed_n1[1, 0] > max_speed
+                # assert max_angular_speed_n1[1, 0] > max_angular_speed
+
+                # Rescale horizon so that the trajectories are dynamically feasible
+                spline_trajs.rescale_spline_horizon_to_dynamically_feasible_horizon(max_speed, max_angular_speed,
+                                                                                    acceleration_max_system)
+                assert np.allclose(spline_trajs.final_times_n1.numpy(), required_horizon_n1.numpy(), atol=1e-2)
+
+                # Compute the maximum speed and angular speed
+                max_speed_n1 = tf.reduce_max(spline_trajs.speed_nk1(), axis=1)
+                max_angular_speed_n1 = tf.reduce_max(tf.abs(spline_trajs.angular_speed_nk1()), axis=1)
+                # assert max_speed_n1[0, 0] <= max_speed
+                # assert np.allclose(max_angular_speed_n1[0, 0], max_angular_speed, atol=1e-2)
+                # assert max_angular_speed_n1[0, 0] <= max_angular_speed
+                assert max_speed_n1[1, 0] <= max_speed
+                assert max_angular_speed_n1[1, 0] <= max_angular_speed
+
+                # Find the spline trajectories that are valid
+                valid_idxs_n = spline_trajs.find_trajectories_within_a_horizon(horizon_s=6.)
+                assert valid_idxs_n.shape == (1,)
+                assert valid_idxs_n.numpy()[0] == 0
+                spline_trajs.speed_nk1()
+                spline_trajs.position_nk2()
+                spline_trajs.heading_nk1()
+
+                pts = np.array(tf.concat([spline_trajs.position_nk2(),
+                                          spline_trajs.speed_nk1(), spline_trajs.heading_nk1()], axis=2))
 
 
-                traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, goal_state, uf,basis=fs.PolyFamily(8))# constraints=constraints,
+                for k in range(len(t)):
 
-                # ,cost=cost_fcn)
-                # Create the trajectory
-
-
-                x, u = traj_const.eval(t)
-
-                max_val_w = 1.1
-                max_val_a = 0.4
-                max_val_v = 0.6
-                if abs(u[0]).max()<=max_val_w and abs(u[1]).max()<=max_val_a and abs(x[3]).max()<=max_val_v and x[3].min()>=0 :
-
-
-                    print('it can reach to', goal_state)
-
-                    local_point=x
-                    ttc = []
-                    V = []
-
-
-                    # local_pts_camera=[]
-                    n=1
-
-                    for k in range(len(t)):
-
-
-                        start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
-                        start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
-                        start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
-                        start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
-                        # Initial SystemConfig is [0, 0, 0, v0, 0]
-                        start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
-                        Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                                           -np.sin(config.heading_nk1()[0][0][0]),
-                                           config.position_nk2()[0][0][0]],
-                                          [np.sin(config.heading_nk1()[0][0][0]),
-                                           np.cos(config.heading_nk1()[0][0][0]),
-                                           config.position_nk2()[0][0][1]],
-                                          [0, 0, 1]]
-                        target_state = np.array(Transformation).dot(
-                            [local_point[0][k], local_point[1][k], 1])
-                        goal_heading_nk1 = local_point[2][k] + \
-                                           config.heading_nk1()[0][0][0]
-                        goal_heading_nk1 =np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
-                        # phi1 = phi % 2 * math.pi
-                        # goal_heading_nk1=phi1-math.pi
-                        # # if goal_heading_nk1 < np.float32(-np.pi):
-                        # #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
-                        # # if goal_heading_nk1 > np.float32(np.pi):
-                        # #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
-                        global_point = np.array(
-                            [target_state[0], target_state[1], goal_heading_nk1, (local_point[3][k]) .astype (np.float16)])
-
-                        V.append(my_interpolating_functionV(global_point))
-                        # ttc.append(my_interpolating_function(global_point))
-
-                    #print("final state in world: ", global_point)
-                    # print("final state in world: ", local_point[:][])
-                    # self.TTCmin = min(ttc)
-                    # print("min of TTC is: ", self.TTCmin)
-                    self.discount = 0.90
-                    self.gamma = 1.0
-                    # self.Q0=self.gamma * (  #
-                    #         dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
-                    #         1 - self.discount))
-                    # print("Q of this action-waypoint is: ", self.Q0)
-                    self.V = min(V)
-                    self.label0 = np.sign(self.V)
-                    print("label of this action-waypoint is: ", self.label0)
-
-                    # self.Q.append(self.Q0)
-
-                    count += 1
-                    print("num samples collected: ", count)
-                    print(" ")
-                    r = SBPDRenderer.get_renderer_already_exists()
-                    dx_cm, traversible = r.get_config()
-                    dx_m = dx_cm / 100.
-                        # print(type(simulator.start_config.trainable_variables[0]))
-                        # camera_pos_13 = self.heading_nk1_next[0]
-                        # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
-                        # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                    camera_pos_13 = config.heading_nk1()[0]
-                    camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-
-                        # image of current state
-                    rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                    img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-                        #        # In the topview the positive x axis points to the right and
-                        # the positive y axis points up. The robot is located at
-                        # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
-                    crop_size = [64, 64]
-                    robot = [0, (crop_size[0] - 1) / 2]
-                    import matplotlib.pyplot as plt
-
-                    # fig = plt.figure(figsize=(30, 10))
-                    # ax1 = fig.add_subplot(1, 3, 1)
-                    # ax2 = fig.add_subplot(1, 3, 2)
-                    # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
-                    #
-                    # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
-                    # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
-                    start=[ 0, (crop_size[0]-1)/2]
-                    # local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
-                    # local_pts_camera.append(local_point_camera)
-
-
-                    start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
-                    waypointAction.append(goal_state)
-                    image.append(rgb_image_1mk3)
-
-                # end of if
-                else:
-                    out_x3 = np.clip(x[3], a_min=0, a_max=max_val_v)
-                    x[3] = out_x3
-                    out_u0 = np.clip(u[0], a_min = -max_val_w, a_max = max_val_w)
-                    out_u1 = np.clip(u[1], a_min=np.maximum(-max_val_a*np.ones((len(x[3]),1)),-1 * x[3] / dt), a_max=np.minimum(max_val_a*np.ones((len(x[3]),1)),(max_val_v-x[3])/dt))
-                    out_u0[0] = 0
-                    u[0]=out_u0
-                    u[1]=out_u1[1,:]
-
-
-                    # p = create_params()
-
-                    p = DotMap()
-                    p.seed = 1
-                    p.n = 1
-                    p.dt = .05
-                    p.dk = int(f/p.dt)
-                    p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
-                    p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
-
-                    p.system_dynamics_params = DotMap(system=DubinsV4,
-                                                      dt=.05,
-                                                      v_bounds=[0.0, .6],
-                                                      w_bounds=[-1.1, 1.1],
-                                                      a_bounds=[-0.4, 0.4]
-                                                      )
-                    p.system_dynamics_params.simulation_params = DotMap(simulation_mode='ideal',
-                                                                        noise_params=DotMap(is_noisy=False,
-                                                                                            noise_type='uniform',
-                                                                                            noise_lb=[-0.02, -0.02,
-                                                                                                      0.],
-                                                                                            noise_ub=[0.02, 0.02,
-                                                                                                      0.],
-                                                                                            noise_mean=[0., 0., 0.],
-                                                                                            noise_std=[0.02, 0.02,
-                                                                                                       0.]))
-
-                    n, k = p.n, p.dk
-
-                    dubins = p.system_dynamics_params.system(p.dt, params=p.system_dynamics_params)
-
-                    start_time_sim = time.time()
-                    start_pos_n13 = tf.constant(np.array([[[0.0, 0.0, 0.0, v0]]], dtype=np.float32))
-                    acceleration = (np.ones((n, k ), dtype=np.float32) * u[1]).reshape(1,k,1)
-                    angular_speed_nk1 = np.float32(u[0][None, :, None])
-                    u_nk2 = tf.constant(np.concatenate([angular_speed_nk1, acceleration], axis=2))
-                    u_nk2=np.float32(u_nk2)
-
-                    #
-                    traj_ref_egocentric = dubins.simulate_T(start_pos_n13, u_nk2, k)
-
-                    end_time_sim = time.time()
-                    time_sim=end_time_sim - start_time_sim
-
-                    data0 = VisualNavigationDataSource.reset_data_dictionary(p)
-                    # simulator.reset()
-
-                    start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
-                    start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
-                    start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
-                    start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
-                    # Initial SystemConfig is [0, 0, 0, v0, 0]
-                    start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
-                    # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                    #                    -np.sin(config.heading_nk1()[0][0][0]),
-                    #                    config.position_nk2()[0][0][0]],
-                    #                   [np.sin(config.heading_nk1()[0][0][0]),
-                    #                    np.cos(config.heading_nk1()[0][0][0]),
-                    #                    config.position_nk2()[0][0][1]],
-                    #                   [0, 0, 1]]
-                    Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+                    Transformation = [[np.cos(pts[0][0][0]),
                                        np.sin(config.heading_nk1()[0][0][0]),
                                        config.position_nk2()[0][0][0]],
                                       [-np.sin(config.heading_nk1()[0][0][0]),
                                        np.cos(config.heading_nk1()[0][0][0]),
                                        config.position_nk2()[0][0][1]],
                                       [0, 0, 1]]
+                    target_state = np.array(Transformation).dot(
+                        [local_point[0][k], local_point[1][k], 1])
+                    goal_heading_nk1 = local_point[2][k] + \
+                                       config.heading_nk1()[0][0][0]
+                    if goal_heading_nk1 < np.float32(-np.pi):
+                        goal_heading_nk1 = goal_heading_nk1 + 2 * np.pi
+                    if goal_heading_nk1 > np.float32(np.pi):
+                        goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
+
+                    global_point = np.array(
+                        [target_state[0], target_state[1], goal_heading_nk1, (local_point[3][k]).astype(np.float16)])
+
+                    V.append(my_interpolating_functionV(global_point))
+                    ttc.append(my_interpolating_function(global_point))
+
+                #traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, goal_state, uf,basis=fs.PolyFamily(8))# constraints=constraints,
+
+                # ,cost=cost_fcn)
+                # Create the trajectory
 
 
-                    ttc = []
-                    V = []
+                # x, u = traj_const.eval(t)
+                #
+                # max_val_w = 1.1
+                # max_val_a = 0.4
+                # max_val_v = 0.6
+                # if abs(u[0]).max()<=max_val_w and abs(u[1]).max()<=max_val_a and abs(x[3]).max()<=max_val_v and x[3].min()>=0 :
+                #
+                #
+                #     print('it can reach to', goal_state)
+                #
+                #     local_point=x
+                #     ttc = []
+                #     V = []
+                #
+                #
+                #     # local_pts_camera=[]
+                #
+                #     for k in range(len(t)):
+                #         start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
+                #         start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
+                #         start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
+                #         start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
+                #         # Initial SystemConfig is [0, 0, 0, v0, 0]
+                #         start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
+                #         Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+                #                            np.sin(config.heading_nk1()[0][0][0]),
+                #                            config.position_nk2()[0][0][0]],
+                #                           [-np.sin(config.heading_nk1()[0][0][0]),
+                #                            np.cos(config.heading_nk1()[0][0][0]),
+                #                            config.position_nk2()[0][0][1]],
+                #                           [0, 0, 1]]
+                #         target_state = np.array(Transformation).dot(
+                #             [local_point[0][k], local_point[1][k], 1])
+                #         goal_heading_nk1 = local_point[2][k] + \
+                #                            config.heading_nk1()[0][0][0]
+                #         if goal_heading_nk1 < np.float32(-np.pi):
+                #             goal_heading_nk1=goal_heading_nk1 + 2*np.pi
+                #         if goal_heading_nk1 > np.float32(np.pi):
+                #             goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
+                #         global_point = np.array(
+                #             [target_state[0], target_state[1], goal_heading_nk1, (local_point[3][k]) .astype (np.float16)])
+                #
+                #         V.append(my_interpolating_functionV(global_point))
+                #         ttc.append(my_interpolating_function(global_point))
 
-                    dx_m=0.05
-
-
-                    for j in range(k):
-                        start_time = time.time()
-                        # ###
-
-                        local_point = traj_ref_egocentric[j]
-                        # local_pts.append(local_point)
-                        # local_point_camera = np.array(local_point[0][0][0]) // dx_m + start[0], np.array(
-                        #     local_point[0][0][1]) / dx_m + start[1]
-                        # local_pts_camera.append(local_point_camera)
-
-                        # convert to global
-
-                        target_state = np.array(Transformation).dot(
-                            [local_point[0][0][0], local_point[0][0][1], 1])
-                        goal_heading_nk1 = local_point[0][0][2] + \
-                                           config.heading_nk1()[0][0][0]
-                        goal_heading_nk1=np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
-                        # phi1 = phi % 2 * math.pi
-                        # goal_heading_nk1=phi1-math.pi
-                        # if goal_heading_nk1 <= np.float32(-np.pi):
-                        #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
-                        # elif goal_heading_nk1 >= np.float32(np.pi):
-                        #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
-                        global_point = np.array(
-                            [target_state[0], target_state[1], goal_heading_nk1,
-                             local_point[0][0][3].numpy().astype(np.float16)])
-
-                        ttc.append(my_interpolating_function(global_point))
-                        V.append(my_interpolating_functionV(global_point))
-
-
-                        self.discount = 0.90
-                        self.gamma = 1.0
-                        # self.theta = 1e-10
-                    # print(global_pts)
-                        #print("It reaches ", global_point)
-                    # print("realistic waypoint", local_point)
-                    local_pts.append(local_point)
-
-                    global_pts.append(global_point)
-                    # goal_state=global_point
-                    goal_state = local_point
+                    #print("final state in world: ", global_point)
+                    # print("final state in world: ", local_point[:][])
                     self.TTCmin = min(ttc)
+                    print("min of TTC is: ", self.TTCmin)
+                    self.discount = 0.90
+                    self.gamma = 1.0
+                    self.Q0=self.gamma * (  #
+                            dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
+                            1 - self.discount))
+                    print("Q of this action-waypoint is: ", self.Q0)
                     self.V = min(V)
                     self.label0 = np.sign(self.V)
-
-                    # print("min of TTC is: ", self.TTCmin)
-
-                    self.Q0 = self.gamma * (  #
-                                dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
-                                1 - self.discount))
-                    # print("Q of this action-waypoint is: ", self.Q0)
                     print("label of this action-waypoint is: ", self.label0)
 
                     self.Q.append(self.Q0)
 
-                    self.labels.append(self.label0)
-
                     count += 1
                     print("num samples collected: ", count)
                     print(" ")
-
-                    #end of else
-
-                        # print ("Q values: ", self.Q)
-
-
                     r = SBPDRenderer.get_renderer_already_exists()
                     dx_cm, traversible = r.get_config()
                     dx_m = dx_cm / 100.
@@ -606,27 +500,215 @@ class Simulator(SimulatorHelper):
                     robot = [0, (crop_size[0] - 1) / 2]
                     import matplotlib.pyplot as plt
 
-                    # fig = plt.figure(figsize=(30, 10))
-                    # ax1 = fig.add_subplot(1, 3, 1)
-                    # ax2 = fig.add_subplot(1, 3, 2)
-                    # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
-                    #
-                    # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
-                    # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
-                    # start=[ 0, (crop_size[0]-1)/2]
-                    # local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
-                    # local_pts_camera.append(local_point_camera)
+                    fig = plt.figure(figsize=(30, 10))
+                    ax1 = fig.add_subplot(1, 3, 1)
+                    ax2 = fig.add_subplot(1, 3, 2)
+                    ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
+
+                    ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
+                    ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
+                    start=[ 0, (crop_size[0]-1)/2]
+                    local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
+                    local_pts_camera.append(local_point_camera)
 
 
                     start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
-                    waypointAction.append(np.array(goal_state))
+                    waypointAction.append(goal_state)
                     image.append(rgb_image_1mk3)
+
+                # # end of if
+                # else:
+                #     out_x3 = np.clip(x[3], a_min=0, a_max=max_val_v)
+                #     x[3] = out_x3
+                #     out_u0 = np.clip(u[0], a_min = -max_val_w, a_max = max_val_w)
+                #     out_u1 = np.clip(u[1], a_min=np.maximum(-max_val_a*np.ones((len(x[3]),1)),-1 * x[3] / dt), a_max=np.minimum(max_val_a*np.ones((len(x[3]),1)),(max_val_v-x[3])/dt))
+                #     out_u0[0] = 0
+                #     u[0]=out_u0
+                #     u[1]=out_u1[1,:]
+                #
+                #
+                #     # p = create_params()
+                #
+                #     p = DotMap()
+                #     p.seed = 1
+                #     p.n = 1
+                #     p.dt = .05
+                #     p.dk = int(f/p.dt)
+                #     p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
+                #     p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
+                #
+                #     p.system_dynamics_params = DotMap(system=DubinsV4,
+                #                                       dt=.05,
+                #                                       v_bounds=[0.0, .6],
+                #                                       w_bounds=[-1.1, 1.1],
+                #                                       a_bounds=[-0.4, 0.4]
+                #                                       )
+                #     p.system_dynamics_params.simulation_params = DotMap(simulation_mode='ideal',
+                #                                                         noise_params=DotMap(is_noisy=False,
+                #                                                                             noise_type='uniform',
+                #                                                                             noise_lb=[-0.02, -0.02,
+                #                                                                                       0.],
+                #                                                                             noise_ub=[0.02, 0.02,
+                #                                                                                       0.],
+                #                                                                             noise_mean=[0., 0., 0.],
+                #                                                                             noise_std=[0.02, 0.02,
+                #                                                                                        0.]))
+                #
+                #     n, k = p.n, p.dk
+                #
+                #     dubins = p.system_dynamics_params.system(p.dt, params=p.system_dynamics_params)
+                #
+                #     start_time_sim = time.time()
+                #     start_pos_n13 = tf.constant(np.array([[[0.0, 0.0, 0.0, v0]]], dtype=np.float32))
+                #     acceleration = (np.ones((n, k ), dtype=np.float32) * u[1]).reshape(1,k,1)
+                #     angular_speed_nk1 = np.float32(u[0][None, :, None])
+                #     u_nk2 = tf.constant(np.concatenate([angular_speed_nk1, acceleration], axis=2))
+                #     u_nk2=np.float32(u_nk2)
+                #
+                #     #
+                #     traj_ref_egocentric = dubins.simulate_T(start_pos_n13, u_nk2, k)
+                #
+                #     end_time_sim = time.time()
+                #     time_sim=end_time_sim - start_time_sim
+                #
+                #     data0 = VisualNavigationDataSource.reset_data_dictionary(p)
+                #     # simulator.reset()
+                #
+                #     start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
+                #     start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
+                #     start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
+                #     start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
+                #     # Initial SystemConfig is [0, 0, 0, v0, 0]
+                #     start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
+                #     # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+                #     #                    -np.sin(config.heading_nk1()[0][0][0]),
+                #     #                    config.position_nk2()[0][0][0]],
+                #     #                   [np.sin(config.heading_nk1()[0][0][0]),
+                #     #                    np.cos(config.heading_nk1()[0][0][0]),
+                #     #                    config.position_nk2()[0][0][1]],
+                #     #                   [0, 0, 1]]
+                #     Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+                #                        np.sin(config.heading_nk1()[0][0][0]),
+                #                        config.position_nk2()[0][0][0]],
+                #                       [-np.sin(config.heading_nk1()[0][0][0]),
+                #                        np.cos(config.heading_nk1()[0][0][0]),
+                #                        config.position_nk2()[0][0][1]],
+                #                       [0, 0, 1]]
+                #
+                #
+                #     ttc = []
+                #     V = []
+                #
+                #     dx_m=0.05
+                #
+                #
+                #     for j in range(k):
+                #         start_time = time.time()
+                #         # ###
+                #
+                #         local_point = traj_ref_egocentric[j]
+                #         # local_pts.append(local_point)
+                #         # local_point_camera = np.array(local_point[0][0][0]) // dx_m + start[0], np.array(
+                #         #     local_point[0][0][1]) / dx_m + start[1]
+                #         # local_pts_camera.append(local_point_camera)
+                #
+                #         # convert to global
+                #
+                #         target_state = np.array(Transformation).dot(
+                #             [local_point[0][0][0], local_point[0][0][1], 1])
+                #         goal_heading_nk1 = local_point[0][0][2] + \
+                #                            config.heading_nk1()[0][0][0]
+                #         if goal_heading_nk1 <= np.float32(-np.pi):
+                #             goal_heading_nk1=goal_heading_nk1 + 2*np.pi
+                #         elif goal_heading_nk1 >= np.float32(np.pi):
+                #             goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
+                #         global_point = np.array(
+                #             [target_state[0], target_state[1], goal_heading_nk1,
+                #              local_point[0][0][3].numpy().astype(np.float16)])
+                #
+                #         ttc.append(my_interpolating_function(global_point))
+                #         V.append(my_interpolating_functionV(global_point))
+                #
+                #
+                #         self.discount = 0.90
+                #         self.gamma = 1.0
+                #         # self.theta = 1e-10
+                #     # print(global_pts)
+                #         #print("It reaches ", global_point)
+                #     # print("realistic waypoint", local_point)
+                #     local_pts.append(local_point)
+                #
+                #     global_pts.append(global_point)
+                #     # goal_state=global_point
+                #     goal_state = local_point
+                #     self.TTCmin = min(ttc)
+                #     self.V = min(V)
+                #     self.label0 = np.sign(self.V)
+                #
+                #     # print("min of TTC is: ", self.TTCmin)
+                #
+                #     self.Q0 = self.gamma * (  #
+                #                 dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
+                #                 1 - self.discount))
+                #     # print("Q of this action-waypoint is: ", self.Q0)
+                #     print("label of this action-waypoint is: ", self.label0)
+                #
+                #     self.Q.append(self.Q0)
+                #
+                #     self.labels.append(self.label0)
+                #
+                #     count += 1
+                #     print("num samples collected: ", count)
+                #     print(" ")
+
+                    #end of else
+
+                        # print ("Q values: ", self.Q)
+
+                    #
+                    # r = SBPDRenderer.get_renderer_already_exists()
+                    # dx_cm, traversible = r.get_config()
+                    # dx_m = dx_cm / 100.
+                    #     # print(type(simulator.start_config.trainable_variables[0]))
+                    #     # camera_pos_13 = self.heading_nk1_next[0]
+                    #     # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
+                    #     # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
+                    #
+                    # camera_pos_13 = config.heading_nk1()[0]
+                    # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
+                    #
+                    #     # image of current state
+                    # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
+                    #
+                    # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
+                    #     #        # In the topview the positive x axis points to the right and
+                    #     # the positive y axis points up. The robot is located at
+                    #     # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
+                    # crop_size = [64, 64]
+                    # robot = [0, (crop_size[0] - 1) / 2]
+                    # import matplotlib.pyplot as plt
+                    #
+                    # # fig = plt.figure(figsize=(30, 10))
+                    # # ax1 = fig.add_subplot(1, 3, 1)
+                    # # ax2 = fig.add_subplot(1, 3, 2)
+                    # # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
+                    # #
+                    # # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
+                    # # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
+                    # # start=[ 0, (crop_size[0]-1)/2]
+                    # # local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
+                    # # local_pts_camera.append(local_point_camera)
+                    #
+                    #
+                    # start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
+                    # waypointAction.append(np.array(goal_state))
+                    # image.append(rgb_image_1mk3)
 
 
                 # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                 #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
-        dataForAnImage={'start_pose':np.array(start_pose , dtype=object),
-                'image': np.array(image  , dtype=object).squeeze(),'waypointAction':np.array(waypointAction  , dtype=object), 'labels': np.array(self.labels  , dtype=object)}
+        dataForAnImage={'start_pose':np.array(start_pose),
+                'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
         # plt.hist(np.array(self.labels))
         # plt.show()
 
@@ -776,11 +858,10 @@ class Simulator(SimulatorHelper):
         while reset_start:
             self._reset_obstacle_map(self.rng)  # Do nothing here
 
-            self._reset_start_configuration(self.rng)  # Reset self.start_config
-            # print('start is', self.start_config)
+            reset_start = self._reset_start_configuration(self.rng)  # Reset self.start_config
             # Reset self.goal_config. If there is no available goals, reset_start = True, then reset the start again.
             reset_start = self._reset_goal_configuration(self.rng)
-            # print('goal is' , self.goal_config)
+
             # Manually restart the start and goal (only work for single goal)
             # reset_start = self._reset_start_goal_manually(start_pos=[9, 10], goal_pos=[9, 20])#? IndexError: index 943 is out of bounds for axis 0 with size 521
             # reset_start = self._reset_start_goal_manually(start_pos=[8.65, 50.25], goal_pos=[8.60, 47.15])
@@ -877,8 +958,7 @@ class Simulator(SimulatorHelper):
             return true
         # Reset the speed
         if p.speed.reset_type == 'zero':
-            # speed_111 = np.zeros((1, 1, 1))
-            speed_111 = rng.uniform(p.speed.bounds[0], p.speed.bounds[1], (1, 1, 1))
+            speed_111 = np.zeros((1, 1, 1))
         elif p.speed.reset_type == 'random':
             speed_111 = rng.uniform(p.speed.bounds[0], p.speed.bounds[1], (1, 1, 1))
         elif p.speed.reset_type == 'custom':
@@ -890,9 +970,7 @@ class Simulator(SimulatorHelper):
 
         # Reset the angular speed
         if p.ang_speed.reset_type == 'zero':
-            # ang_speed_111 = np.zeros((1, 1, 1))
-            # ang_speed_111 = np.ones((1, 1, 1)) * (1e-10)
-            ang_speed_111 = rng.uniform(p.ang_speed.bounds[0], p.ang_speed.bounds[1], (1, 1, 1))
+            ang_speed_111 = np.zeros((1, 1, 1))
         elif p.ang_speed.reset_type == 'random':
             ang_speed_111 = rng.uniform(p.ang_speed.bounds[0], p.ang_speed.bounds[1], (1, 1, 1))
         elif p.ang_speed.reset_type == 'gaussian':
@@ -907,11 +985,6 @@ class Simulator(SimulatorHelper):
 
 
         # Initialize the start configuration
-        print("start_112 is", start_112)
-        print("heading_111 is", heading_111)
-        print('speed_111 is', speed_111)
-        print('ang_speed_111 is' , ang_speed_111)
-
         self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
                                          position_nk2=start_112,
                                          heading_nk1=heading_111,
@@ -957,7 +1030,6 @@ class Simulator(SimulatorHelper):
             # enforce fmm_dist(start, goal) < max_fmm_dist
             free_xy = np.where(start_fmm_map.fmm_distance_map.voxel_function_mn <
                                p.position.max_fmm_dist)
-
             free_xy = np.array(free_xy).T
             free_xy = free_xy[:, ::-1]
             free_xy_pts_m2 = self.obstacle_map._map_to_point(free_xy)
@@ -974,7 +1046,6 @@ class Simulator(SimulatorHelper):
 
             # enforce fmm_dist - l2_dist > fmm_l2_gap
             fmm_l2_gap = rng.uniform(0.0, p.position.max_dist_diff)
-            print('fmm_l2_gap is' , fmm_l2_gap)
             l2_dist_to_goal = np.linalg.norm((start_112 - free_xy_pts_m2[:, None]), axis=2)[:, 0]
             fmm_dist_to_goal = np.squeeze(
                 start_fmm_map.fmm_distance_map.compute_voxel_function(free_xy_pts_m2[:, None]).numpy())
@@ -990,7 +1061,6 @@ class Simulator(SimulatorHelper):
                 return True
 
             goal_112 = self.obstacle_map.sample_point_112(rng, free_xy_map_m2=free_xy)
-            print ('goal_112 is' , goal_112)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle goal position.')
 
@@ -1387,7 +1457,7 @@ def vehicle_flat_reverse(zflag):
     x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
 
     # And next solve for the inputs
-    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2 ) * (
+    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
             (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2)
     u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
 
@@ -1437,7 +1507,7 @@ def plot_results(t, x, u):
     plt.xlabel('Time t [sec]')
     plt.ylabel('a [m2/s]')
     plt.tight_layout()
-    # plt.show()
+    plt.show()
 
 
 vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2,

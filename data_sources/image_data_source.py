@@ -100,8 +100,8 @@ class ImageDataSource(DataSource):
 
                     # Add {Absolute file path: number of samples} to the
                     # metadata dictionary
-                    # metadata[img_filename] = self._get_n(data)
-                    metadata[img_filename] = 1
+                    metadata[img_filename] = self._get_n(data)
+                    # metadata[img_filename] = 1
 
                 # Save metadata
                 metadata_filename = os.path.join(new_data_dirs[-1], 'metadata.pkl')
@@ -434,18 +434,18 @@ class ImageDataSource(DataSource):
             # TODO: delete this, convenient for visualization of cost function
             # print('Warning! Deleting a few keys that are not handled appropriately in the data collection process for '
             #       'the last time step.')
-            if 'episode_type_string_n1' in data_current.keys():
-                del(data_current['episode_type_string_n1'])
-                if 'episode_type_string_n1' in self.data_tags:
-                    self.data_tags.remove('episode_type_string_n1')
-            if 'episode_number_n1' in data_current.keys():
-                del(data_current['episode_number_n1'])
-                if 'episode_number_n1' in self.data_tags:
-                    self.data_tags.remove('episode_number_n1')
-            if 'waypoint_horizon_n1' in data_current.keys():
-                del(data_current['waypoint_horizon_n1'])
-                if 'waypoint_horizon_n1' in self.data_tags:
-                    self.data_tags.remove('waypoint_horizon_n1')
+            # if 'episode_type_string_n1' in data_current.keys():
+            #     del(data_current['episode_type_string_n1'])
+            #     if 'episode_type_string_n1' in self.data_tags:
+            #         self.data_tags.remove('episode_type_string_n1')
+            # if 'episode_number_n1' in data_current.keys():
+            #     del(data_current['episode_number_n1'])
+            #     if 'episode_number_n1' in self.data_tags:
+            #         self.data_tags.remove('episode_number_n1')
+            # if 'waypoint_horizon_n1' in data_current.keys():
+            #     del(data_current['waypoint_horizon_n1'])
+            #     if 'waypoint_horizon_n1' in self.data_tags:
+            #         self.data_tags.remove('waypoint_horizon_n1')
             
             num_samples = data['num_samples_n1'][file_idx, 0]
             info_dict['data'] = data_current

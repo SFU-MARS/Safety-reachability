@@ -50,7 +50,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         # return data['vehicle_state_nk3'].shape[0]
 
-        return data['start_pose'].shape[2]
+        return len(data)
     
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
@@ -80,9 +80,11 @@ class VisualNavigationDataSource(ImageDataSource):
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
         d2 = {}
-        self.num_episode = 1000
-        self.episode_counter=0
+        self.num_episode = 500
+        self.episode_counter = 0
         while self.episode_counter<self.num_episode:
+            if (self.episode_counter == 257):
+                continue
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
             # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
@@ -108,9 +110,10 @@ class VisualNavigationDataSource(ImageDataSource):
             # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0803'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0909'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
+
             with open(os.path.join(here, file_name), "wb") as f:
                 pickle.dump(dataForAnImage, f)
                 # pickle.dump(dd, f)

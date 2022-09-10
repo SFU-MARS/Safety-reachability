@@ -10,35 +10,36 @@ imagez=[]
 waypointActionz=[]
 labelz=[]
 dictionaries=[]
+dictionary=[]
+dictionary1=[]
+dict_list=[]
 
 data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729'
 data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
 databig={}
 keys=[]
+
 for data_file in data_files:
     with open(data_file, 'rb') as f:
         data = pickle.load(f)
         listofdict.append(data)
 
 each=60
-m=int(60/each)              #60 muber of samles in each pkl file 
+m=int(60/each)              #60 number of samles in each pkl file
 # print (len(listofdict))
 for k1 in range(0,m):
 # for k1 in range(1):
 
 
-    train_size=50
+    train_size=800
 
-    for i in range(train_size):
+    for i in range(1,train_size):
   # for i in range(2):
     # print(listofdict[i]['start_pose'][each*k1:each*(k1+1)])
     # print (k1)
     # print (i)
     #
-        posez = []
-        imagez = []
-        waypointActionz = []
-        labelz = []
+
         posez.append(np.squeeze(listofdict[i]['start_pose'][each*k1:each*(k1+1)]))
         imagez.append(np.squeeze(listofdict[i]['image'][each*k1:each*(k1+1)]))
         waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][each*k1:each*(k1+1)]))
@@ -69,25 +70,42 @@ for k1 in range(0,m):
  #                'image': np.stack(imagez).reshape(224,224,3,50),
  #                'waypointAction': np.stack(waypointActionz).reshape(1,1,4,50),
  #                'labels': np.stack(labelz).reshape(1,50)}
-        dictionary = {'start_pose': np.stack(posez).reshape(1, 1, 120),#(2, 1, 60)
+
+        dictionary= {'start_pose': np.stack(posez).reshape(1, 1, 120),#(2, 1, 60)
                   'image': np.stack(imagez).reshape(224, 224, 180),
                   'waypointAction': np.stack(waypointActionz).reshape(4, 1, 60),
                   'labels': np.stack(labelz).reshape(1, 60)}
+        if i % 10 != 0:
+            dict_list.append(dictionary)
+
+            posez = []
+            imagez = []
+            waypointActionz = []
+            labelz = []
+
+        if i % 10 == 0:
       # dictionaries.append(dictionary)
-        f  = open("sample"+str(1)+str(i)+'.pkl', "wb")
-        pickle.dump(dictionary, f)
-        f.close()
+            f  = open("sample"+str(1)+str(int(i/10))+'.pkl', "wb")
+            pickle.dump(dict_list, f)
+            dict_list=[]
+
+            posez = []
+            imagez = []
+            waypointActionz = []
+            labelz = []
+
+            f.close()
+posez1 = []
+imagez1 = []
+waypointActionz1 = []
+labelz1 = []
+dict_list1=[]
 
 for k in range(0,m):
 
-    for i in range(train_size,train_size+50,1):
+    for i in range(train_size+1,train_size+200,1):
 
 
-        posez1 = []
-        imagez1 = []
-        waypointActionz1 = []
-        labelz1 = []
-        dictionaries1 = []
 
         posez1.append(np.squeeze(listofdict[i]['start_pose'][each*k:each*(k+1)]))
         imagez1.append(np.squeeze(listofdict[i]['image'][each*k:each*(k+1)]))
@@ -119,13 +137,31 @@ for k in range(0,m):
 #                 'image': np.stack(imagez1).reshape(224,224,3,50),
 #                 'waypointAction': np.stack(waypointActionz1).reshape(1,1,4,50),
 #                 'labels': np.stack(labelz1).reshape(1,1,50)}
-        dictionary1 = {'start_pose': np.stack(posez1).reshape(1, 1, 120),
-                    'image': np.stack(imagez1).reshape(224, 224, 180),
-                    'waypointAction': np.stack(waypointActionz1).reshape(4, 1, 60),
-                    'labels': np.stack(labelz1).reshape(1, 60)}
+
+        dictionary1  = {'start_pose': np.stack(posez1).reshape(1, 1, 120),
+                        'image': np.stack(imagez1).reshape(224, 224, 180),
+                        'waypointAction': np.stack(waypointActionz1).reshape(4, 1, 60),
+                        'labels': np.stack(labelz1).reshape(1, 60)}
+
+        if i % 10 != 0:
+            dict_list1.append(dictionary1)
+
+            posez1 = []
+            imagez1 = []
+            waypointActionz1 = []
+            labelz1 = []
+
+        if i % 10 == 0:
         # dictionaries.append(dictionary)
-        f = open("sample"+str(20)+str(i)+'.pkl', "wb")
-        #200
-        pickle.dump(dictionary1, f)
-        f.close()
+            f = open("sample"+str(200)+str(int(i/10))+'.pkl', "wb")
+            #200
+            pickle.dump(dict_list1, f)
+            dict_list1=[]
+
+            posez1 = []
+            imagez1 = []
+            waypointActionz1 = []
+            labelz1 = []
+
+            f.close()
 

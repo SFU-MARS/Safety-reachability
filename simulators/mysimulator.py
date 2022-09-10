@@ -1006,7 +1006,7 @@ class Simulator(SimulatorHelper):
         while reset_start:
             self._reset_obstacle_map(self.rng)  # Do nothing here
 
-            reset_start = self._reset_start_configuration(self.rng)  # Reset self.start_config
+            self._reset_start_configuration(self.rng)  # Reset self.start_config
             # Reset self.goal_config. If there is no available goals, reset_start = True, then reset the start again.
             reset_start = self._reset_goal_configuration(self.rng)
 

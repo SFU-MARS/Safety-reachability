@@ -23,8 +23,9 @@ def create_params():
     # start must be greater than some threshold (sampled based on
     # max_dist_diff)
     p.reset_params.goal_config = DotMap(position=DotMap(
-                                                    reset_type='random_v1',
+                                                    reset_type='random',
                                                     max_dist_diff=.5,
-                                                    max_fmm_dist=6.0
+                                                    # max_fmm_dist=6.0
+                                                    max_fmm_dist = 6.0
                                                 ))
     return p

@@ -166,11 +166,11 @@ class VisualNavigationModelBase(BaseModel):
 
         # normalized_img = img_nmkd /255
 
-        data['inputs'] = [img_nmkd1, state_features_n21]
+        data['inputs'] = [img_nmkd, state_features_n2]
 
-        data['labels'] = optimal_labels_n1
-        # data['Action_waypoint'] = waypointAction
-        data['Action_waypoint'] = np.expand_dims((np.squeeze(waypointAction)), axis=0)
+        data['labels'] = optimal_labels_n
+        data['Action_waypoint'] = waypointAction
+        # data['Action_waypoint'] = np.expand_dims((np.squeeze(waypointAction)), axis=0)
 
         return data
     

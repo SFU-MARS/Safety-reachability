@@ -15,7 +15,8 @@ def create_rgb_trainer_params():
     simulator_params = create_simulator_params()
 
     # Seed
-    simulator_params.seed = 10
+    # simulator_params.seed = 10
+    simulator_params.seed = 5
 
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
@@ -71,14 +72,14 @@ def create_params():
     p.model.arch.finetune_resnet_weights = True
 
     # Change the learning rate and num_samples
-    p.trainer.lr = 1e-6
+    p.trainer.lr = 1e-7
     # p.trainer.lr = 1e-8
     # p.trainer.batch_size = 1#48 original, changed after error 36
-    p.trainer.batch_size =1
+    p.trainer.batch_size = 9 #60
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
-    p.trainer.num_samples = int(50) #int(2400)
+    p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1050)
     # p.trainer.num_samples = int(295)
     # p.trainer.num_samples = int(60)
@@ -86,7 +87,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 100
+    p.trainer.num_epochs = 50
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -129,8 +130,9 @@ def create_params():
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area4 / full_episode_random_v1_100k',
     #    '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/sbpd_projected_grid_include_last_step_successful_goals_only / area5a / full_episode_random_v1_100k']
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4-seperate4']
-    p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-stack3-last']
+    # p.data_creation.data_dir = [
+    #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-stack3-last-10b']
+    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0907']
 
     p.data_creation.data_points = int(1e3/2)
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

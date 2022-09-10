@@ -63,7 +63,10 @@ class SBPDSimulator(Simulator):
         if hasattr(self, 'reachability_map'):
             start_pos_n2 = self.start_config.position_nk2()[:, 0].numpy()
             goal_pos_n2 = self.goal_config.position_nk2()[:, 0].numpy()
+            # try:
             self.reachability_map.change_goal(start_position_n2=start_pos_n2, goal_positions_n2=goal_pos_n2)
+            # except(ValueError):
+            #   pass
         else:
             self.reachability_map = self._init_reachability_map()
 
