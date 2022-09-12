@@ -63,6 +63,7 @@ class ReachabilityMap(object):
             # If it is precomputed, load precomputed 4d reach avoid ttr
             if os.path.isfile(
                     os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name)):
+                print("-- loading 4D TTR map")
                 ttr_4d_reach_avoid_saved = np.load(
                     os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name),
                     allow_pickle=True)
@@ -71,6 +72,7 @@ class ReachabilityMap(object):
                 self._reset_reach_avoid_4d_map_from_saved(ttr_4d_reach_avoid_saved, map_origin_2d=map_clipped_origin_2d)
             # If it is not precomputed, clip the goal map and compute reach avoid TTR map
             else:
+                print("-- 4D TTR map not found")
                 goal_map_clipped_2d, obstacle_map_clipped_2d, map_clipped_origin_2d, map_clipped_bdry_2d, clipped_dx = \
                     self._reset_clipped_map()
                 self._reset_reach_avoid_4d_map(goal_map_2d=goal_map_clipped_2d, obstacle_map_2d=obstacle_map_clipped_2d,
@@ -387,26 +389,28 @@ class ReachabilityMap(object):
         # After computation, ttr has one more dimension on theta. Because we maintain the TTR map in [-pi, pi] in theta
         # dimension
 
-        ttr_value_reach_avoid_4d = self.eng.mainLF_dubins_car_reach_avoid_4d_dxdy_circular(self.dx_4d_matlab,
-                                                                                           self.gN_4d,
-                                                                                           self.gMin_4d,
-                                                                                           self.gMax_4d,
-                                                                                           self.p.aMax,
-                                                                                           self.p.wMax,
-                                                                                           self.p.dMax_xy,
-                                                                                           self.p.dMax_theta,
-                                                                                           self.reach_avoid_4d_map_tmp_path)
+        #ttr_value_reach_avoid_4d = self.eng.mainLF_dubins_car_reach_avoid_4d_dxdy_circular(self.dx_4d_matlab,
+         #                                                                                  self.gN_4d,
+          #                                                                                 self.gMin_4d,
+           #                                                                                self.gMax_4d,
+            #                                                                               self.p.aMax,
+             #                                                                              self.p.wMax,
+              #                                                                             self.p.dMax_xy,
+               #                                                                            self.p.dMax_theta,
+                #                                                                           self.reach_avoid_4d_map_tmp_path)
 
         self.eng.quit()
 
-        ttr_value_reach_avoid_4d_numpy = np.asarray(ttr_value_reach_avoid_4d)
-        np.save(os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name),
-                ttr_value_reach_avoid_4d_numpy)
+        # [NOTE]: this takes an insanely long time to run; is there a better way to do this in order to save it a file?
+        #ttr_value_reach_avoid_4d_numpy = np.asarray(ttr_value_reach_avoid_4d)
+
+        # save the array to a file
+        #np.save(os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name), ttr_value_reach_avoid_4d_numpy)
 
         print("new reach avoid 4d ttr is computed and saved!")
 
         # Wrap the ttr value function into a voxel function
-        self.reach_avoid_4d_map.voxel_function_4d = tf.convert_to_tensor(ttr_value_reach_avoid_4d, dtype=tf.float32)
+        #self.reach_avoid_4d_map.voxel_function_4d = tf.convert_to_tensor(ttr_value_reach_avoid_4d, dtype=tf.float32)
 
     def _compute_avoid_4d_map_LFsweep(self):
         """

@@ -79,8 +79,8 @@ class SBPDMap(ObstacleMap):
         # free_xy_map_m21=[]
         if free_xy_map_m2 is None:
             free_xy_map_m2 = self.free_xy_map_m2
-        free_xy_map_m2 = [[a, b] for a, b in free_xy_map_m2 if  100 <= a <= 500 and 100 <= b <= 421]
-        free_xy_map_m2=np.array(free_xy_map_m2)
+        # free_xy_map_m2 = [[a, b] for a, b in free_xy_map_m2 if  100 <= a <= 500 and 100 <= b <= 421]
+        # free_xy_map_m2=np.array(free_xy_map_m2)
         idx = rng.choice(len(free_xy_map_m2))
         # print(('idx is:'+ str(idx)))
         pos_112 = free_xy_map_m2[idx][None, None]

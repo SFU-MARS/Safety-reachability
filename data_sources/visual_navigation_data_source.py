@@ -92,8 +92,8 @@ class VisualNavigationDataSource(ImageDataSource):
             # Run the planner for one step
             # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
             # its corresponding image
-            dataForAnImage=simulator.simulate()
-            self.episode_counter+=1
+            dataForAnImage = simulator.simulate()
+            self.episode_counter += 1
 
             # if self.episode_counter%4!=0:
             #
@@ -110,7 +110,7 @@ class VisualNavigationDataSource(ImageDataSource):
             # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0909'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0911'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
 
