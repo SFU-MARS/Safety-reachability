@@ -299,12 +299,16 @@ class Simulator(SimulatorHelper):
         local_pts = []
         local_pts_camera=[]
         num_images=range (4)
-        counter_images=0
+        num_sample_generated=0
         self.labels=[]
 
 
-
         for xf in actions_waypoints:
+
+            # we may discover that partway through a trajectory that the trajectory takes us out of bounds;
+            # therefore, we need to use a boolean var to track whether or not we will continue processing the
+            # current waypoint
+            processWaypoint = True
 
             Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
                                -np.sin(config.heading_nk1()[0][0][0]),
@@ -331,10 +335,7 @@ class Simulator(SimulatorHelper):
                 speedf = [v0]
                 # print('speedf is' ,v0)
 
-
-
                 for vf in speedf:
-
 
                     vf1=[vf]
                     goal_state = [y for x in [target_state, vf1] for y in x]
@@ -343,12 +344,10 @@ class Simulator(SimulatorHelper):
                     # p.dt=0.05
                     t = np.arange(0, 1*f, 0.05 )
 
-
                     traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, goal_state, uf,basis=fs.PolyFamily(8))# constraints=constraints,
 
                     # ,cost=cost_fcn)
                     # Create the trajectory
-
 
                     x, u = traj_const.eval(t)
 
@@ -356,7 +355,6 @@ class Simulator(SimulatorHelper):
                     max_val_a = 0.4
                     max_val_v = 0.6
                     if abs(u[0]).max()<=max_val_w and abs(u[1]).max()<=max_val_a and abs(x[3]).max()<=max_val_v and x[3].min()>=0 :
-
 
                         print('it can reach to', goal_state)
 
@@ -366,39 +364,11 @@ class Simulator(SimulatorHelper):
                         ttc = []
                         V = []
 
-
                         # local_pts_camera=[]
                         n=1
 
                         for k in range(len(t)): #timestep over traj
 
-                            #
-                            # start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
-                            # start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
-                            # start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
-                            # start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
-                            # # Initial SystemConfig is [0, 0, 0, v0, 0]
-                            # start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
-                            # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                            #                    -np.sin(config.heading_nk1()[0][0][0]),
-                            #                    config.position_nk2()[0][0][0]],
-                            #                   [np.sin(config.heading_nk1()[0][0][0]),
-                            #                    np.cos(config.heading_nk1()[0][0][0]),
-                            #                    config.position_nk2()[0][0][1]],
-                            #                   [0, 0, 1]]
-                            # target_state = np.array(Transformation).dot(
-                            #     [local_point[0][k], local_point[1][k], 1])
-                            # goal_heading_nk1 = local_point[2][k] + \
-                            #                    config.heading_nk1()[0][0][0]
-                            # goal_heading_nk1 =np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
-                            # # phi1 = phi % 2 * math.pi
-                            # # goal_heading_nk1=phi1-math.pi
-                            # # # if goal_heading_nk1 < np.float32(-np.pi):
-                            # # #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
-                            # # # if goal_heading_nk1 > np.float32(np.pi):
-                            # # #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
-                            # global_point = np.array(
-                            #     [target_state[0], target_state[1], goal_heading_nk1, (local_point[3][k]) .astype (np.float16)])
                             global_point=x[:, k]
                             V.append(my_interpolating_functionV(global_point))
                             # ttc.append(my_interpolating_function(global_point))
@@ -414,8 +384,14 @@ class Simulator(SimulatorHelper):
                         #         1 - self.discount))
                         # print("Q of this action-waypoint is: ", self.Q0)
                         self.V = min(V)
+
                         self.label0 = np.sign(self.V)
+                        self.labels.append(self.label0)
+
+                        num_sample_generated +=1
+
                         print("label of this action-waypoint is: ", self.label0)
+
 
                         # self.Q.append(self.Q0)
 
@@ -442,19 +418,9 @@ class Simulator(SimulatorHelper):
                             # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
                         crop_size = [64, 64]
                         robot = [0, (crop_size[0] - 1) / 2]
-                        import matplotlib.pyplot as plt
-
-                        # fig = plt.figure(figsize=(30, 10))
-                        # ax1 = fig.add_subplot(1, 3, 1)
-                        # ax2 = fig.add_subplot(1, 3, 2)
-                        # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
-                        #
-                        # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
-                        # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
                         start=[ 0, (crop_size[0]-1)/2]
                         # local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
                         # local_pts_camera.append(local_point_camera)
-
 
                         start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
                         waypointAction.append(goal_state)
@@ -469,7 +435,6 @@ class Simulator(SimulatorHelper):
                         out_u0[0] = 0
                         u[0]=out_u0
                         u[1]=out_u1[1,:]
-
 
                         # p = create_params()
 
@@ -517,164 +482,78 @@ class Simulator(SimulatorHelper):
                         # traj_ref .eval(session=tf.compat.v1.Session())
                         end_time_sim = time.time()
                         time_sime=end_time_sim - start_time_sim
-                        #
-                        # data0 = VisualNavigationDataSource.reset_data_dictionary(p)
-                        # # simulator.reset()
-                        #
-                        # start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
-                        # start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
+
                         # start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
                         start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
                         # # Initial SystemConfig is [0, 0, 0, v0, 0]
                         start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
-                        # # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                        # #                    -np.sin(config.heading_nk1()[0][0][0]),
-                        # #                    config.position_nk2()[0][0][0]],
-                        # #                   [np.sin(config.heading_nk1()[0][0][0]),
-                        # #                    np.cos(config.heading_nk1()[0][0][0]),
-                        # #                    config.position_nk2()[0][0][1]],
-                        # #                   [0, 0, 1]]
-                        # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                        #                    np.sin(config.heading_nk1()[0][0][0]),
-                        #                    config.position_nk2()[0][0][0]],
-                        #                   [-np.sin(config.heading_nk1()[0][0][0]),
-                        #                    np.cos(config.heading_nk1()[0][0][0]),
-                        #                    config.position_nk2()[0][0][1]],
-                        #                   [0, 0, 1]]
-                        #
-                        #
-                        # ttc = []
+
                         V = []
-                        #
-                        # dx_m=0.05
-                        # res_x = all(ele.numpy()[0] >= self.obstacle_map.map_bounds[1][0] and ele.numpy()[0] < 0 for ele in traj_ref[1:])
-                        # res_y = all(ele.numpy()[1] >= self.obstacle_map.map_bounds[1][1] and ele.numpy()[1] < 0 for ele in traj_ref)
-                        #
-                        # if res_x and res_y:
-                        #
                         # aborted = False
                         for j in range(1,k):
-
 
                             start_time = time.time()
                             # ###
 
                             global_point = traj_ref[j]
                             global_point = global_point.numpy()
+                            print("iteration " + str(j) + " of " + str(k))
                             if global_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or global_point[0][0][0] < 0 or  0 > global_point[0][0][1]  or global_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
-                                # aborted = True
+                                processWaypoint = False
+                                print("-- breaking")
                                 break
-                                # break
+
                             # if not aborted:
                             global_point[0][0][2] = np.arctan2(np.sin(global_point[0][0][2]), np.cos(global_point[0][0][2]))
-                            # local_pts.append(local_point)
-                            # local_point_camera = np.array(local_point[0][0][0]) // dx_m + start[0], np.array(
-                            #     local_point[0][0][1]) / dx_m + start[1]
-                            # local_pts_camera.append(local_point_camera)
-
-                            # convert to global
-
-                            # target_state = np.array(Transformation).dot(
-                            #     [local_point[0][0][0], local_point[0][0][1], 1])
-                            # goal_heading_nk1 = local_point[0][0][2] + \
-                            #                    config.heading_nk1()[0][0][0]
-                            # goal_heading_nk1=np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
-                            # # phi1 = phi % 2 * math.pi
-                            # # goal_heading_nk1=phi1-math.pi
-                            # # if goal_heading_nk1 <= np.float32(-np.pi):
-                            # #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
-                            # # elif goal_heading_nk1 >= np.float32(np.pi):
-                            # #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
-                            # global_point = np.array(
-                            #     [target_state[0], target_state[1], goal_heading_nk1,
-                            #      local_point[0][0][3].numpy().astype(np.float16)])
 
                             # ttc.append(my_interpolating_function(global_point))
                             # V.append(my_interpolating_functionV(global_point))
                             V.append(my_interpolating_functionV(global_point))
 
-                            # self.discount = 0.90
-                            # self.gamma = 1.0
-                            # self.theta = 1e-10
+                        # did we not find an out-of-bounds trajectory?
+                        if processWaypoint:
 
+                            self.V = min(V)
+                            self.label0 = np.sign(self.V)
 
-                            # print(global_pts)
-                                #print("It reaches ", global_point)
-                            # print("realistic waypoint", local_point)
-                            # local_pts.append(local_point)
+                            num_sample_generated += 1
 
-                            # global_pts.append(global_point)
-                            # goal_state=global_point
-                            # goal_state = local_point
-                            # self.TTCmin = min(ttc)
-                        self.V = min(V)
-                        self.label0 = np.sign(self.V)
+                            self.labels.append(self.label0)
 
-                        # print("min of TTC is: ", self.TTCmin)
+                            count += 1
+                            # print("num samples collected: ", count)
 
-                        # self.Q0 = self.gamma * (  #
-                        #             dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
-                        #             1 - self.discount))
-                        # print("Q of this action-waypoint is: ", self.Q0)
-                        # print("label of this action-waypoint is: ", self.label0)
-                        #
-                        # self.Q.append(self.Q0)
+                            r = SBPDRenderer.get_renderer_already_exists()
+                            dx_cm, traversible = r.get_config()
+                            dx_m = dx_cm / 100.
+                                # print(type(simulator.start_config.trainable_variables[0]))
+                                # camera_pos_13 = self.heading_nk1_next[0]
+                                # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
+                                # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
 
-                        self.labels.append(self.label0)
+                            camera_pos_13 = config.heading_nk1()[0]
+                            camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
 
-                        count += 1
-                        # print("num samples collected: ", count)
+                                # image of current state
+                            rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
 
-                        #end of else
+                            img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
+                                #        # In the topview the positive x axis points to the right and
+                                # the positive y axis points up. The robot is located at
+                                # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
+                            crop_size = [64, 64]
+                            robot = [0, (crop_size[0] - 1) / 2]
 
-                            # print ("Q values: ", self.Q)
+                            start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
+                            waypointAction.append(np.array(goal_state))
+                            image.append(rgb_image_1mk3)
 
-
-                        r = SBPDRenderer.get_renderer_already_exists()
-                        dx_cm, traversible = r.get_config()
-                        dx_m = dx_cm / 100.
-                            # print(type(simulator.start_config.trainable_variables[0]))
-                            # camera_pos_13 = self.heading_nk1_next[0]
-                            # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
-                            # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                        camera_pos_13 = config.heading_nk1()[0]
-                        camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-
-                            # image of current state
-                        rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                        img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-                            #        # In the topview the positive x axis points to the right and
-                            # the positive y axis points up. The robot is located at
-                            # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
-                        crop_size = [64, 64]
-                        robot = [0, (crop_size[0] - 1) / 2]
-                        import matplotlib.pyplot as plt
-
-                        # fig = plt.figure(figsize=(30, 10))
-                        # ax1 = fig.add_subplot(1, 3, 1)
-                        # ax2 = fig.add_subplot(1, 3, 2)
-                        # ax1.imshow(rgb_image_1mk3[0].astype(np.uint8))
-                        #
-                        # ax2.imshow(img1[0][:, :, 0].astype(np.uint8))
-                        # ax2.imshow(img1[0][:, :, 0], extent=[0, 64, 0, 64])
-                        # start=[ 0, (crop_size[0]-1)/2]
-                        # local_point_camera=np.array(local_point[0][0][0])// dx_m+start[0], np.array(local_point[0][0][1])/ dx_m+start[1]
-                        # local_pts_camera.append(local_point_camera)
-
-
-                        start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
-                        waypointAction.append(np.array(goal_state))
-                        image.append(rgb_image_1mk3)
-
+                        #endif
 
                     # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
             dataForAnImage={'start_pose':np.array(start_pose , dtype=object),
                     'image': np.array(image  , dtype=object).squeeze(),'waypointAction':np.array(waypointAction  , dtype=object), 'labels': np.array(self.labels  , dtype=object)}
-            # plt.hist(np.array(self.labels))
-            # plt.show()
 
                     # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 
@@ -682,8 +561,6 @@ class Simulator(SimulatorHelper):
 
 
             return dataForAnImage
-                # , dataForAnImage_TF
-
 
     # plt.scatter(start[0], start[1], marker='*', color='green',s=200, label='start')
     # plt.scatter(local_pts_camera[0],local_pts_camera[1],marker='+',color='red',s=200, label='waypoints')

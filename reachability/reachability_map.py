@@ -389,28 +389,28 @@ class ReachabilityMap(object):
         # After computation, ttr has one more dimension on theta. Because we maintain the TTR map in [-pi, pi] in theta
         # dimension
 
-        ttr_value_reach_avoid_4d = self.eng.mainLF_dubins_car_reach_avoid_4d_dxdy_circular(self.dx_4d_matlab,
-                                                                                           self.gN_4d,
-                                                                                           self.gMin_4d,
-                                                                                           self.gMax_4d,
-                                                                                           self.p.aMax,
-                                                                                           self.p.wMax,
-                                                                                           self.p.dMax_xy,
-                                                                                           self.p.dMax_theta,
-                                                                                           self.reach_avoid_4d_map_tmp_path)
-
-        self.eng.quit()
-
-        # [NOTE]: this takes an insanely long time to run; is there a better way to do this in order to save it a file?
-        ttr_value_reach_avoid_4d_numpy = np.asarray(ttr_value_reach_avoid_4d)
-
-        # save the array to a file
-        np.save(os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name), ttr_value_reach_avoid_4d_numpy)
+        # ttr_value_reach_avoid_4d = self.eng.mainLF_dubins_car_reach_avoid_4d_dxdy_circular(self.dx_4d_matlab,
+        #                                                                                    self.gN_4d,
+        #                                                                                    self.gMin_4d,
+        #                                                                                    self.gMax_4d,
+        #                                                                                    self.p.aMax,
+        #                                                                                    self.p.wMax,
+        #                                                                                    self.p.dMax_xy,
+        #                                                                                    self.p.dMax_theta,
+        #                                                                                    self.reach_avoid_4d_map_tmp_path)
+        #
+        # self.eng.quit()
+        #
+        # # [NOTE]: this takes an insanely long time to run; is there a better way to do this in order to save it a file?
+        # ttr_value_reach_avoid_4d_numpy = np.asarray(ttr_value_reach_avoid_4d)
+        #
+        # # save the array to a file
+        # np.save(os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name), ttr_value_reach_avoid_4d_numpy)
 
         print("new reach avoid 4d ttr is computed and saved!")
 
         # Wrap the ttr value function into a voxel function
-        self.reach_avoid_4d_map.voxel_function_4d = tf.convert_to_tensor(ttr_value_reach_avoid_4d, dtype=tf.float32)
+        # self.reach_avoid_4d_map.voxel_function_4d = tf.convert_to_tensor(ttr_value_reach_avoid_4d, dtype=tf.float32)
 
     def _compute_avoid_4d_map_LFsweep(self):
         """
