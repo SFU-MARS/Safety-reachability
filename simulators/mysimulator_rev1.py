@@ -308,7 +308,6 @@ class Simulator(SimulatorHelper):
             # we may discover that partway through a trajectory that the trajectory takes us out of bounds;
             # therefore, we need to use a boolean var to track whether or not we will continue processing the
             # current waypoint
-            processWaypoint = True
 
             Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
                                -np.sin(config.heading_nk1()[0][0][0]),
@@ -331,11 +330,13 @@ class Simulator(SimulatorHelper):
                 target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
 
                 # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
-                # speedf = np.random.uniform(low=0, high=0.6, size=(3,))
-                speedf = [v0]
+                speedf = np.random.uniform(low=0, high=0.6, size=(3,))
+                # speedf = [v0]
                 # print('speedf is' ,v0)
 
                 for vf in speedf:
+
+                    processWaypoint = True
 
                     vf1=[vf]
                     goal_state = [y for x in [target_state, vf1] for y in x]
@@ -422,6 +423,10 @@ class Simulator(SimulatorHelper):
                         # local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
                         # local_pts_camera.append(local_point_camera)
 
+                        start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
+
+                        start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
+
                         start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
                         waypointAction.append(goal_state)
                         image.append(rgb_image_1mk3)
@@ -497,13 +502,13 @@ class Simulator(SimulatorHelper):
 
                             global_point = traj_ref[j]
                             global_point = global_point.numpy()
-                            print("iteration " + str(j) + " of " + str(k))
+                            # print("iteration " + str(j) + " of " + str(k))
                             if global_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or global_point[0][0][0] < 0 or  0 > global_point[0][0][1]  or global_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
                                 processWaypoint = False
                                 print("-- breaking")
                                 break
 
-                            # if not aborted:
+
                             global_point[0][0][2] = np.arctan2(np.sin(global_point[0][0][2]), np.cos(global_point[0][0][2]))
 
                             # ttc.append(my_interpolating_function(global_point))
@@ -552,15 +557,15 @@ class Simulator(SimulatorHelper):
 
                     # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
-            dataForAnImage={'start_pose':np.array(start_pose , dtype=object),
-                    'image': np.array(image  , dtype=object).squeeze(),'waypointAction':np.array(waypointAction  , dtype=object), 'labels': np.array(self.labels  , dtype=object)}
+            dataForAnImage={'start_pose':np.array(start_pose),
+                    'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
 
                     # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 
                 # episode_counter=self.episode_counter
 
 
-            return dataForAnImage
+        return dataForAnImage
 
     # plt.scatter(start[0], start[1], marker='*', color='green',s=200, label='start')
     # plt.scatter(local_pts_camera[0],local_pts_camera[1],marker='+',color='red',s=200, label='waypoints')

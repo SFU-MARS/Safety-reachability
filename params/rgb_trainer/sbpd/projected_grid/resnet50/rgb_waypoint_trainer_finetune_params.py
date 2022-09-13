@@ -136,7 +136,7 @@ def create_params():
 
     p.data_creation.data_points = int(1e3/2)
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
-    p.data_creation.data_points_per_file=1
+    p.data_creation.data_points_per_file= 20
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
     p.test.number_tests = 200

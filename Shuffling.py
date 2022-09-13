@@ -13,39 +13,42 @@ dictionaries=[]
 dictionary=[]
 dictionary1=[]
 dict_list=[]
+num_sample_each_file=[]
 
-data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729'
+data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0913'
 data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
 databig={}
 keys=[]
+
 
 for data_file in data_files:
     with open(data_file, 'rb') as f:
         data = pickle.load(f)
         listofdict.append(data)
+        num_sample_each_file.append(data['waypointAction'].shape[0])
+from_each = 10
+m = int(max(num_sample_each_file) / from_each)
+#            #60 number of samles in each pkl file
+# # print (len(listofdict))
+# for k1 in range(m):
+# # for k1 in range(1):
+train_size=400
+my_List=[165,166,285,292,413,452]
+for k in range(0, m):
 
-each=60
-m=int(60/each)              #60 number of samles in each pkl file
-# print (len(listofdict))
-for k1 in range(0,m):
-# for k1 in range(1):
 
-
-    train_size=800
-
-    for i in range(1,train_size):
-  # for i in range(2):
+    # for i in range(1,train_size):
+  for i in my_List:
     # print(listofdict[i]['start_pose'][each*k1:each*(k1+1)])
     # print (k1)
     # print (i)
     #
 
-        posez.append(np.squeeze(listofdict[i]['start_pose'][each*k1:each*(k1+1)]))
-        imagez.append(np.squeeze(listofdict[i]['image'][each*k1:each*(k1+1)]))
-        waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][each*k1:each*(k1+1)]))
-        labelz.append(np.squeeze(listofdict[i]['labels'][each*k1:each*(k1+1)]))
-
-
+         posez.append(np.squeeze(listofdict[i]['start_pose'][from_each*k:from_each*(k+1)]))
+         imagez.append(np.squeeze(listofdict[i]['image'][from_each*k:from_each*(k+1)]))
+        #waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][:]))
+         waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][from_each*k:from_each*(k+1)]))
+         labelz.append(np.squeeze(listofdict[i]['labels'][from_each*k:from_each*(k+1)]))
 
 
 
@@ -71,10 +74,10 @@ for k1 in range(0,m):
  #                'waypointAction': np.stack(waypointActionz).reshape(1,1,4,50),
  #                'labels': np.stack(labelz).reshape(1,50)}
 
-        dictionary= {'start_pose': np.stack(posez).reshape(1, 1, 120),#(2, 1, 60)
-                  'image': np.stack(imagez).reshape(224, 224, 180),
-                  'waypointAction': np.stack(waypointActionz).reshape(4, 1, 60),
-                  'labels': np.stack(labelz).reshape(1, 60)}
+        dictionary= {'start_pose': np.stack(posez).reshape(1, 1, -1),#(2, 1, 60)
+                  'image': np.stack(imagez).reshape(224, 224, -1),
+                  'waypointAction': np.stack(waypointActionz).reshape(4, 1, -1),
+                  'labels': np.stack(labelz).reshape(1, -1)}
         if i % 10 != 0:
             dict_list.append(dictionary)
 
@@ -103,7 +106,7 @@ dict_list1=[]
 
 for k in range(0,m):
 
-    for i in range(train_size+1,train_size+200,1):
+    for i in range(train_size+1,train_size+100,1):
 
 
 
