@@ -504,54 +504,69 @@ class Simulator(SimulatorHelper):
 
                         start_time_sim = time.time()
                         # start_pos_n13 = tf.constant(np.array([[[0.0, 0.0, 0.0, v0]]], dtype=np.float32)) ### change this to global frame: config.position_and_heading_nk3(),config.speed_nk1()
-
+                        start_pos_n13 = np.concatenate([config.position_and_heading_nk3().numpy(), config.speed_nk1().numpy()], axis=2)
                         acceleration = (np.ones((n, k ), dtype=np.float32) * u[1]).reshape(1,k,1)
                         angular_speed_nk1 = np.float32(u[0][None, :, None])
                         u_nk2 = tf.constant(np.concatenate([angular_speed_nk1, acceleration], axis=2))
                         u_nk2=np.float32(u_nk2)
 
                         #
-                        traj_ref_egocentric = dubins.simulate_T(start_pos_n13, u_nk2, k)
+                        traj_ref = dubins.simulate_T(start_pos_n13, u_nk2, k)
 
+
+                        # traj_ref .eval(session=tf.compat.v1.Session())
                         end_time_sim = time.time()
-                        time_sim=end_time_sim - start_time_sim
-
-                        data0 = VisualNavigationDataSource.reset_data_dictionary(p)
-                        # simulator.reset()
-
-                        start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
-                        start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
-                        start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
+                        time_sime=end_time_sim - start_time_sim
+                        #
+                        # data0 = VisualNavigationDataSource.reset_data_dictionary(p)
+                        # # simulator.reset()
+                        #
+                        # start_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][0]
+                        # start_posy_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.position_nk2()[0][0][1]
+                        # start_pos_nk2 = tf.concat([start_posx_nk1, start_posy_nk1], axis=2)
                         start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
-                        # Initial SystemConfig is [0, 0, 0, v0, 0]
+                        # # Initial SystemConfig is [0, 0, 0, v0, 0]
                         start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
+                        # # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+                        # #                    -np.sin(config.heading_nk1()[0][0][0]),
+                        # #                    config.position_nk2()[0][0][0]],
+                        # #                   [np.sin(config.heading_nk1()[0][0][0]),
+                        # #                    np.cos(config.heading_nk1()[0][0][0]),
+                        # #                    config.position_nk2()[0][0][1]],
+                        # #                   [0, 0, 1]]
                         # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                        #                    -np.sin(config.heading_nk1()[0][0][0]),
+                        #                    np.sin(config.heading_nk1()[0][0][0]),
                         #                    config.position_nk2()[0][0][0]],
-                        #                   [np.sin(config.heading_nk1()[0][0][0]),
+                        #                   [-np.sin(config.heading_nk1()[0][0][0]),
                         #                    np.cos(config.heading_nk1()[0][0][0]),
                         #                    config.position_nk2()[0][0][1]],
                         #                   [0, 0, 1]]
-                        Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                                           np.sin(config.heading_nk1()[0][0][0]),
-                                           config.position_nk2()[0][0][0]],
-                                          [-np.sin(config.heading_nk1()[0][0][0]),
-                                           np.cos(config.heading_nk1()[0][0][0]),
-                                           config.position_nk2()[0][0][1]],
-                                          [0, 0, 1]]
-
-
-                        ttc = []
+                        #
+                        #
+                        # ttc = []
                         V = []
+                        #
+                        # dx_m=0.05
+                        # res_x = all(ele.numpy()[0] >= self.obstacle_map.map_bounds[1][0] and ele.numpy()[0] < 0 for ele in traj_ref[1:])
+                        # res_y = all(ele.numpy()[1] >= self.obstacle_map.map_bounds[1][1] and ele.numpy()[1] < 0 for ele in traj_ref)
+                        #
+                        # if res_x and res_y:
+                        #
+                        # aborted = False
+                        for j in range(1,k):
 
-                        dx_m=0.05
 
-
-                        for j in range(k):
                             start_time = time.time()
                             # ###
 
-                            local_point = traj_ref_egocentric[j]
+                            global_point = traj_ref[j]
+                            global_point = global_point.numpy()
+                            if global_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or global_point[0][0][0] < 0 or  0 > global_point[0][0][1]  or global_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
+                                # aborted = True
+                                break
+                                # break
+                            # if not aborted:
+                            global_point[0][0][2] = np.arctan2(np.sin(global_point[0][0][2]), np.cos(global_point[0][0][2]))
                             # local_pts.append(local_point)
                             # local_point_camera = np.array(local_point[0][0][0]) // dx_m + start[0], np.array(
                             #     local_point[0][0][1]) / dx_m + start[1]
@@ -559,55 +574,56 @@ class Simulator(SimulatorHelper):
 
                             # convert to global
 
-                            target_state = np.array(Transformation).dot(
-                                [local_point[0][0][0], local_point[0][0][1], 1])
-                            goal_heading_nk1 = local_point[0][0][2] + \
-                                               config.heading_nk1()[0][0][0]
-                            goal_heading_nk1=np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
-                            # phi1 = phi % 2 * math.pi
-                            # goal_heading_nk1=phi1-math.pi
-                            # if goal_heading_nk1 <= np.float32(-np.pi):
-                            #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
-                            # elif goal_heading_nk1 >= np.float32(np.pi):
-                            #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
-                            global_point = np.array(
-                                [target_state[0], target_state[1], goal_heading_nk1,
-                                 local_point[0][0][3].numpy().astype(np.float16)])
+                            # target_state = np.array(Transformation).dot(
+                            #     [local_point[0][0][0], local_point[0][0][1], 1])
+                            # goal_heading_nk1 = local_point[0][0][2] + \
+                            #                    config.heading_nk1()[0][0][0]
+                            # goal_heading_nk1=np.arctan2(np.sin(goal_heading_nk1), np.cos(goal_heading_nk1))
+                            # # phi1 = phi % 2 * math.pi
+                            # # goal_heading_nk1=phi1-math.pi
+                            # # if goal_heading_nk1 <= np.float32(-np.pi):
+                            # #     goal_heading_nk1=goal_heading_nk1 + 2*np.pi
+                            # # elif goal_heading_nk1 >= np.float32(np.pi):
+                            # #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
+                            # global_point = np.array(
+                            #     [target_state[0], target_state[1], goal_heading_nk1,
+                            #      local_point[0][0][3].numpy().astype(np.float16)])
 
-                            ttc.append(my_interpolating_function(global_point))
+                            # ttc.append(my_interpolating_function(global_point))
+                            # V.append(my_interpolating_functionV(global_point))
                             V.append(my_interpolating_functionV(global_point))
 
-
-                            self.discount = 0.90
-                            self.gamma = 1.0
+                            # self.discount = 0.90
+                            # self.gamma = 1.0
                             # self.theta = 1e-10
-                        # print(global_pts)
-                            #print("It reaches ", global_point)
-                        # print("realistic waypoint", local_point)
-                        local_pts.append(local_point)
 
-                        global_pts.append(global_point)
-                        # goal_state=global_point
-                        goal_state = local_point
-                        self.TTCmin = min(ttc)
+
+                            # print(global_pts)
+                                #print("It reaches ", global_point)
+                            # print("realistic waypoint", local_point)
+                            # local_pts.append(local_point)
+
+                            # global_pts.append(global_point)
+                            # goal_state=global_point
+                            # goal_state = local_point
+                            # self.TTCmin = min(ttc)
                         self.V = min(V)
                         self.label0 = np.sign(self.V)
 
                         # print("min of TTC is: ", self.TTCmin)
 
-                        self.Q0 = self.gamma * (  #
-                                    dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
-                                    1 - self.discount))
+                        # self.Q0 = self.gamma * (  #
+                        #             dt + self.discount * (1 - pow(self.discount, self.TTCmin + 1)) / (
+                        #             1 - self.discount))
                         # print("Q of this action-waypoint is: ", self.Q0)
-                        print("label of this action-waypoint is: ", self.label0)
-
-                        self.Q.append(self.Q0)
+                        # print("label of this action-waypoint is: ", self.label0)
+                        #
+                        # self.Q.append(self.Q0)
 
                         self.labels.append(self.label0)
 
                         count += 1
-                        print("num samples collected: ", count)
-                        print(" ")
+                        # print("num samples collected: ", count)
 
                         #end of else
 

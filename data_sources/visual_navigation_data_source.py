@@ -83,8 +83,7 @@ class VisualNavigationDataSource(ImageDataSource):
         self.num_episode = 500
         self.episode_counter = 0
         while self.episode_counter<self.num_episode:
-            if (self.episode_counter == 257):
-                continue
+
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
             # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
@@ -93,7 +92,7 @@ class VisualNavigationDataSource(ImageDataSource):
             # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
             # its corresponding image
             dataForAnImage = simulator.simulate()
-            self.episode_counter += 1
+
 
             # if self.episode_counter%4!=0:
             #
@@ -110,7 +109,7 @@ class VisualNavigationDataSource(ImageDataSource):
             # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0911'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0912'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
 
@@ -128,7 +127,11 @@ class VisualNavigationDataSource(ImageDataSource):
 
             end = time.time()
             elapsed = end - start
+
+            # if (self.episode_counter == 257):
+            #     continue
             print("The episode", self.episode_counter, "takes time", elapsed)
+            self.episode_counter += 1
 
         # # Prepare the dictionary for saving purposes
         # self.prepare_and_save_the_data_dictionary(dataForAnImage, counter)

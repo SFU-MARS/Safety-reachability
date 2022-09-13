@@ -27,7 +27,7 @@ class DubinsV4(Dubins4D):
 
     def _saturate_acceleration(self, atilde_nk,vtilde_nk,dt):
         """ Linear clipping saturation function for angular velocity"""
-        a_nk = tf.clip_by_value(atilde_nk, max(self.a_bounds[0],-1*vtilde_nk.numpy()/dt), min(self.a_bounds[1],(self.v_bounds[1]-vtilde_nk).numpy()/dt))
+        a_nk = tf.clip_by_value(atilde_nk, max(self.a_bounds[0],-1*vtilde_nk/dt), min(self.a_bounds[1],(self.v_bounds[1]-vtilde_nk)/dt))
         return a_nk
     
     def _saturate_linear_velocity_prime(self, vtilde_nk):
