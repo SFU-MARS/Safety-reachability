@@ -5,7 +5,7 @@ from utils import utils
 
 tf.enable_eager_execution(**utils.tf_session_config())
 
-import numpy as np
+
 from objectives.objective_function import ObjectiveFunction
 from objectives.angle_distance import AngleDistance
 from objectives.goal_distance import GoalDistance
@@ -44,7 +44,6 @@ from systems.dubins_car import DubinsCar
 ##
 
 from trajectory.trajectory import SystemConfig
-import numpy as np
 import argparse
 import importlib
 import os
@@ -200,14 +199,16 @@ class Simulator(SimulatorHelper):
         xg, yg, vg, thetag = np.meshgrid(x, y, v, theta, indexing='ij', sparse=True)
         #
         # data=np.load("/home/ttoufigh/optimized_dp/TTR_grid_biggergrid_3lookback_wDisturbance_wObstalceMap_speedlimit3reverse_5.npy")
+        # data = np.load(
+        #     "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/ttr_avoid_map_4d_whole_area3_no_dist.npy")
         data = np.load(
-            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/ttr_avoid_map_4d_whole_area3_no_dist.npy")
+            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/TTR0914.npy")
         dataV = scipy.io.loadmat(
-            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/dataV.mat")
+            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/dataV0914.mat")
         from scipy.interpolate import RegularGridInterpolator
 
         my_interpolating_function = RegularGridInterpolator((x, y, theta, v), data)
-        my_interpolating_functionV = RegularGridInterpolator((x, y, theta, v), dataV['dataV'])
+        my_interpolating_functionV = RegularGridInterpolator((x, y, theta, v), dataV['dataV1'])
 ##
         # if isinstance(self.p.data_creation.data_dir, list):
         #     assert len(self.p.data_creation.data_dir) == 1
@@ -276,9 +277,10 @@ class Simulator(SimulatorHelper):
         # speedf = np.float16(np.linspace(0, 0.6, num=3))
 
 
-        v0 = config.speed_nk1()[0][0][0].numpy()
-        start_state = [0, 0, 0, v0]
-        x0 = start_state
+        # v0 = config.speed_nk1()[0][0][0].numpy()
+
+        x0 = np.concatenate((config.position_and_heading_nk3()[0][0].numpy(), config.speed_nk1()[0][0].numpy()))
+
                 # for v0 in speed:
         #
         # start_state = [0, 0, 0, v0]
@@ -303,7 +305,13 @@ class Simulator(SimulatorHelper):
         self.labels=[]
 
 
+
         for xf in actions_waypoints:
+
+
+
+            goal_state_local=[]
+            construc_point_local=[]
 
             # we may discover that partway through a trajectory that the trajectory takes us out of bounds;
             # therefore, we need to use a boolean var to track whether or not we will continue processing the
@@ -341,6 +349,8 @@ class Simulator(SimulatorHelper):
                     vf1=[vf]
                     goal_state = [y for x in [target_state, vf1] for y in x]
 
+
+
                     # t = np.arange(0, 10, f*)
                     # p.dt=0.05
                     t = np.arange(0, 1*f, 0.05 )
@@ -357,10 +367,15 @@ class Simulator(SimulatorHelper):
                     max_val_v = 0.6
                     if abs(u[0]).max()<=max_val_w and abs(u[1]).max()<=max_val_a and abs(x[3]).max()<=max_val_v and x[3].min()>=0 :
 
-                        print('it can reach to', goal_state)
+                        # print('it can reach to', goal_state)# global
+
+                        goal_state_local= np.array(np.linalg.inv(Transformation)).dot([goal_state[0], goal_state[1], 1])
+                        goal_state_local[2]=goal_state[2]- config.heading_nk1()[0][0][0]
+                        goal_state_local[2] = np.arctan2(np.sin(goal_state_local[2]), np.cos(goal_state_local[2]))
+                        goal_state_local = np.concatenate((goal_state_local,[goal_state[3]]))
 
                         # local_point=x
-                        global_traj = x
+                        # global_traj = x
 
                         ttc = []
                         V = []
@@ -371,7 +386,7 @@ class Simulator(SimulatorHelper):
                         for k in range(len(t)): #timestep over traj
 
                             global_point=x[:, k]
-                            V.append(my_interpolating_functionV(global_point))
+                            V.append(my_interpolating_functionV(global_point.reshape((1, 1,4)) ))
                             # ttc.append(my_interpolating_function(global_point))
 
                         #print("final state in world: ", global_point)
@@ -428,7 +443,7 @@ class Simulator(SimulatorHelper):
                         start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
 
                         start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
-                        waypointAction.append(goal_state)
+                        waypointAction.append(np.array(goal_state_local))
                         image.append(rgb_image_1mk3)
 
                     # end of if
@@ -500,23 +515,29 @@ class Simulator(SimulatorHelper):
                             start_time = time.time()
                             # ###
 
-                            global_point = traj_ref[j]
-                            global_point = global_point.numpy()
+                            construc_point = traj_ref[j]
+                            construc_point = construc_point.numpy()
                             # print("iteration " + str(j) + " of " + str(k))
-                            if global_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or global_point[0][0][0] < 0 or  0 > global_point[0][0][1]  or global_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
+                            if construc_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or construc_point[0][0][0] < 0 or  0 > construc_point[0][0][1]  or construc_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
                                 processWaypoint = False
                                 print("-- breaking")
                                 break
 
 
-                            global_point[0][0][2] = np.arctan2(np.sin(global_point[0][0][2]), np.cos(global_point[0][0][2]))
+                            construc_point[0][0][2] = np.arctan2(np.sin(construc_point[0][0][2]), np.cos(construc_point[0][0][2]))
 
                             # ttc.append(my_interpolating_function(global_point))
                             # V.append(my_interpolating_functionV(global_point))
-                            V.append(my_interpolating_functionV(global_point))
+                            V.append(my_interpolating_functionV(construc_point))
 
                         # did we not find an out-of-bounds trajectory?
+
                         if processWaypoint:
+                            construc_point_local  = np.array(np.linalg.inv(Transformation)).dot([construc_point[0][0][0], construc_point[0][0][1], 1])
+                            construc_point_local[2] = construc_point[0][0][2] - config.heading_nk1()[0][0][0]
+                            construc_point_local[2] = np.arctan2(np.sin(construc_point[0][0][2]), np.cos(construc_point[0][0][2]))
+                            # construc_point_local1 = np.concatenate(construc_point_local,construc_point[0][0][3])
+                            construc_point_local = np.append(construc_point_local, construc_point[0][0][3])
 
                             self.V = min(V)
                             self.label0 = np.sign(self.V)
@@ -549,15 +570,17 @@ class Simulator(SimulatorHelper):
                             crop_size = [64, 64]
                             robot = [0, (crop_size[0] - 1) / 2]
 
+
+
                             start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
-                            waypointAction.append(np.array(goal_state))
+                            waypointAction.append(np.array(construc_point_local))
                             image.append(rgb_image_1mk3)
 
                         #endif
 
                     # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
-            dataForAnImage={'start_pose':np.array(start_pose),
+        dataForAnImage={'start_pose':np.array(start_pose),
                     'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
 
                     # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
