@@ -2,7 +2,7 @@ from models.visual_navigation.base import VisualNavigationModelBase
 from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
-
+import numpy
 
 class Resnet50ModelBase(VisualNavigationModelBase):
     """
@@ -57,6 +57,9 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 # model1, is_training_flag = resnet50_cnn()
                 # preds= model1.predict_on_batch(data)
             # preds = self.arch.predict_on_batch(data)
+            data[0]=data[0].reshape(1,224,224,180)
+            data[1] = data[1].reshape(1,120)
+            # assert(data[0].shape[2]==180)
             preds=self.arch(data)
         else:
             # Do not use dropouts

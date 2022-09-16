@@ -322,6 +322,7 @@ class ImageDataSource(DataSource):
         self._load_data_into_info_dict(self.training_dataset, file_idx,
                                        self.training_info_dict)
 
+        # _load_data_into
         # Get the start index relative to the start of this data_files data
         start_index += -self.training_info_dict['num_samples'] + n
 
@@ -428,7 +429,7 @@ class ImageDataSource(DataSource):
 
             with open(filename, 'rb') as f:
                 data_current = pickle.load(f)
-                
+            assert isinstance(data_current, dict)
             # Note (Somil): This is a hack that has been put together to make sure that the data collected for the last
             # time step works.
             # TODO: delete this, convenient for visualization of cost function

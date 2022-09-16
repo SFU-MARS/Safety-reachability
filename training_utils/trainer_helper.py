@@ -46,20 +46,22 @@ class TrainerHelper(object):
                 training_batch1 = {}
                 validation_batch1 = {}
                 # Get a training and a validation batch
+
+
                 training_batch = data_source.generate_training_batch(j)
-                training_batch1['start_pose']=training_batch['start_pose'].reshape((-1,120))
-                training_batch1['image']=training_batch['image'].reshape((-1,224,224,180))
-                training_batch1['waypointAction']=training_batch['waypointAction']
-                training_batch1['labels']=training_batch['labels']
+                # training_batch1['start_pose']=training_batch['start_pose'].reshape((-1,120))
+                # training_batch1['image']=training_batch['image'].reshape((-1,224,224,180))
+                # training_batch1['waypointAction']=training_batch['waypointAction']
+                # training_batch1['labels']=training_batch['labels']
 
                 validation_batch = data_source.generate_validation_batch()
-                validation_batch1['start_pose']=validation_batch['start_pose'].reshape((-1,120))
-                validation_batch1['image']=validation_batch['image'].reshape((-1,224,224,180))
-                validation_batch1['waypointAction']=validation_batch['waypointAction']
-                validation_batch1['labels']=validation_batch['labels']
+                # validation_batch1['start_pose']=validation_batch['start_pose'].reshape((-1,120))
+                # validation_batch1['image']=validation_batch['image'].reshape((-1,224,224,180))
+                # validation_batch1['waypointAction']=validation_batch['waypointAction']
+                # validation_batch1['labels']=validation_batch['labels']
 
                 with tf.GradientTape() as tape:
-                    regularization_loss, prediction_loss, loss = model.compute_loss_function(training_batch1, is_training=True, return_loss_components=True)
+                    regularization_loss, prediction_loss, loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=True)
                     print('prediction loss :{0}'.format(prediction_loss))
                     print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
                     print(' loss :{0}'.format(loss.numpy()))
@@ -70,7 +72,7 @@ class TrainerHelper(object):
                                                global_step=tf.train.get_or_create_global_step())
 
                 # Record the average loss for the training and the validation batch
-                self.record_average_loss_for_batch(model, training_batch1, validation_batch1, training_loss_metric,
+                self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
                                                    validation_loss_metric)
 
             # Do all the things required at the end of epochs including saving the checkpoints

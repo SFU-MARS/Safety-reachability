@@ -266,7 +266,7 @@ class Simulator(SimulatorHelper):
                              [.5, 0, 0.1],        [.5, 0, -0.1],
                              [.55, 0.1, 0.05],    [.55, -0.1, -0.05]]
 
-        f=6
+        f=1
 
 
         # actions_waypoints=[[ f * i for i in inner ] for inner in actions_waypoints]
@@ -303,8 +303,8 @@ class Simulator(SimulatorHelper):
         num_images=range (4)
         num_sample_generated=0
         self.labels=[]
-
-
+        count1=[]
+        count0=[]
 
         for xf in actions_waypoints:
 
@@ -582,8 +582,13 @@ class Simulator(SimulatorHelper):
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
         dataForAnImage={'start_pose':np.array(start_pose),
                     'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+        count1=self.labels.count(1)
+        count0=self.labels.count(-1)
 
-                    # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
+        print("count1", str(count1))
+        print("count0", str(count0))
+
+        # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 
                 # episode_counter=self.episode_counter
 
@@ -890,6 +895,7 @@ class Simulator(SimulatorHelper):
                 goal_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+
         elif p.position.reset_type == 'custom':
             x, y = p.position.goal_pos
             goal_112 = np.array([[[x, y]]], dtype=np.float32)

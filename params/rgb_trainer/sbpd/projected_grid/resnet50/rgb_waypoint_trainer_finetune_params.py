@@ -75,14 +75,16 @@ def create_params():
     p.trainer.lr = 1e-7
     # p.trainer.lr = 1e-8
     # p.trainer.batch_size = 1#48 original, changed after error 36
-    p.trainer.batch_size = 9 #60
+    p.trainer.batch_size = 60 #60
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
-    p.trainer.num_samples = int(45) #int(2400)48e4
+    # p.trainer.num_samples = int(45) #int(2400)48e4
+    # p.trainer.num_samples = int(60)
+    p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
     # p.trainer.num_samples = int(295)
-    # p.trainer.num_samples = int(60)
+
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
@@ -132,7 +134,7 @@ def create_params():
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4-seperate4']
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-stack3-last-10b']
-    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0907']
+    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0914-new-stack3-2']
 
     p.data_creation.data_points = int(1e3/2)
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

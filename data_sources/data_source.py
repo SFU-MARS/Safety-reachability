@@ -157,6 +157,7 @@ class DataSource(object):
         """
         with open(filename, 'rb') as handle:
             data_current = pickle.load(handle)
+            assert isinstance(data_current, dict)
         return data_current
 
     def get_data_tags(self, example_file, file_type='.pkl'):
@@ -168,8 +169,8 @@ class DataSource(object):
             with open(example_file, 'rb') as handle:
                 data = pickle.load(handle)
 
-            # self.data_tags = list(data.keys())
-            self.data_tags = list(data[1].keys())
+            self.data_tags = list(data.keys())
+            # self.data_tags = list(data[0].keys())
         else:
             raise NotImplementedError
 
@@ -177,25 +178,35 @@ class DataSource(object):
         """
         Get the data corresponding to a given indices.
         """
+        # data = {}
+        # data1 = {}
+        #
+        # for tag in self.data_tags:
+        #
+        #     # data1 = []
+        #     #
+        #         # if tag!='labels':
+        #         # data[tag] = data_dictionary[tag][indices]
+        #
+        #         data1.append(data_dictionary[indices[i]][tag])
+        #
+        #     data[tag]=np.concatenate( data1, axis=0 )
+        #
+        #         # else:
+        #         #     data[tag] = np.transpose(data_dictionary[tag])[indices]
+        #     # except KeyError:
+        #     #     print("no this key in the current data file!")
+        # return data
+
+
         data = {}
-        data1 = {}
-
-
         for tag in self.data_tags:
-
-            data1 = []
-
-            for i in range(8):
-
-                # if tag!='labels':
-                # data[tag] = data_dictionary[tag][indices]
-
-                data1.append(data_dictionary[indices[i]][tag])
-
-            data[tag]=np.concatenate( data1, axis=0 )
-
-                # else:
-                #     data[tag] = np.transpose(data_dictionary[tag])[indices]
-            # except KeyError:
-            #     print("no this key in the current data file!")
+            try:
+                print(data_dictionary[tag].shape)
+                # maybe (b, w, h) np.moveaxis(data_dictionary[
+                data[tag] = data_dictionary[tag][indices]
+                # data[tag] = np.moveaxis(data_dictionary[tag], 2, 0)[indices]
+            except KeyError:
+                print("no this key in the current data file!")
         return data
+

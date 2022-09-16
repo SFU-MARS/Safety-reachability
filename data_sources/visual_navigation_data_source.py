@@ -49,8 +49,9 @@ class VisualNavigationDataSource(ImageDataSource):
         this data dictionary.
         """
         # return data['vehicle_state_nk3'].shape[0]
+        return data['image'].shape[0]
 
-        return len(data)
+        # return len(data)
     
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
@@ -109,7 +110,7 @@ class VisualNavigationDataSource(ImageDataSource):
             # else:
             # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0914-new'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0914-newf1'
             # here = os.path.dirname(os.path.abspath(__file__))
             file_name = 'file' + str(self.episode_counter) + '.pkl'
 
