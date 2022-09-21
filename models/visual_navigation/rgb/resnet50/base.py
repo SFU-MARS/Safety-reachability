@@ -73,6 +73,8 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # To avoid this issue we save the pre-prediction batch norm parameters
             # values and then reassign them post prediction.
             old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
+            data[0]=data[0].reshape(1,224,224,180)
+            data[1] = data[1].reshape(1,120)
             preds = self.arch.predict_on_batch(data)
             [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
              zip(self.bn_parameters, old_bn_parameter_values)]

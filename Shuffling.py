@@ -20,13 +20,20 @@ data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory
 databig={}
 keys=[]
 count1=0
-
+file_name=0
 for data_file in data_files:
     with open(data_file, 'rb') as f:
         data = pickle.load(f)
         num_sample_each_file.append(data['waypointAction'].shape[0])
         if data['waypointAction'].shape[0]==60:
+            file_name+=1
             listofdict.append(data)
+            f = open("sample" + str(file_name) + '.pkl', "wb")
+            # 200
+            pickle.dump(data, f)
+            # dict_list1 = []
+
+            f.close()
 
 from_each = 10
 m = int(max(num_sample_each_file) / from_each)

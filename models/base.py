@@ -63,18 +63,34 @@ class BaseModel(object):
         # for i in range(0, 60):
         #     prediction_loss1[i]  = np.maximum(0.,1-np.dot(tf.transpose(np.transpose(processed_data['Action_waypoint'][0])[i], tf.ones(1)),axis=0), np.transpose(nn_output)))
         import numpy as np
-        ywxmax=tf.zeros(8,1)
+        # ywxmax=tf.zeros(8,1)
         output_list=[]
-        for i in range(8):
-            x = tf.contrib.eager.Variable(tf.random_normal([4, 60], mean=1.0, stddev=0.35))
-            tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
-            x_trans = tf.transpose(x)
-            x_conc = tf.concat((x_trans, tf.ones((60, 1))), axis=1)
-            w = tf.transpose(nn_output)[:, i]
-            z = tf.matmul(tf.reshape(w, (1, 5)), tf.transpose(x_conc))
-            y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
-            y1 = tf.cast(y,tf.float32)
-            output_list.append(tf.maximum(0,1-tf.matmul(z, y1)))
+        # for i in range(60):
+        #     x = tf.contrib.eager.Variable(tf.random_normal([4, 60], mean=1.0, stddev=0.35))
+        #     # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
+        #     tf.assign(x, processed_data['Action_waypoint'][i, :])
+        #     x_trans = tf.transpose(x)
+        #     x_conc = tf.concat((x_trans, tf.ones((60, 1))), axis=1)
+        #     w = tf.transpose(nn_output)[:, i]
+        #     z = tf.matmul(tf.reshape(w, (1, 5)), tf.transpose(x_conc))
+        #     # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
+        #     y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :,:]), (60, 1))
+        #     y1 = tf.cast(y,tf.float32)
+        #     output_list.append(tf.maximum(0,1-tf.matmul(z, y1)))
+        for i in range(self.p.trainer.batch_size):
+
+            x = tf.contrib.eager.Variable(tf.random_normal([4], mean=1.0, stddev=0.35))
+            # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
+            tf.assign(x, processed_data['Action_waypoint'][i, :])
+            x1 = tf.reshape(x, (4, 1))
+            # x_trans = tf.transpose(x)
+            x_conc = tf.concat((x1, tf.ones((1, 1))), axis=0)
+            w = nn_output
+            z = tf.matmul(w, x_conc)
+            # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
+            y = tf.convert_to_tensor(processed_data['labels'][i, :, :])
+            y1 = tf.cast(y, tf.float32)
+            output_list.append(tf.maximum(0, 1 - tf.matmul(z, y1)))
 
         ywxmax=tf.stack(output_list)
 

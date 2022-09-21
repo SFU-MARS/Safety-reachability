@@ -29,16 +29,25 @@ class DataSource(object):
         Load a saved dataset.
         """
         # Get all the files in the directory
-        file_list1,file_list2 = self.get_file_list()
+        # file_list1,file_list2 = self.get_file_list()
+        #
+        # # Concatenate the data corresponding to a list of files
+        # data_train = self.concatenate_file_data(file_list1)
+        # data_eval = self.concatenate_file_data(file_list2)
+        #
+        # # Shuffle the data and create the training and the validation datasets
+        # data_train = self.shuffle_data_dictionary(data_train)
+        # data_eval = self.shuffle_data_dictionary(data_eval)
+        # self.training_dataset, self.validation_dataset = self.split_data_into_training_and_validation(data_train,data_eval)
+
+        file_list = self.get_file_list()
 
         # Concatenate the data corresponding to a list of files
-        data_train = self.concatenate_file_data(file_list1)
-        data_eval = self.concatenate_file_data(file_list2)
+        data = self.concatenate_file_data(file_list)
 
         # Shuffle the data and create the training and the validation datasets
-        data_train = self.shuffle_data_dictionary(data_train)
-        data_eval = self.shuffle_data_dictionary(data_eval)
-        self.training_dataset, self.validation_dataset = self.split_data_into_training_and_validation(data_train,data_eval)
+        data = self.shuffle_data_dictionary(data)
+        self.training_dataset, self.validation_dataset = self.split_data_into_training_and_validation(data)
 
     def split_data_into_training_and_validation(self, data):
         """
@@ -98,16 +107,22 @@ class DataSource(object):
 
         if isinstance(self.p.data_creation.data_dir, str):
             self.p.data_creation.data_dir = [self.p.data_creation.data_dir]
-        
-        file_list1 = []
-        file_list2 = []
-        for i in range(len(self.p.data_creation.data_dir)):
-            file_list1.extend([os.path.join(self.p.data_creation.data_dir[i], f)
-                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample1')])
-            file_list2.extend([os.path.join(self.p.data_creation.data_dir[i], f)
-                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample2')])
 
-        return file_list1, file_list2
+        file_list = []
+        for i in range(len(self.p.data_creation.data_dir)):
+            file_list.extend([os.path.join(self.p.data_creation.data_dir[i], f)
+                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type)])
+        return file_list
+
+        # file_list1 = []
+        # file_list2 = []
+        # for i in range(len(self.p.data_creation.data_dir)):
+        #     file_list1.extend([os.path.join(self.p.data_creation.data_dir[i], f)
+        #                       for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample1')])
+        #     file_list2.extend([os.path.join(self.p.data_creation.data_dir[i], f)
+        #                       for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type) and f.startswith('sample2')])
+
+        # return file_list1, file_list2
 
     def concatenate_file_data(self, file_list):
         """
@@ -202,7 +217,7 @@ class DataSource(object):
         data = {}
         for tag in self.data_tags:
             try:
-                print(data_dictionary[tag].shape)
+                # print(data_dictionary[tag].shape)
                 # maybe (b, w, h) np.moveaxis(data_dictionary[
                 data[tag] = data_dictionary[tag][indices]
                 # data[tag] = np.moveaxis(data_dictionary[tag], 2, 0)[indices]
