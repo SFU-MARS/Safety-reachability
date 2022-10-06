@@ -48,7 +48,7 @@ def create_params(simulator_params):
                         num_samples=int(1e3),
         
                         # The percentage of the dataset that corresponds to the training set
-                        training_set_size=0.75,
+                        training_set_size=0.80,
         
                         # Batch size
                         batch_size=64,
@@ -63,8 +63,8 @@ def create_params(simulator_params):
                         learning_schedule=1,
         
                         # Learning schedule adjustment parameters
-                        lr_decay_frequency=None,
-                        lr_decay_factor=None,
+                        lr_decay_frequency=5,
+                        lr_decay_factor=10-6,
         
                         # Checkpoint settings
                         max_num_ckpts_to_keep=int(1e2),

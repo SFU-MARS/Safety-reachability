@@ -2,7 +2,7 @@ from models.visual_navigation.base import VisualNavigationModelBase
 from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
-import numpy
+import numpy as np
 
 class Resnet50ModelBase(VisualNavigationModelBase):
     """
@@ -57,9 +57,18 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 # model1, is_training_flag = resnet50_cnn()
                 # preds= model1.predict_on_batch(data)
             # preds = self.arch.predict_on_batch(data)
-            data[0]=data[0].reshape(1,224,224,180)
+            # data[0]=data[0].reshape(1,224,224,180)
+            frames = np.empty((224,224, 3, 60),dtype='float32')
+
+            for k in range(60):
+                frames[:, :, :, k] = data[0][k]
+            data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
+            # data[0]=data[0].astype('float32')
+
+
             data[1] = data[1].reshape(1,120)
             # assert(data[0].shape[2]==180)
+            # preds = self.arch.predict_on_batch(data)
             preds=self.arch(data)
         else:
             # Do not use dropouts
@@ -73,9 +82,16 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # To avoid this issue we save the pre-prediction batch norm parameters
             # values and then reassign them post prediction.
             old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
-            data[0]=data[0].reshape(1,224,224,180)
+            frames = np.empty((224,224, 3, 60))
+
+            for k in range(60):
+                frames[:, :, :, k] = data[0][k]
+            data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
+            data[0]=data[0].astype('float32')
+            # data[0]=data[0].reshape(1,224,224,180)
             data[1] = data[1].reshape(1,120)
-            preds = self.arch.predict_on_batch(data)
+            # preds = self.arch.predict_on_batch(data)
+            preds = self.arch(data)
             [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
              zip(self.bn_parameters, old_bn_parameter_values)]
         return preds

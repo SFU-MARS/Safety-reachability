@@ -61,10 +61,11 @@ class TrainerHelper(object):
                 # validation_batch1['labels']=validation_batch['labels']
 
                 with tf.GradientTape() as tape:
-                    regularization_loss, prediction_loss, loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=True)
+                    regularization_loss, prediction_loss, loss, accuracy = model.compute_loss_function(training_batch, is_training=True, return_loss_components=True)
                     print('prediction loss :{0}'.format(prediction_loss))
                     print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
                     print(' loss :{0}'.format(loss.numpy()))
+                    print(' accuracy :{0}'.format(accuracy))
                     # tape.watch(loss)
                 # Take an optimization step
                 grads = tape.gradient(loss, model.get_trainable_vars())
@@ -137,11 +138,11 @@ class TrainerHelper(object):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, _ = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, total_loss_validation , accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
-        training_loss_metric(prediction_loss_training)
-        validation_loss_metric(prediction_loss_validation)
+        training_loss_metric(total_loss_training)
+        validation_loss_metric(total_loss_validation)
 
     def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation, model,
                                 callback_fn=None):

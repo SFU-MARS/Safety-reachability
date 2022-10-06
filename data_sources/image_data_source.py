@@ -133,7 +133,7 @@ class ImageDataSource(DataSource):
             file_number = {:d}
         """
         filename = os.path.relpath(filename, data_dir)  # file{:d}.pkl
-        file_number = filename.split('.')[0].split('sample')[-1]  # '{:d}'
+        file_number = filename.split('.')[0].split('file')[-1]  # '{:d}'
         file_number = int(file_number)  # {:d}
         return filename, file_number
 

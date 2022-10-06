@@ -65,6 +65,7 @@ class BaseModel(object):
         import numpy as np
         # ywxmax=tf.zeros(8,1)
         output_list=[]
+        countT=0
         # for i in range(60):
         #     x = tf.contrib.eager.Variable(tf.random_normal([4, 60], mean=1.0, stddev=0.35))
         #     # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
@@ -90,7 +91,10 @@ class BaseModel(object):
             # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
             y = tf.convert_to_tensor(processed_data['labels'][i, :, :])
             y1 = tf.cast(y, tf.float32)
-            output_list.append(tf.maximum(0, 1 - tf.matmul(z, y1)))
+            output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
+            if tf.matmul(z, y1)-1 >= 0:
+                countT+=1
+
 
         ywxmax=tf.stack(output_list)
 
@@ -102,11 +106,14 @@ class BaseModel(object):
 
         C=1 #Penalty parameter of the error term
         total_loss = C*(prediction_loss1)+ 0.5 * regularization_loss
+
+        accuracy=countT/self.p.trainer.batch_size
+
        
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss1, total_loss, nn_output
         elif return_loss_components:
-            return regularization_loss, prediction_loss1, total_loss
+            return regularization_loss, prediction_loss1, total_loss, accuracy
         else:
             return total_loss
     

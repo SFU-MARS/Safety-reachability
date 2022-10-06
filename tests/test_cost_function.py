@@ -131,4 +131,4 @@ def test_cost_function(plot=False):
 
 
 if __name__ == '__main__':
-    test_cost_function(plot=False)
+    test_cost_function(plot=True)

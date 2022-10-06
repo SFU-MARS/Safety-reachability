@@ -408,8 +408,8 @@ class ReachabilityMap(object):
         np.save(os.path.join(self.p.MATLAB_PATH + self.reach_avoid_map_4d_path + self.reach_avoid_map_4d_name), ttr_value_reach_avoid_4d_numpy)
 
         print("new reach avoid 4d ttr is computed and saved!")
-
-        # Wrap the ttr value function into a voxel function
+        #
+        # # Wrap the ttr value function into a voxel function
         self.reach_avoid_4d_map.voxel_function_4d = tf.convert_to_tensor(ttr_value_reach_avoid_4d, dtype=tf.float32)
 
     def _compute_avoid_4d_map_LFsweep(self):

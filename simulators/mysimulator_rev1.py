@@ -201,14 +201,15 @@ class Simulator(SimulatorHelper):
         # data=np.load("/home/ttoufigh/optimized_dp/TTR_grid_biggergrid_3lookback_wDisturbance_wObstalceMap_speedlimit3reverse_5.npy")
         # data = np.load(
         #     "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/ttr_avoid_map_4d_whole_area3_no_dist.npy")
-        data = np.load(
-            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/TTR0914.npy")
-        dataV = scipy.io.loadmat(
-            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/dataV0914.mat")
+
+        # data = np.load(
+        #     "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/TTR0914.npy")
+        data = scipy.io.loadmat(
+            "/local-scratch/tara/project/WayPtNav-reachability/reachability/data_tmp/avoid_map_4d/v1/dataVtest2.mat")
         from scipy.interpolate import RegularGridInterpolator
 
-        my_interpolating_function = RegularGridInterpolator((x, y, theta, v), data)
-        my_interpolating_functionV = RegularGridInterpolator((x, y, theta, v), dataV['dataV1'])
+        # my_interpolating_functionV = RegularGridInterpolator((x, y, theta, v), data)
+        my_interpolating_functionV = RegularGridInterpolator((x, y, theta, v), data['dataV'])
 ##
         # if isinstance(self.p.data_creation.data_dir, list):
         #     assert len(self.p.data_creation.data_dir) == 1
