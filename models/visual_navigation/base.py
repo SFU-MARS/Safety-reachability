@@ -67,8 +67,8 @@ class VisualNavigationModelBase(BaseModel):
         Create the occupancy grid and other inputs for the neural network.
         """
         
-        # if self.p.data_processing.input_processing_function is not None:
-        #     data = self.preprocess_nn_input(raw_data, is_training)
+        if self.p.data_processing.input_processing_function is not None:
+            raw_data = self.preprocess_nn_input(raw_data, is_training)
 
         # Get the input image (n, m, k, d)
         # batch size n x (m x k pixels) x d channels
@@ -151,10 +151,12 @@ class VisualNavigationModelBase(BaseModel):
 
         vehicle_state = raw_data['start_pose']
 
+
         # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
         # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
         # state_features_n4 = np.array(vehicle_state)
         state_features_n2= np.squeeze(vehicle_state)
+        # state_features_n2=tf.convert_to_tensor(state_features_n2)
         state_features_n21=np.expand_dims(state_features_n2, axis=0)
         # Optimal Supervision
         # optimal_labels_n = self._optimal_labels(raw_data)

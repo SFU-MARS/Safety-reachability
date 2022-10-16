@@ -15,8 +15,8 @@ def create_rgb_trainer_params():
     simulator_params = create_simulator_params()
 
     # Seed
-    # simulator_params.seed = 10
-    simulator_params.seed = 5
+    simulator_params.seed = 10
+    # simulator_params.seed = 5
 
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()

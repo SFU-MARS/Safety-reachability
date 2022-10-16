@@ -29,7 +29,10 @@ class BaseModel(object):
         Compute the loss function for a given dataset.
         """
         # Create the NN inputs and labels
+
         processed_data  = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
+        # processed_data = tf.Variable(processed_data)
+
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
         
         if self.p.loss.loss_type == 'mse':
@@ -44,77 +47,67 @@ class BaseModel(object):
             epochs=10
             rate=1/epochs
             reg_parm=0.1
+            output_list=[]
+            countT=0
 
-            # for epoch in range(1, epochs):
-            #     # for n, data in enumerate(processed_data['Action_waypoint'] ):
-            #     for i in range (0,60):
-            #         if (processed_data['labels'] [0][:,i]* np.dot(tf.concat((tf.transpose(processed_data['Action_waypoint'][0][:,i]), tf.ones(1)),axis=0), nn_output[0])< 1):
-            #             # nn_output1[i,:] = np.transpose(np.array(nn_output))[:,i] + rate * ((processed_data['Action_waypoint'][i] * processed_data['labels'][i]) + (-2 * (1 / epoch) * np.transpose(np.array(nn_output))[:,i]))
+
+            # for i in range(self.p.trainer.batch_size):
             #
-            #             # nn_output1[i,:] = (1 - rate)*np.transpose(np.array(nn_output))[:,i]+rate*reg_parm*(processed_data['Action_waypoint'][i] * processed_data['labels'][i])
-            #             nn_output1[i, :] = (1 - rate) * tf.transpose(np.array(nn_output)[0]) + rate * reg_parm * (
-            #                 processed_data['labels'][0][:,i])*tf.concat((tf.transpose(processed_data['Action_waypoint'][0][:,i]), tf.ones(1)) ,axis=0)
-            #         else:
-            #             # nn_output1[i,:]= np.transpose(np.array(nn_output))[:,i] + rate * (-2 * (1 / epoch) * np.transpose(nn_output)[:,i])
-            #             nn_output1[i,:] = (1 - rate) * tf.transpose(nn_output)[0]
+            #     x = tf.contrib.eager.Variable(tf.random_normal([4], mean=1.0, stddev=0.35))
+            #     # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
+            #     tf.assign(x, processed_data['Action_waypoint'][i, :])
+            #     x1 = tf.reshape(x, (4, 1))
+            #     # x_trans = tf.transpose(x)
+            #     x_conc = tf.concat((x1, tf.ones((1, 1))), axis=0)
+            #     w = tf.convert_to_tensor(nn_output)
+            #     z = tf.matmul(w, x_conc)
+            #     new_predicted = np.array([-1 if i == 0 else i for i in z])
+            #     # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
+            #     y = tf.convert_to_tensor(processed_data['labels'][i, :, :])
+            #     y1 = tf.cast(y, tf.float32)
+            #     output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
+            #     if tf.matmul(z, y1) >= 0:
+            #         countT+=1
+            x = tf.concat((processed_data['Action_waypoint'], tf.ones((60, 1))), axis=1)
+            w = tf.convert_to_tensor(nn_output)
+            w1 = tf.reshape(w, (5, 1))
+            predicted = tf.matmul(x, w1)
+            # new_predicted = np.array([-1 if i <= 1 else 1 for i in predicted])
+            # hinge_loss = np.mean([max(0, 1 - x * y) for x, y in zip(processed_data['labels'], predicted)])
+            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in zip(np.squeeze(processed_data['labels']), predicted)])
+            hinge_loss = tf.reduce_mean([max([[0.]], 1 - y * wx) for y, wx in
+                            zip(tf.cast(processed_data['labels'], dtype=tf.float32), predicted)])
+            # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
+            prediction_loss1 = hinge_loss
 
-            # return nn_output1
+            t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels']), predicted)]
+            threshold = 1
+            elements_gt = tf.math.greater(t, threshold)
+            num_elements_gt = tf.math.reduce_mean(tf.cast(elements_gt, tf.int32))
+            print(num_elements_gt)
+            accuracy=num_elements_gt
+            # accuracy =tf.reduce_mean(tf.matmul(predicted, processed_data['labels'])>=1)
+            # ywxmax=tf.stack(output_list)
 
-        # for i in range(0, 60):
-        #     prediction_loss1[i]  = np.maximum(0.,1-np.dot(tf.transpose(np.transpose(processed_data['Action_waypoint'][0])[i], tf.ones(1)),axis=0), np.transpose(nn_output)))
-        import numpy as np
-        # ywxmax=tf.zeros(8,1)
-        output_list=[]
-        countT=0
-        # for i in range(60):
-        #     x = tf.contrib.eager.Variable(tf.random_normal([4, 60], mean=1.0, stddev=0.35))
-        #     # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
-        #     tf.assign(x, processed_data['Action_waypoint'][i, :])
-        #     x_trans = tf.transpose(x)
-        #     x_conc = tf.concat((x_trans, tf.ones((60, 1))), axis=1)
-        #     w = tf.transpose(nn_output)[:, i]
-        #     z = tf.matmul(tf.reshape(w, (1, 5)), tf.transpose(x_conc))
-        #     # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
-        #     y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :,:]), (60, 1))
-        #     y1 = tf.cast(y,tf.float32)
-        #     output_list.append(tf.maximum(0,1-tf.matmul(z, y1)))
-        for i in range(self.p.trainer.batch_size):
+            # x=tf.ones((60,1))-tf.matmul(tf.matmul(tf.concat([tf.transpose(processed_data['Action_waypoint'][0]), tf.ones((60,1))],axis=1), tf.transpose(nn_output)), processed_data['labels'][0])
+            # y=tf.maximum(tf.zeros((60,1)),x)
+            # prediction_loss1 = tf.reduce_sum(ywxmax)
 
-            x = tf.contrib.eager.Variable(tf.random_normal([4], mean=1.0, stddev=0.35))
-            # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
-            tf.assign(x, processed_data['Action_waypoint'][i, :])
-            x1 = tf.reshape(x, (4, 1))
-            # x_trans = tf.transpose(x)
-            x_conc = tf.concat((x1, tf.ones((1, 1))), axis=0)
-            w = nn_output
-            z = tf.matmul(w, x_conc)
-            # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
-            y = tf.convert_to_tensor(processed_data['labels'][i, :, :])
-            y1 = tf.cast(y, tf.float32)
-            output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
-            if tf.matmul(z, y1)-1 >= 0:
-                countT+=1
+            regularization_loss = tf.nn.l2_loss(nn_output)
 
+            C=1 #Penalty parameter of the error term
 
-        ywxmax=tf.stack(output_list)
+            total_loss = C*(prediction_loss1)+ 0.5 * regularization_loss
 
-        # x=tf.ones((60,1))-tf.matmul(tf.matmul(tf.concat([tf.transpose(processed_data['Action_waypoint'][0]), tf.ones((60,1))],axis=1), tf.transpose(nn_output)), processed_data['labels'][0])
-        # y=tf.maximum(tf.zeros((60,1)),x)
-        prediction_loss1=tf.reduce_sum(ywxmax)
-
-        regularization_loss = tf.nn.l2_loss(nn_output)
-
-        C=1 #Penalty parameter of the error term
-        total_loss = C*(prediction_loss1)+ 0.5 * regularization_loss
-
-        accuracy=countT/self.p.trainer.batch_size
+            accuracy=countT/self.p.trainer.batch_size
 
        
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss1, total_loss, nn_output
         elif return_loss_components:
-            return regularization_loss, prediction_loss1, total_loss, accuracy
+            return regularization_loss, prediction_loss1, total_loss
         else:
+            # return total_loss
             return total_loss
     
     def get_trainable_vars(self):

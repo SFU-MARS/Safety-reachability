@@ -57,19 +57,25 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 # model1, is_training_flag = resnet50_cnn()
                 # preds= model1.predict_on_batch(data)
             # preds = self.arch.predict_on_batch(data)
-            # data[0]=data[0].reshape(1,224,224,180)
+            # data[0]=data[0].reshape(1,224,224,-1)
+
             frames = np.empty((224,224, 3, 60),dtype='float32')
 
             for k in range(60):
                 frames[:, :, :, k] = data[0][k]
             data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
-            # data[0]=data[0].astype('float32')
+            data[0]=data[0].astype('float32')
+            data[0]=tf.constant(data[0])
 
-
-            data[1] = data[1].reshape(1,120)
+            # data[1] = tf.reshape(data[1], (1,120))
+            data[1] = data[1].reshape((1, -1))
+            data[1]=tf.constant(data[1])
+            # data[0]= tf.convert_to_tensor(data[0])
+            # data[1] = tf.convert_to_tensor(data[1])
             # assert(data[0].shape[2]==180)
-            # preds = self.arch.predict_on_batch(data)
-            preds=self.arch(data)
+            preds = self.arch.predict_on_batch(data)
+            # preds=tf.constant(preds)
+            # preds=self.arch(data)
         else:
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)
@@ -88,10 +94,14 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 frames[:, :, :, k] = data[0][k]
             data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
             data[0]=data[0].astype('float32')
-            # data[0]=data[0].reshape(1,224,224,180)
-            data[1] = data[1].reshape(1,120)
-            # preds = self.arch.predict_on_batch(data)
-            preds = self.arch(data)
+            # data[0]=data[0].reshape(1,224,224,-1)
+            data[1]=data[1].reshape((1,-1))
+            # data[0]=tf.convert_to_tensor(data[0])
+            # data[1] = tf.convert_to_tensor(data[1])
+            # data[1] = tf.reshape(data[1], (1,120))
+            preds = self.arch.predict_on_batch(data)
+            # preds = tf.constant(preds)
+            # preds = self.arch(data)
             [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
              zip(self.bn_parameters, old_bn_parameter_values)]
         return preds

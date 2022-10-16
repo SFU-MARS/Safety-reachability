@@ -40,6 +40,7 @@ class TrainerHelper(object):
             # Define the metrics to keep a track of average loss over the epoch.
             training_loss_metric = tfe.metrics.Mean()
             validation_loss_metric = tfe.metrics.Mean()
+            # epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
 
             # For loop over the training samples
             for j in range(0, num_training_samples, self.p.batch_size):
@@ -53,6 +54,7 @@ class TrainerHelper(object):
                 # training_batch1['image']=training_batch['image'].reshape((-1,224,224,180))
                 # training_batch1['waypointAction']=training_batch['waypointAction']
                 # training_batch1['labels']=training_batch['labels']
+                # training_batch = tf.convert_to_tensor(training_batch)
 
                 validation_batch = data_source.generate_validation_batch()
                 # validation_batch1['start_pose']=validation_batch['start_pose'].reshape((-1,120))
@@ -61,17 +63,35 @@ class TrainerHelper(object):
                 # validation_batch1['labels']=validation_batch['labels']
 
                 with tf.GradientTape() as tape:
-                    regularization_loss, prediction_loss, loss, accuracy = model.compute_loss_function(training_batch, is_training=True, return_loss_components=True)
-                    print('prediction loss :{0}'.format(prediction_loss))
-                    print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
-                    print(' loss :{0}'.format(loss.numpy()))
-                    print(' accuracy :{0}'.format(accuracy))
+                    # tape.watch(model.get_trainable_vars())
+                    # tape.watch(training_batch)
+                    loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
+                    # print('prediction loss :{0}'.format(prediction_loss))
+                    # print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
+                    # print(' loss :{0}'.format(loss.numpy()))
+                    # print(' accuracy :{0}'.format(accuracy))
+                    # Compare predicted label to actual label
+                    # training=True is needed only if there are layers with different
+                    # behavior during training versus inference (e.g. Dropout).
+
                     # tape.watch(loss)
                 # Take an optimization step
+                grads1=[]
+                # [var.name for var in tape.watched_variables()]
                 grads = tape.gradient(loss, model.get_trainable_vars())
+                # for grad in grads:
+                #     if grad == None:
+                #         grad = tf.constant([0])
+                #     grads1.append(grad)
+
+
+                # for var, g in zip(model.get_trainable_vars(), grads):
+                #     # print(f'{var.name}, shape: {g.shape}')
+                #     grads1.append((tf.where(tf.is_nan(g), tf.zeros_like(g),g)))
+                # gvs_ = [(tf.where(tf.is_nan(grad), tf.zeros_like(grad), grad), var) for grad,var in gvs_]
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
-
+                # epoch_accuracy.update_state(accuracy)
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
                                                    validation_loss_metric)
@@ -138,11 +158,11 @@ class TrainerHelper(object):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, total_loss_validation , accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _ = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
-        training_loss_metric(total_loss_training)
-        validation_loss_metric(total_loss_validation)
+        training_loss_metric(prediction_loss_training)
+        validation_loss_metric(prediction_loss_validation)
 
     def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation, model,
                                 callback_fn=None):

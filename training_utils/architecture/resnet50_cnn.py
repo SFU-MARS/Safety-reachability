@@ -69,6 +69,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Generate a Keras model
 
     model = tf.keras.Model(inputs=[input_image, input_flat], outputs=x)
+    model.load_weights(params.resnet50_weights_path, by_name=True)
     model.summary()
     #
     # # Load the Resnet50 weights
@@ -88,6 +89,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
         strides=(1, 1),
         padding='valid',
          input_shape=(224, 224, 180)))
+    # model1.add(layers.ZeroPadding2D(padding=(2, 2)))
     model1.add(layers.Conv2D(20, (3, 3),
         strides=(1, 1),
         padding='valid'
@@ -97,7 +99,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
         padding='valid'
         ))
 
-    model1.add(layers.ZeroPadding2D(padding=(2,2)))
+    model1.add(layers.ZeroPadding2D(padding=(2, 2)))
     model1.add(layers.ZeroPadding2D(padding=(1, 1)))
     model1.summary()
 
@@ -163,6 +165,8 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     model4 = tf.keras.Model(inputs=[input_image1, input_flat1], outputs=x1)
     model4.summary()
-
+    # model4.compile(
+    #     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    #     loss='mean_absolute_error')
 
     return model4, is_training

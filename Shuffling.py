@@ -65,7 +65,7 @@ for k in range(0, m):
         #
 
         posez.append(np.squeeze(listofdict[i]['start_pose'][from_each * k:from_each * (k + 1)]))
-        imagez.append(np.squeeze(listofdict[i]['image'][from_each * k:from_each * (k + 1)]))
+        imagez.append(np.squeeze(listofdict[i]['image'][0]))
         # waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][:]))
         waypointActionz.append(np.squeeze(listofdict[i]['waypointAction'][from_each * k:from_each * (k + 1)]))
         labelz.append(np.squeeze(listofdict[i]['labels'][from_each * k:from_each * (k + 1)]))

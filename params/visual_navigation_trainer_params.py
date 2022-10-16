@@ -24,8 +24,8 @@ def create_params(simulator_params):
     # Loss function parameters
     p.loss = DotMap(
                     # Type of the loss function
-                    # loss_type='mse',
                     loss_type='hinge',
+                    # loss_type='hinge',
 
 
                     # Weight regularization co-efficient
@@ -60,7 +60,7 @@ def create_params(simulator_params):
                         lr=1e-4,
                         
                         # Learning schedule
-                        learning_schedule=1,
+                        learning_schedule=2,
         
                         # Learning schedule adjustment parameters
                         lr_decay_frequency=5,
