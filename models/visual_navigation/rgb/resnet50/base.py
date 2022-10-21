@@ -59,22 +59,29 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # preds = self.arch.predict_on_batch(data)
             # data[0]=data[0].reshape(1,224,224,-1)
 
-            frames = np.empty((224,224, 3, 60),dtype='float32')
+            # frames = np.empty((224,224, 3, 60),dtype='float32')
 
-            for k in range(60):
-                frames[:, :, :, k] = data[0][k]
-            data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
-            data[0]=data[0].astype('float32')
-            data[0]=tf.constant(data[0])
+            # for k in range(60):
+            #     frames[:, :, :, k] = data[0][k]
+            # data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
+            # data[0]=data[0].astype('float32')
+            # data[0]=tf.constant(data[0])
 
             # data[1] = tf.reshape(data[1], (1,120))
-            data[1] = data[1].reshape((1, -1))
-            data[1]=tf.constant(data[1])
+            # data[1] = data[1].reshape((1, -1))
+            # data[1]=tf.constant(data[1])
             # data[0]= tf.convert_to_tensor(data[0])
             # data[1] = tf.convert_to_tensor(data[1])
             # assert(data[0].shape[2]==180)
-            preds = self.arch.predict_on_batch(data)
+            # preds = self.arch.predict_on_batch(data)
             # preds=tf.constant(preds)
+            data[1] = data[1][:50]
+            t=np.tile(data[0],(data[1].shape[0],1,1))
+            data[0]=t.reshape(data[1].shape[0],224,224,3)
+            # data[0] = tf.constant(data[0])
+            data[1] = tf.constant(data[1])
+            preds = self.arch.predict_on_batch(data)
+
             # preds=self.arch(data)
         else:
             # Do not use dropouts
@@ -88,20 +95,25 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # To avoid this issue we save the pre-prediction batch norm parameters
             # values and then reassign them post prediction.
             old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
-            frames = np.empty((224,224, 3, 60))
-
-            for k in range(60):
-                frames[:, :, :, k] = data[0][k]
-            data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
-            data[0]=data[0].astype('float32')
-            # data[0]=data[0].reshape(1,224,224,-1)
-            data[1]=data[1].reshape((1,-1))
+            # frames = np.empty((224,224, 3, 60))
+            #
+            # for k in range(60):
+            #     frames[:, :, :, k] = data[0][k]
+            # data[0] = np.expand_dims(frames.reshape(224, 224, 180),axis=0)
+            # data[0]=data[0].astype('float32')
+            # # data[0]=data[0].reshape(1,224,224,-1)
+            # data[1]=data[1].reshape((1,-1))
             # data[0]=tf.convert_to_tensor(data[0])
             # data[1] = tf.convert_to_tensor(data[1])
             # data[1] = tf.reshape(data[1], (1,120))
-            preds = self.arch.predict_on_batch(data)
+            # preds = self.arch.predict_on_batch(data)
             # preds = tf.constant(preds)
+            data[1] = data[1][:50]
+            t=np.tile(data[0],(data[1].shape[0],1,1))
+            data[0]=t.reshape(data[1].shape[0],224,224,3)
+            data[1] = tf.constant(data[1])
             # preds = self.arch(data)
+            preds = self.arch.predict_on_batch(data)
             [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
              zip(self.bn_parameters, old_bn_parameter_values)]
         return preds

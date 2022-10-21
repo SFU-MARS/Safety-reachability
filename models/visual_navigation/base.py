@@ -15,7 +15,7 @@ from keras.preprocessing import image
 from keras.utils import layer_utils
 from keras.utils.data_utils import get_file
 from keras.applications.imagenet_utils import preprocess_input
-import pydot
+
 from IPython.display import SVG
 from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
@@ -154,10 +154,11 @@ class VisualNavigationModelBase(BaseModel):
 
         # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
         # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
-        # state_features_n4 = np.array(vehicle_state)
-        state_features_n2= np.squeeze(vehicle_state)
+        # state_featuures_n4 = np.array(vehicle_state)
+        state_featres_n2 = np.squeeze(vehicle_state)
+        state_features_n21 = np.reshape(state_featres_n2,(-1,2))
         # state_features_n2=tf.convert_to_tensor(state_features_n2)
-        state_features_n21=np.expand_dims(state_features_n2, axis=0)
+        # state_features_n21=np.expand_dims(state_features_n2, axis=0)
         # Optimal Supervision
         # optimal_labels_n = self._optimal_labels(raw_data)
         optimal_labels_n = raw_data['labels']
@@ -168,7 +169,7 @@ class VisualNavigationModelBase(BaseModel):
 
         # normalized_img = img_nmkd /255
 
-        data['inputs'] = [img_nmkd, state_features_n2]
+        data['inputs'] = [img_nmkd, state_features_n21]
 
         data['labels'] = optimal_labels_n
         data['Action_waypoint'] = waypointAction

@@ -3,8 +3,7 @@ from training_utils.architecture.simple_mlp import simple_mlp
 # from training_utils.architecture.resnet50.resnet_50 import ResNet50
 # from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from "@tensorflow/tfjs" import * as tf
-
-
+K = tf.keras.backend
 class BaseModel(object):
     """
     A base class for an input-output model that can be trained.
@@ -68,24 +67,31 @@ class BaseModel(object):
             #     output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
             #     if tf.matmul(z, y1) >= 0:
             #         countT+=1
-            x = tf.concat((processed_data['Action_waypoint'], tf.ones((60, 1))), axis=1)
-            w = tf.convert_to_tensor(nn_output)
-            w1 = tf.reshape(w, (5, 1))
-            predicted = tf.matmul(x, w1)
+            x = tf.concat((processed_data['Action_waypoint'][:50], tf.ones((nn_output.shape[0], 1, 1))), axis=1)
+            x = tf.reshape(x, (50, 5))
+            # w = tf.convert_to_tensor(nn_output)
+            w = tf.reduce_mean(nn_output, axis=0)
+            # w1 = tf.reshape(w, (5, 1))
+            predicted = tf.matmul(x, tf.reshape(w, (5,1)))
             # new_predicted = np.array([-1 if i <= 1 else 1 for i in predicted])
             # hinge_loss = np.mean([max(0, 1 - x * y) for x, y in zip(processed_data['labels'], predicted)])
             # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in zip(np.squeeze(processed_data['labels']), predicted)])
-            hinge_loss = tf.reduce_mean([max([[0.]], 1 - y * wx) for y, wx in
-                            zip(tf.cast(processed_data['labels'], dtype=tf.float32), predicted)])
+            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in
+            #                 zip(processed_data['labels'], predicted)])
+            # hinge_loss = sum([max(0, 1 - wx * y) for wx, y in
+            #  zip(predicted, processed_data['labels'][:50])])
+            # hinge_loss =K.sum(1. - K.flatten(tf.cast(predicted, dtype=tf.float64)) * K.flatten(processed_data['labels'][:50]))
+            #tf.compat.v1.keras.losses.hinge
+            hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
             # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
             prediction_loss1 = hinge_loss
 
-            t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels']), predicted)]
+            t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
             threshold = 1
             elements_gt = tf.math.greater(t, threshold)
-            num_elements_gt = tf.math.reduce_mean(tf.cast(elements_gt, tf.int32))
-            print(num_elements_gt)
-            accuracy=num_elements_gt
+            num_elements_gt = np.mean(tf.cast(elements_gt, tf.int32))
+            print('accuracy:' + str(num_elements_gt))
+            # accuracy=num_elements_gt
             # accuracy =tf.reduce_mean(tf.matmul(predicted, processed_data['labels'])>=1)
             # ywxmax=tf.stack(output_list)
 
@@ -97,9 +103,9 @@ class BaseModel(object):
 
             C=1 #Penalty parameter of the error term
 
-            total_loss = C*(prediction_loss1)+ 0.5 * regularization_loss
-
-            accuracy=countT/self.p.trainer.batch_size
+            # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
+            total_loss = C * (prediction_loss1)
+            # accuracy=countT/self.p.trainer.batch_size
 
        
         if return_loss_components_and_output:

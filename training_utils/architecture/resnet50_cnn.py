@@ -1,6 +1,7 @@
 import tensorflow as tf
 from training_utils.architecture.resnet50.resnet_50 import ResNet50 
 from tensorflow.keras import datasets, layers, models
+from tensorflow.keras import Input
 layers = tf.keras.layers
 from tensorflow.keras.layers import Dense, Dropout , Concatenate, Input
 from tensorflow.keras.models import Model
@@ -131,6 +132,10 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     input_image1 = layers.Input(shape=(224, 224, 180), dtype=dtype)
     input_flat1 = layers.Input(shape=(120,), dtype=dtype)
+
+    # input_image1 = Input(shape=(224, 224, 180), dtype=dtype)
+    # input_flat1 = Input(shape=(120,), dtype=dtype)
+
     x1 = input_image1
     x1 = model1.call(x1)
     if params.dim_red_conv_2d.use:
@@ -169,4 +174,4 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     #     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
     #     loss='mean_absolute_error')
 
-    return model4, is_training
+    return model, is_training

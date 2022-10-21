@@ -133,7 +133,7 @@ class ImageDataSource(DataSource):
             file_number = {:d}
         """
         filename = os.path.relpath(filename, data_dir)  # file{:d}.pkl
-        file_number = filename.split('.')[0].split('file')[-1]  # '{:d}'
+        file_number = filename.split('.')[0].split('sample')[-1]  # '{:d}'
         file_number = int(file_number)  # {:d}
         return filename, file_number
 
@@ -330,8 +330,10 @@ class ImageDataSource(DataSource):
         if start_index + self.p.trainer.batch_size <= n:
             
             # Get the training batch
-            training_batch = self.get_data_from_indices(self.training_info_dict['data'],
-                                                        data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
+            # training_batch = self.get_data_from_indices(self.training_info_dict['data'],
+            #                                             data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
+            training_batch = self.training_info_dict['data']
+
         else:  # The batch is split over two data_files
             
             # Get the remaining data from the first data_file
@@ -386,8 +388,9 @@ class ImageDataSource(DataSource):
         
         # Sample indices and get data
         idxs = np.random.choice(len(data_shuffle_idxs), self.p.trainer.batch_size)
-        validation_batch = self.get_data_from_indices(self.validation_info_dict['data'],
-                                                      data_shuffle_idxs[idxs])
+        # validation_batch = self.get_data_from_indices(self.validation_info_dict['data'],
+        #                                               data_shuffle_idxs[idxs])
+        validation_batch = self. validation_info_dict ['data']
         return validation_batch
 
     def shuffle_datasets(self):
