@@ -33,22 +33,28 @@ class BaseModel(object):
         # processed_data = tf.Variable(processed_data)
 
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
+
+        # regularization_loss = 0.
+        # model_variables = self.get_trainable_vars()
+        # for model_variable in model_variables:
+        #     regularization_loss += tf.nn.l2_loss(model_variable)
+        # regularization_loss = self.p.loss.regn * regularization_loss
         
         if self.p.loss.loss_type == 'mse':
             prediction_loss = tf.losses.mean_squared_error(nn_output, processed_data['labels'])
         elif self.p.loss.loss_type == 'l2_loss':
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
         elif self.p.loss.loss_type == 'hinge':
-            import numpy as np
-            nn_output1=np.zeros((60,5))
-            prediction_loss1=np.zeros((60,1))
-            prediction_loss0 = np.zeros((60, 1))
-            epochs=10
-            rate=1/epochs
-            reg_parm=0.1
-            output_list=[]
-            countT=0
-
+            # import numpy as np
+            # nn_output1=np.zeros((60,5))
+            # prediction_loss1=np.zeros((60,1))
+            # prediction_loss0 = np.zeros((60, 1))
+            # epochs=10
+            # rate=1/epochs
+            # reg_parm=0.1
+            # output_list=[]
+            # countT=0
+            #
 
             # for i in range(self.p.trainer.batch_size):
             #
@@ -67,12 +73,14 @@ class BaseModel(object):
             #     output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
             #     if tf.matmul(z, y1) >= 0:
             #         countT+=1
-            x = tf.concat((processed_data['Action_waypoint'][:50], tf.ones((nn_output.shape[0], 1, 1))), axis=1)
-            x = tf.reshape(x, (50, 5))
+            from tensorflow.python.framework import ops
+        # with ops.name_scope(scope, "hinge_loss", (nn_output, processed_data)) as scope:
+            x = K.concatenate((processed_data['Action_waypoint'][:50], tf.ones((nn_output.shape[0], 1, 1))), axis=1)
+            x = K.reshape(x, (50, 5))
             # w = tf.convert_to_tensor(nn_output)
-            w = tf.reduce_mean(nn_output, axis=0)
+            # w = tf.reduce_mean(nn_output, axis=0)
             # w1 = tf.reshape(w, (5, 1))
-            predicted = tf.matmul(x, tf.reshape(w, (5,1)))
+            predicted = K.dot(x, tf.reshape(tf.reduce_mean(nn_output, axis=0), (5,1)))
             # new_predicted = np.array([-1 if i <= 1 else 1 for i in predicted])
             # hinge_loss = np.mean([max(0, 1 - x * y) for x, y in zip(processed_data['labels'], predicted)])
             # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in zip(np.squeeze(processed_data['labels']), predicted)])
@@ -82,15 +90,29 @@ class BaseModel(object):
             #  zip(predicted, processed_data['labels'][:50])])
             # hinge_loss =K.sum(1. - K.flatten(tf.cast(predicted, dtype=tf.float64)) * K.flatten(processed_data['labels'][:50]))
             #tf.compat.v1.keras.losses.hinge
-            hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
-            # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
+
+            from tensorflow.python.ops import array_ops
+            from tensorflow.python.ops import math_ops
+            from tensorflow.python.ops import nn_ops
+
+
+            logits = math_ops.to_float(predicted)
+            labels = math_ops.to_float(processed_data['labels'][:50])
+            logits.get_shape().assert_is_compatible_with(labels.get_shape())
+            all_ones = array_ops.ones_like(labels)
+            losses = nn_ops.relu(
+                math_ops.subtract(all_ones, math_ops.multiply(labels, logits)))
+            hinge_loss = math_ops.reduce_sum(losses)
+
+        # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
+        # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
             prediction_loss1 = hinge_loss
 
-            t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
-            threshold = 1
-            elements_gt = tf.math.greater(t, threshold)
-            num_elements_gt = np.mean(tf.cast(elements_gt, tf.int32))
-            print('accuracy:' + str(num_elements_gt))
+            # t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
+            # threshold = 1
+            # elements_gt = tf.math.greater(t, threshold)
+            # num_elements_gt = np.mean(tf.cast(elements_gt, tf.int32))
+            # print('accuracy:' + str(num_elements_gt))
             # accuracy=num_elements_gt
             # accuracy =tf.reduce_mean(tf.matmul(predicted, processed_data['labels'])>=1)
             # ywxmax=tf.stack(output_list)
@@ -99,22 +121,24 @@ class BaseModel(object):
             # y=tf.maximum(tf.zeros((60,1)),x)
             # prediction_loss1 = tf.reduce_sum(ywxmax)
 
-            regularization_loss = tf.nn.l2_loss(nn_output)
+            regularization_loss1 = tf.nn.l2_loss(nn_output)
 
             C=1 #Penalty parameter of the error term
 
+            total_loss = prediction_loss1 +  0.5 * regularization_loss1
+            # print(total_loss)
             # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            total_loss = C * (prediction_loss1)
+            # total_loss = C * (prediction_loss1)
             # accuracy=countT/self.p.trainer.batch_size
 
-       
-        if return_loss_components_and_output:
-            return regularization_loss, prediction_loss1, total_loss, nn_output
-        elif return_loss_components:
-            return regularization_loss, prediction_loss1, total_loss
-        else:
-            # return total_loss
-            return total_loss
+
+            if return_loss_components_and_output:
+                return regularization_loss1, prediction_loss1, total_loss, nn_output
+            elif return_loss_components:
+                return regularization_loss1, prediction_loss1, total_loss
+            else:
+                return total_loss
+                # return regularization_loss
     
     def get_trainable_vars(self):
         """

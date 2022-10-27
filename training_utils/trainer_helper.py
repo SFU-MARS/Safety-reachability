@@ -63,8 +63,10 @@ class TrainerHelper(object):
                 # validation_batch1['labels']=validation_batch['labels']
 
                 with tf.GradientTape() as tape:
-                    # tape.watch(model.get_trainable_vars())
+
+                    tape.watch(model.get_trainable_vars())
                     # tape.watch(training_batch)
+
                     loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
                     # print('prediction loss :{0}'.format(prediction_loss))
                     # print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))

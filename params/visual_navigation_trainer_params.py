@@ -30,6 +30,7 @@ def create_params(simulator_params):
 
                     # Weight regularization co-efficient
                     regn=1e-6,
+                    # regn=1e-8,
                     lam=10 ** (-3),
 
                     # Velocity Smoothing co-efficient for end-to-end networks
@@ -60,7 +61,7 @@ def create_params(simulator_params):
                         lr=1e-4,
                         
                         # Learning schedule
-                        learning_schedule=2,
+                        learning_schedule=1,
         
                         # Learning schedule adjustment parameters
                         lr_decay_frequency=5,

@@ -37,7 +37,7 @@ def create_params():
                              output_layer_activation_func=tf.keras.activations.linear,
                              
                              # Whether to use dropout in the fully connected layers
-                             use_dropout=False,
+                             use_dropout=True,
                              
                              # Dropout rate (in case dropout is used)
                              dropout_rate=0.2,

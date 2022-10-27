@@ -1,6 +1,6 @@
 from utils import utils
 import tensorflow as tf
-tf.enable_eager_execution(**utils.tf_session_config())
+# tf.enable_eager_execution(**utils.tf_session_config())
 # tf.enable_eager_execution()
 
 from training_utils.visual_navigation_trainer import VisualNavigationTrainer

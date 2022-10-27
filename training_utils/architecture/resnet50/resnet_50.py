@@ -72,7 +72,7 @@ class IdentityBlock(tf.keras.Model):
         axis=bn_axis, name=bn_name_base + '2c')
 
   def __call__(self, input_tensor, training=False):
-    training = False
+    # training = False
     x = self.conv2a(input_tensor)
     x = self.bn2a(x, training=training)
     x = layers.Activation('relu')(x)
@@ -153,7 +153,7 @@ class ConvBlock(tf.keras.Model):
         axis=bn_axis, name=bn_name_base + '1')
 
   def __call__(self, input_tensor, training=False):
-    training = False
+    # training = False
     x = self.conv2a(input_tensor)
     x = self.bn2a(x, training=training)
     x = layers.Activation('relu')(x)
@@ -307,7 +307,7 @@ class ResNet50(tf.keras.Model):
         self.global_pooling = None
 
   def call(self, inputs, training=True, output_layer=5):
-    training = False
+    # training = False
     # Make sure the desired output layer is a layer
     # 1-5. output_layer=-1 signifies the whole
     # resnet50 model

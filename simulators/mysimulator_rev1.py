@@ -2,7 +2,7 @@ import tensorflow as tf
 # from matplotlib.pyplot import hold
 
 from utils import utils
-tf.enable_eager_execution(**utils.tf_session_config())
+# tf.enable_eager_execution(**utils.tf_session_config())
 
 
 from objectives.objective_function import ObjectiveFunction

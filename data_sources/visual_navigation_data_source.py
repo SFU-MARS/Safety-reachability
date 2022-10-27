@@ -50,7 +50,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         # return data['vehicle_state_nk3'].shape[0]
         return data['image'].shape[0]
-
+        #
         # return len(data)
     
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up

@@ -136,42 +136,42 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # input_image1 = Input(shape=(224, 224, 180), dtype=dtype)
     # input_flat1 = Input(shape=(120,), dtype=dtype)
 
-    x1 = input_image1
-    x1 = model1.call(x1)
-    if params.dim_red_conv_2d.use:
-        # Convolutional layer
-        x1 = layers.Conv2D(
-                    filters=params.dim_red_conv_2d.num_outputs,
-                    kernel_size=params.dim_red_conv_2d.filter_size,
-                    strides=params.dim_red_conv_2d.stride,
-                    padding=params.dim_red_conv_2d.padding,
-                    activation=params.hidden_layer_activation_func)(x1)
-        # Max-pooling layer
-        if params.dim_red_conv_2d.use_maxpool:
-            x1 = layers.MaxPool2D(pool_size=(params.dim_red_conv_2d.size_maxpool_filters,
-                                            params.dim_red_conv_2d.size_maxpool_filters),
-                                 padding='valid')(x1)
-
-    # # model1.add(model)
-    # x1 = model.call(x1)
-    x1 = layers.Flatten()(x1)
-    input_flat2 = model3.call(input_flat1)
-    x1 = layers.Concatenate(axis=1)([x1, input_flat2])
-
-    for i in range(params.num_hidden_layers):
-        x1 = layers.Dense(params.num_neurons_per_layer, activation=params.hidden_layer_activation_func)(x1)
-        if params.use_dropout:
-            x1 = layers.Dropout(rate=params.dropout_rate)(x1)
-
-    # Output layer
-    x1 = layers.Dense(num_outputs, activation=params.output_layer_activation_func)(x1)
-
-    # Generate a Keras model
-
-    model4 = tf.keras.Model(inputs=[input_image1, input_flat1], outputs=x1)
-    model4.summary()
-    # model4.compile(
-    #     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-    #     loss='mean_absolute_error')
+    # x1 = input_image1
+    # x1 = model1.call(x1)
+    # if params.dim_red_conv_2d.use:
+    #     # Convolutional layer
+    #     x1 = layers.Conv2D(
+    #                 filters=params.dim_red_conv_2d.num_outputs,
+    #                 kernel_size=params.dim_red_conv_2d.filter_size,
+    #                 strides=params.dim_red_conv_2d.stride,
+    #                 padding=params.dim_red_conv_2d.padding,
+    #                 activation=params.hidden_layer_activation_func)(x1)
+    #     # Max-pooling layer
+    #     if params.dim_red_conv_2d.use_maxpool:
+    #         x1 = layers.MaxPool2D(pool_size=(params.dim_red_conv_2d.size_maxpool_filters,
+    #                                         params.dim_red_conv_2d.size_maxpool_filters),
+    #                              padding='valid')(x1)
+    #
+    # # # model1.add(model)
+    # # x1 = model.call(x1)
+    # x1 = layers.Flatten()(x1)
+    # input_flat2 = model3.call(input_flat1)
+    # x1 = layers.Concatenate(axis=1)([x1, input_flat2])
+    #
+    # for i in range(params.num_hidden_layers):
+    #     x1 = layers.Dense(params.num_neurons_per_layer, activation=params.hidden_layer_activation_func)(x1)
+    #     if params.use_dropout:
+    #         x1 = layers.Dropout(rate=params.dropout_rate)(x1)
+    #
+    # # Output layer
+    # x1 = layers.Dense(num_outputs, activation=params.output_layer_activation_func)(x1)
+    #
+    # # Generate a Keras model
+    #
+    # model4 = tf.keras.Model(inputs=[input_image1, input_flat1], outputs=x1)
+    # model4.summary()
+    # # model4.compile(
+    # #     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    # #     loss='mean_absolute_error')
 
     return model, is_training
