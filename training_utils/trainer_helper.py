@@ -5,6 +5,12 @@ import os
 import utils
 from tensorflow.python.util.tf_export import tf_export
 
+import skimage.io
+import skimage.segmentation
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 class TrainerHelper(object):
     
     def __init__(self, params):
@@ -50,17 +56,15 @@ class TrainerHelper(object):
 
 
                 training_batch = data_source.generate_training_batch(j)
-                # training_batch1['start_pose']=training_batch['start_pose'].reshape((-1,120))
-                # training_batch1['image']=training_batch['image'].reshape((-1,224,224,180))
-                # training_batch1['waypointAction']=training_batch['waypointAction']
-                # training_batch1['labels']=training_batch['labels']
-                # training_batch = tf.convert_to_tensor(training_batch)
+                # plt.imshow(training_batch['image'][0].astype(np.int32))
+                # plt.grid(False)
+                # plt.show()
+
 
                 validation_batch = data_source.generate_validation_batch()
-                # validation_batch1['start_pose']=validation_batch['start_pose'].reshape((-1,120))
-                # validation_batch1['image']=validation_batch['image'].reshape((-1,224,224,180))
-                # validation_batch1['waypointAction']=validation_batch['waypointAction']
-                # validation_batch1['labels']=validation_batch['labels']
+                # plt.imshow(validation_batch['image'][0].astype(np.int32))
+                # plt.grid(False)
+                # plt.show()
 
                 with tf.GradientTape() as tape:
 
@@ -68,17 +72,12 @@ class TrainerHelper(object):
                     # tape.watch(training_batch)
 
                     loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
-                    # print('prediction loss :{0}'.format(prediction_loss))
-                    # print('regularization_loss loss :{0}'.format(regularization_loss.numpy()))
-                    # print(' loss :{0}'.format(loss.numpy()))
-                    # print(' accuracy :{0}'.format(accuracy))
-                    # Compare predicted label to actual label
-                    # training=True is needed only if there are layers with different
+
                     # behavior during training versus inference (e.g. Dropout).
 
                     # tape.watch(loss)
                 # Take an optimization step
-                grads1=[]
+
                 # [var.name for var in tape.watched_variables()]
                 grads = tape.gradient(loss, model.get_trainable_vars())
                 # for grad in grads:
@@ -87,10 +86,7 @@ class TrainerHelper(object):
                 #     grads1.append(grad)
 
 
-                # for var, g in zip(model.get_trainable_vars(), grads):
-                #     # print(f'{var.name}, shape: {g.shape}')
-                #     grads1.append((tf.where(tf.is_nan(g), tf.zeros_like(g),g)))
-                # gvs_ = [(tf.where(tf.is_nan(grad), tf.zeros_like(grad), grad), var) for grad,var in gvs_]
+
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
                 # epoch_accuracy.update_state(accuracy)
@@ -99,6 +95,31 @@ class TrainerHelper(object):
                                                    validation_loss_metric)
 
             # Do all the things required at the end of epochs including saving the checkpoints
+
+            # images=training_batch['image']
+            # from lime import lime_image
+            # explainer = lime_image.LimeImageExplainer()
+            # explanation = explainer.explain_instance(
+            #     images[0].astype('double'),
+            #     model.predict_nn_output(is_training=True),
+            #     top_labels=5,
+            #     hide_color=0,
+            #     num_samples=1)
+            # temp, mask = explanation.get_image_and_mask(
+            #     explanation.top_labels[0],
+            #     positive_only=True,
+            #     num_features=5,
+            #     hide_rest=True)
+            # plt.imshow(skimage.segmentation.mark_boundaries(temp / 2 + 0.5, mask))
+            # # Select the same class explained on the figures above.
+            # ind = explanation.top_labels[0]
+            # # Map each explanation weight to the corresponding superpixel
+            # dict_heatmap = dict(explanation.local_exp[ind])
+            # heatmap = np.vectorize(dict_heatmap.get)(explanation.segments)
+            # # Plot. The visualization makes more sense if a symmetrical colorbar is used.
+            # plt.imshow(heatmap, cmap='RdBu', vmin=-heatmap.max(), vmax=heatmap.max())
+            # plt.colorbar()
+            # plt.show()
             epoch_performance_training.append(training_loss_metric.result().numpy())
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation, model,

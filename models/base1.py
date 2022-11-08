@@ -4,17 +4,20 @@ from training_utils.architecture.simple_mlp import simple_mlp
 # from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from "@tensorflow/tfjs" import * as tf
 import numpy as np
+
 K = tf.keras.backend
+
+
 class BaseModel(object):
     """
     A base class for an input-output model that can be trained.
     """
-    
+
     def __init__(self, params):
         self.p = params
         self.make_architecture()
         self.make_processing_functions()
-        
+
     def make_architecture(self):
         """
         Create the NN architecture for the model.
@@ -22,7 +25,7 @@ class BaseModel(object):
         self.arch = simple_mlp(num_inputs=self.p.model.num_inputs,
                                num_outputs=self.p.model.num_outputs,
                                params=self.p.model.arch)
-    
+
     def compute_loss_function(self, raw_data, is_training=None, return_loss_components=False,
                               return_loss_components_and_output=False):
         """
@@ -30,11 +33,11 @@ class BaseModel(object):
         """
         # Create the NN inputs and labels
 
-        processed_data  = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
+        processed_data = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
         # processed_data = tf.Variable(processed_data)
 
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
-
+        print (nn_output.numpy())
         import numpy as np
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
@@ -43,26 +46,15 @@ class BaseModel(object):
         x = np.expand_dims(processed_data['Action_waypoint'][0][:, 0], axis=0)
         y = np.expand_dims(processed_data['Action_waypoint'][0][:, 1], axis=0)
         z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
-        WP=processed_data['Action_waypoint'][0]
-        LABELS=processed_data['labels']
         normal = np.array(nn_output)[0][:-1]
-        from sklearn.svm import SVC
-        clf = SVC(C=0.1, kernel='linear')
-        clf.fit(WP, LABELS[0])
-        w,b=clf.coef_, clf.intercept_
-
-        C = np.concatenate((w,np.reshape(b,(1,1))),axis=1)
-        C = np.transpose(C)
+        C = [.25, .25, 1, 0, .75]
         d = np.array(nn_output)[0][-1]
         xx, yy = np.meshgrid(range(5), range(5))
         z1 = (-normal[0] * xx - normal[1] * yy - d) / normal[2]
         # fig = plt.figure()
         ax = plt.axes(projection="3d")
-        colors = ['red', 'green']
         # ax = fig.add_subplot(111, projection='3d')
-        import matplotlib
         ax.scatter3D(x, y, z, c='red')
-        # ax.scatter3D(x, y, z, c=LABELS[0], cmap=matplotlib.colors.ListedColormap(colors))
         # plt3d = plt.figure().gca(projection='3d')
         ax.plot_surface(xx, yy, z1)
         plt.title("3D Scatter Plot")
@@ -88,9 +80,9 @@ class BaseModel(object):
             prediction_loss = tf.losses.mean_squared_error(nn_output, processed_data['labels'])
             regularization_loss1 = tf.nn.l2_loss(nn_output)
 
-            C=1 #Penalty parameter of the error term
+            C = 1  # Penalty parameter of the error term
 
-            total_loss = prediction_loss +  0.5 * regularization_loss1
+            total_loss = prediction_loss + 0.5 * regularization_loss1
         elif self.p.loss.loss_type == 'l2_loss':
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
         elif self.p.loss.loss_type == 'hinge':
@@ -123,59 +115,29 @@ class BaseModel(object):
             #     if tf.matmul(z, y1) >= 0:
             #         countT+=1
             from tensorflow.python.framework import ops
-        # with ops.name_scope(scope, "hinge_loss", (nn_output, processed_data)) as scope:
+            # with ops.name_scope(scope, "hinge_loss", (nn_output, processed_data)) as scope:
             # t=np.tile(nn_output,(data[1].shape[0],1,1))
             # data[0]=t.reshape(data[1].shape[0],224,224,3)
             # t = tf.tile(nn_output, (50, 1))
             # processed_data['Action_waypoint'] = processed_data['Action_waypoint'] / np.linalg.norm(processed_data['Action_waypoint'])
 
-            x = K.concatenate((processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))), axis=1)
-            # x = K.concatenate((processed_data['Action_waypoint'][:50], tf.ones((nn_output.shape[0], 1, 1))), axis=1)
-            # x = K.reshape(x, (50, 5))
-            # w = tf.convert_to_tensor(nn_output)
-            # w = tf.reduce_mean(nn_output, axis=0)
-            # w1 = tf.reshape(w, (5, 1))
-            predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (5,nn_output.shape[0]))),axis=0))
-            # print("nn_output:", tf.reduce_mean(nn_output, axis=0).numpy())
-            # print()
+            x = K.concatenate(
+                (processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))),
+                axis=1)
 
-            # new_predicted = np.array([-1 if i <= 1 else 1 for i in predicted])
-            # hinge_loss = np.mean([max(0, 1 - x * y) for x, y in zip(processed_data['labels'], predicted)])
-            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in zip(np.squeeze(processed_data['labels']), predicted)])
-            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in
-            #                 zip(processed_data['labels'], predicted)])
-            # hinge_loss = sum([max(0, 1 - wx * y) for wx, y in
-            #  zip(predicted, processed_data['labels'][:50])])
-            # hinge_loss =K.sum(1. - K.flatten(tf.cast(predicted, dtype=tf.float64)) * K.flatten(processed_data['labels'][:50]))
-            #tf.compat.v1.keras.losses.hinge
+            predicted = np.transpose(tf.expand_dims(K.dot(x, tf.transpose(nn_output)), axis=0))
 
-            from tensorflow.python.ops import array_ops
-            from tensorflow.python.ops import math_ops
-            from tensorflow.python.ops import nn_ops
-
-            # fake_labels= [1 ,-1,
-            #  -1, 1,
-            #  1, -1,
-            #  -1,1 ,
-            #  -1,1
-            #  -1,1
-            #  1, 1
-            #  -1, 1
-            #  1, -1,
-            #  1, -1]
-            print("predicted: " + str(predicted))
             logits = math_ops.to_float(predicted)
             labels = math_ops.to_float(processed_data['labels'])
             logits.get_shape().assert_is_compatible_with(labels.get_shape())
-            all_ones = array_ops.ones_like(labels[0])
-            # print("logit: "+ str(logits))
+            all_ones = array_ops.ones_like(labels)
             losses = nn_ops.relu(
                 math_ops.subtract(all_ones, math_ops.multiply(labels, logits)))
             hinge_loss = math_ops.reduce_sum(losses)
 
-        # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
-        # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
-            prediction_loss = hinge_loss*hinge_loss
+            # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
+            # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
+            prediction_loss = hinge_loss * hinge_loss
             print(prediction_loss)
 
             # t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
@@ -193,14 +155,13 @@ class BaseModel(object):
 
             regularization_loss1 = tf.nn.l2_loss(nn_output[:-1])
 
-            C=1 #Penalty parameter of the error term
+            C = 1  # Penalty parameter of the error term
 
-            total_loss = prediction_loss +  0.5 * regularization_loss1
+            # total_loss = prediction_loss +  0.5 * regularization_loss1
             # print(total_loss)
             # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            # total_loss = C * (prediction_loss)
+            total_loss = C * (prediction_loss)
             # accuracy=countT/self.p.trainer.batch_size
-
 
         if return_loss_components_and_output:
             return regularization_loss1, prediction_loss, total_loss, nn_output
@@ -208,33 +169,33 @@ class BaseModel(object):
             return regularization_loss1, prediction_loss, total_loss
         else:
             return total_loss
-                # return regularization_loss
-    
+            # return regularization_loss
+
     def get_trainable_vars(self):
         """
         Get a list of the trainable variables of the model.
         """
         return self.arch.variables
-    
+
     def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
         Create the NN inputs and outputs from the raw data batch. All pre-processing should go here.
         """
         raise NotImplementedError
-    
+
     def predict_nn_output(self, data, is_training=None):
         """
         Predict the NN output to a given input.
         """
         assert is_training is not None
-        
+
         if is_training:
             # Use dropouts
             tf.keras.backend.set_learning_phase(1)
         else:
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)
-        
+
         return self.arch.predict_on_batch(data)
 
     def predict_nn_output_with_postprocessing(self, data, is_training=None):

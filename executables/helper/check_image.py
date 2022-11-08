@@ -14,7 +14,7 @@ Plot images from pkl file
 """
 imagez_merged=[]
 #filename = '/home/anjianl/Desktop/project/WayPtNav/data/successful_data/v2_filter_obstacle_0.25/area5a/success_v2_44k/img_data_rgb_1024_1024_3_90.00_90.00_0.01_20.00_0.22_18_10_100_80_-45_1.000/file1.pkl'
-filename = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-concatenate/sample17.pkl'
+filename = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1030-SVM1/file0.pkl'
 with open(filename, 'rb') as handle:
     data = pickle.load(handle)
     imgs_nmkd = data['image']

@@ -47,75 +47,9 @@ class VisualNavigationModelBase(BaseModel):
         if self.p.data_processing.input_processing_function is not None:
             raw_data = self.preprocess_nn_input(raw_data, is_training)
 
-        # Get the input image (n, m, k, d)
-        # batch size n x (m x k pixels) x d channels
-        # img_nmkd = raw_data['img_nmkd']
-        # raw_data['flatted']=data
         img_nmkd = raw_data['image']
         img_nmkd1=np.expand_dims(img_nmkd, axis=0)
-        # x=[]
-        # frames = np.empty( [1, 50,224,224,3])
-        #
-        # for i in range(50):
-        #     x=img_nmkd[i]
-        #     frames[:,i, :, :, :]= x
-            # y = np.expand_dims(img_nmkd, axis=0)
 
-        # ###
-
-        # X_input = Input(img_nmkd.shape())
-        #
-        # # Zero-Padding
-        # X = ZeroPadding2D((3, 3))(X_input)
-        #
-        # # Stage 1
-        # X = Conv2D(64, (7, 7), strides=(2, 2), name='conv1', kernel_initializer=glorot_uniform(seed=0))(X)
-        # X = BatchNormalization(axis=3, name='bn_conv1')(X)
-        # X = Activation('relu')(X)
-        # X = MaxPooling2D((3, 3), strides=(2, 2))(X)
-        #
-        # # Stage 2
-        # X = convolutional_block(X, f=3, filters=[64, 64, 256], stage=2, block='a', s=1)
-        # X = identity_block(X, 3, [64, 64, 256], stage=2, block='b')
-        # X = identity_block(X, 3, [64, 64, 256], stage=2, block='c')
-        #
-        # ### START CODE HERE ###
-        #
-        # # Stage 3 (≈4 lines)
-        # X = convolutional_block(X, f=3, filters=[128, 128, 512], stage=3, block='a', s=2)
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='b')
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='c')
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='d')
-        #
-        # # Stage 4 (≈6 lines)
-        # X = convolutional_block(X, f=3, filters=[256, 256, 1024], stage=4, block='a', s=2)
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='b')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='c')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='d')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='e')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='f')
-        #
-        # # Stage 5 (≈3 lines)
-        # X = convolutional_block(X, f=3, filters=[512, 512, 2048], stage=5, block='a', s=2)
-        # X = identity_block(X, 3, [512, 512, 2048], stage=5, block='b')
-        # X = identity_block(X, 3, [512, 512, 2048], stage=5, block='c')
-        #
-        # # AVGPOOL (≈1 line). Use "X = AveragePooling2D(...)(X)"
-        # X = AveragePooling2D((2, 2), name="avg_pool")(X)
-
-
-
-        # output layer
-        # X = Flatten()(X)
-        # # X = Dense(classes, activation='softmax', name='fc' + str(classes), kernel_initializer=glorot_uniform(seed=0))(X)
-        #
-        # raw_data['flatted']=X
-
-        ###
-### END CODE HERE ###
-        # Concatenate the goal position in an egocentric frame with vehicle's speed information
-        # goal_position = self._goal_position(raw_data)
-        # vehicle_controls = self._vehicle_controls(raw_data)
         waypointAction = raw_data['waypointAction']
 
         waypointAction1 = np.expand_dims(waypointAction, axis=0)
@@ -192,77 +126,15 @@ class VisualNavigationModelBase(BaseModel):
         if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:
             from training_utils.data_processing.normalize_images import rgb_normalize
             raw_data = rgb_normalize(raw_data)
-            
+
         if self.p.data_processing.input_processing_function in \
                 ['resnet50_keras_preprocessing', 'resnet50_keras_preprocessing_and_distortion']:
             # raw_data['img_nmkd'] = tf.keras.applications.resnet50.preprocess_input(raw_data['img_nmkd'], mode='caffe')
             raw_data['image'] = tf.keras.applications.resnet50.preprocess_input(raw_data['image'], mode='caffe')
             # raw_data['image'] = np.squeeze(raw_data['image'])
 
-        # Normalize images if required
-        if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:
-            from training_utils.data_processing.normalize_images import rgb_normalize
-            raw_data = rgb_normalize(raw_data)
-
-        if self.p.data_processing.input_processing_function in \
-                ['resnet50_keras_preprocessing', 'resnet50_keras_preprocessing_and_distortion']:
-            raw_data['image'] = tf.keras.applications.resnet50.preprocess_input(raw_data['image'], mode='caffe')
 
         return raw_data
 
 
-#Tara
-        # ###
-        # # tf.compat.v1.disable_eager_execution()
-        # img_rows = raw_data['image'].shape[0]
-        # img_cols = raw_data['image'].shape[1]
-        # Input_shape = (img_rows, img_cols, 3)
-        # X_input = Input(Input_shape)
-        # print(X_input)
-        # # X_input=raw_data['image']
-        # # Zero-Padding
-        # X = ZeroPadding2D((3, 3))(X_input)
-        #
-        # # Stage 1
-        # X = Conv2D(64, (7, 7), strides=(2, 2), name='conv1', kernel_initializer=glorot_uniform(seed=0))(X)
-        # X = BatchNormalization(axis=3, name='bn_conv1')(X)
-        # X = Activation('relu')(X)
-        # X = MaxPooling2D((3, 3), strides=(2, 2))(X)
-        #
-        # # Stage 2
-        # X = convolutional_block(X, f=3, filters=[64, 64, 256], stage=2, block='a', s=1)
-        # X = identity_block(X, 3, [64, 64, 256], stage=2, block='b')
-        # X = identity_block(X, 3, [64, 64, 256], stage=2, block='c')
-        #
-        # ### START CODE HERE ###
-        #
-        # # Stage 3 (≈4 lines)
-        # X = convolutional_block(X, f=3, filters=[128, 128, 512], stage=3, block='a', s=2)
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='b')
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='c')
-        # X = identity_block(X, 3, [128, 128, 512], stage=3, block='d')
-        #
-        # # Stage 4 (≈6 lines)
-        # X = convolutional_block(X, f=3, filters=[256, 256, 1024], stage=4, block='a', s=2)
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='b')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='c')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='d')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='e')
-        # X = identity_block(X, 3, [256, 256, 1024], stage=4, block='f')
-        #
-        # # Stage 5 (≈3 lines)
-        # X = convolutional_block(X, f=3, filters=[512, 512, 2048], stage=5, block='a', s=2)
-        # X = identity_block(X, 3, [512, 512, 2048], stage=5, block='b')
-        # X = identity_block(X, 3, [512, 512, 2048], stage=5, block='c')
-        #
-        # # AVGPOOL (≈1 line). Use "X = AveragePooling2D(...)(X)"
-        # # X = AveragePooling2D((2, 2), name="avg_pool")(X)
-        # X = GlobalMaxPooling2D()(X)
-        # ### END CODE HERE ###
-        #
-        # # output layer
-        # # X = Flatten()(X)
-        # # data={}
-        # raw_data['flattened']=X
         # return raw_data
-        return raw_data

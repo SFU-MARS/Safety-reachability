@@ -87,7 +87,17 @@ class DataSource(object):
         assert self.validation_dataset is not None
         self.training_dataset = self.shuffle_data_dictionary(self.training_dataset)
         self.validation_dataset = self.shuffle_data_dictionary(self.validation_dataset)
-    
+
+    # def shuffle_data_dictionary1(self, data_dictionary):
+    #     """
+    #     Shuffle a dictionary of the data.
+    #     """
+    #     num_samples = np.shape(data_dictionary[self.data_tags[0]])[0]
+    #     shuffle_order = [2, 0, 3, 1]
+    #     for data_tag in self.data_tags:
+    #         data_dictionary[data_tag] = data_dictionary[data_tag][shuffle_order]
+    #     return data_dictionary
+
     def shuffle_data_dictionary(self, data_dictionary):
         """
         Shuffle a dictionary of the data.

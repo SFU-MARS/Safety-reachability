@@ -15,7 +15,7 @@ dictionary1=[]
 dict_list=[]
 num_sample_each_file=60
 
-data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1018'
+data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1107-SVM4'
 data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
 databig={}
 keys=[]

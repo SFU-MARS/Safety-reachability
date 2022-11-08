@@ -268,6 +268,16 @@ class Simulator(SimulatorHelper):
 
         f=1
 
+        # fake_labels= [1 ,-1,
+        #  -1, 1,
+        #  1, -1,
+        #  -1,1 ,
+        #  -1,1
+        #  -1,1
+        #  1, 1
+        #  -1, 1
+        #  1, -1,
+        #  1, -1]
 
         # actions_waypoints=[[ f * i for i in inner ] for inner in actions_waypoints]
 
@@ -574,14 +584,15 @@ class Simulator(SimulatorHelper):
 
                             start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
                             waypointAction.append(np.array(construc_point_local))
-                            image=rgb_image_1mk3
+                            image.append(rgb_image_1mk3)
 
                         #endif
 
                     # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
         dataForAnImage={'start_pose':np.array(start_pose),
-                    'image': np.array(image),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+                    'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+
         count1=self.labels.count(1)
         count0=self.labels.count(-1)
 
