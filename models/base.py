@@ -34,7 +34,7 @@ class BaseModel(object):
         # processed_data = tf.Variable(processed_data)
 
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
-
+        print("nn_output: "+str(nn_output.numpy()))
         import numpy as np
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D

@@ -102,7 +102,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     model1.add(layers.ZeroPadding2D(padding=(2, 2)))
     model1.add(layers.ZeroPadding2D(padding=(1, 1)))
-    model1.summary()
+    # model1.summary()
 
     for layer in resnet50.layers[:-1]:
     # for layer in model.layers[:-15]:
@@ -115,7 +115,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     model1.build(input_shape=(224,224,180))
 
-    model1.summary()
+    # model1.summary()
     # model1.compile(optimizer='adam')
 
     # model1.add(layers.MaxPooling2D(2, 2))
@@ -127,7 +127,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     model3.add(layers.Dense(20))
     model3.add(layers.Dense(2))
     model3.build(input_shape=(120,))
-    model3.summary()
+    # model3.summary()
 
 
     input_image1 = layers.Input(shape=(224, 224, 180), dtype=dtype)
