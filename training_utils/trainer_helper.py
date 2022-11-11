@@ -50,10 +50,8 @@ class TrainerHelper(object):
 
             # For loop over the training samples
             for j in range(0, num_training_samples, self.p.batch_size):
-                training_batch1 = {}
-                validation_batch1 = {}
-                # Get a training and a validation batch
 
+                # Get a training and a validation batch
 
                 training_batch = data_source.generate_training_batch(j)
                 # plt.imshow(training_batch['image'][0].astype(np.int32))
@@ -121,7 +119,9 @@ class TrainerHelper(object):
             # plt.colorbar()
             # plt.show()
             epoch_performance_training.append(training_loss_metric.result().numpy())
+            print("performance_training: "+ str(epoch_performance_training))
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
+            print("performance_validation: "+ str(epoch_performance_validation))
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation, model,
                                          callback_fn)
             
@@ -185,6 +185,7 @@ class TrainerHelper(object):
         regn_loss_validation, prediction_loss_validation, _ = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric(prediction_loss_training)
+        # print(training_loss_metric)
         validation_loss_metric(prediction_loss_validation)
 
     def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation, model,
@@ -218,6 +219,7 @@ class TrainerHelper(object):
             # No adjustment is necessary
             return
         elif self.p.learning_schedule == 2:
+            # self.lr.assign(1/(epoch+1000))
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
                 self.lr.assign(self.lr * self.p.lr_decay_factor)

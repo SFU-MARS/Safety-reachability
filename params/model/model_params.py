@@ -17,7 +17,7 @@ def create_params():
 
                  # Number of the outputs to the model
                  # num_outputs=3,  # (x, y, theta) waypoint
-                 num_outputs= 4,
+                 num_outputs= 5,
                  # Occupancy grid discretization
                  occupancy_grid_dx=[0.05, 0.05],
                  

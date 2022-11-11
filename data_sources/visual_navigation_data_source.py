@@ -87,7 +87,7 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
-            fake_labels= [ [-1,-1,-1, 1,1,1 ],[-1,-1,-1, -1,1,1 ],[-1,-1,-1, -1,1,1 ] , [-1,-1,-1, 1,1,1 ] ]
+            fake_labels= [ [-1,-1,-1, -1,-1,1 ],[-1,-1,-1, 1,1,-1 ],[-1,-1,-1, 1,1,-1 ] , [-1,-1,-1, -1,-1,1 ] ]
             for labels in fake_labels:
             # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
                 simulator.reset()
@@ -114,7 +114,7 @@ class VisualNavigationDataSource(ImageDataSource):
                 # else:
                 # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-                here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1107-SVM4-2'
+                here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1110-SVM4-2'
                 # here = os.path.dirname(os.path.abspath(__file__))
                 file_name = 'file' + str(self.episode_counter) + '.pkl'
 

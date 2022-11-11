@@ -38,45 +38,94 @@ class BaseModel(object):
         import numpy as np
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure()
-        import numpy as np
-        x = np.expand_dims(processed_data['Action_waypoint'][0][:, 0], axis=0)
-        y = np.expand_dims(processed_data['Action_waypoint'][0][:, 1], axis=0)
-        z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
-        WP=processed_data['Action_waypoint'][0]
-        LABELS=processed_data['labels']
-        normal = np.array(nn_output)[0][:-1]
-        from sklearn.svm import SVC
-        clf = SVC(C=0.1, kernel='linear')
-        clf.fit(WP, LABELS[0])
-        w,b=clf.coef_, clf.intercept_
-
-        C = np.concatenate((w,np.reshape(b,(1,1))),axis=1)
-        C = np.transpose(C)
-        d = np.array(nn_output)[0][-1]
-        xx, yy = np.meshgrid(range(5), range(5))
-        z1 = (-normal[0] * xx - normal[1] * yy - d) / normal[2]
         # fig = plt.figure()
-        ax = plt.axes(projection="3d")
-        colors = ['red', 'green']
-        # ax = fig.add_subplot(111, projection='3d')
-        import matplotlib
-        ax.scatter3D(x, y, z, c='red')
-        # ax.scatter3D(x, y, z, c=LABELS[0], cmap=matplotlib.colors.ListedColormap(colors))
-        # plt3d = plt.figure().gca(projection='3d')
-        ax.plot_surface(xx, yy, z1)
-        plt.title("3D Scatter Plot")
-        d1 = C[-1]
-        z2 = (-C[0] * xx - C[1] * yy - d1) / C[2]
-        ax.plot_surface(xx, yy, z2)
 
-        ax.set_xlabel('X Label')
-        ax.set_ylabel('Y Label')
-        ax.set_zlabel('Z Label')
+        ###
+        # import numpy as np
 
+        # x = np.expand_dims(processed_data['Action_waypoint'][0][:, 0], axis=0)
+        # y = np.expand_dims(processed_data['Action_waypoint'][0][:, 1], axis=0)
+        # y = processed_data['Action_waypoint'][0][:, 1]
+        # z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
+        # WP=processed_data['Action_waypoint'][0]
+        # LABELS=processed_data['labels']
+        # normal = np.array(nn_output)[0][:-1]
+        # from sklearn.svm import SVC
+        # clf = SVC(C=1e5, kernel='linear')
+        # clf.fit(WP, LABELS[0])
+        # w,b = clf.coef_, clf.intercept_
+        # # x_points = np.linspace(-1, 1)  # generating x-points from -1 to 1
+        # # y_points = -(w[0] / w[1]) * x_points - b / w[1]  # getting
+        # # plt.plot(x_points, y_points, c='r')
+        #
+        # C = np.concatenate((w,np.reshape(b,(1,1))),axis=1)
+        # # C = np.concatenate((w, np.reshape(b, (1))), axis=0)
+        # C = np.transpose(C)
+        # d = np.array(nn_output)[0][-1]
+        #
+        #
+        # # b=np.array(nn_output)[0][-1]
+        # xx, yy = np.meshgrid(range(5), range(5))
+        # # y_points1 = -(C[0] / C[1]) * x_points - b / C[1]
+        # z0 = (-normal[0] * xx - normal[1] * yy - d) / normal[2]
+        # # fig = plt.figure()
+        # ax1 = plt.axes(projection="3d")
+        # ax1.grid(True)
+        #
+        # colors = ['red', 'green']
+        # # ax = fig.add_subplot(111, projection='3d')
+        # import matplotlib
+        # ax1.scatter3D(x, y, z, c='red')
+        # # ax.scatter2D(x, y, c='red')
+        # # ax.scatter3D(x, y, z, c=LABELS[0], cmap=matplotlib.colors.ListedColormap(colors))
+        # # plt3d = plt.figure().gca(projection='3d')
+        # # plt.plot(x_points, y_points1, c='b')
+        #
+        # ax1.plot_surface(xx, yy, z0)
+        # plt.title("nn vs correct for first")
+        # d0 = C[-1]
+        # zc1 = (-C[0] * xx - C[1] * yy - d0) / C[2]
+        # ax1.plot_surface(xx, yy, zc1)
+        #
+        # for spine in ax1.spines.values():
+        #     spine.set_visible(False)
+        #
         # plt.show()
-        # plt3d.plot_surface(xx, yy, z1)
-        plt.savefig("demo2.png")
+        #
+        # normal1 = np.array(nn_output)[1][:-1]
+        # d1 = np.array(nn_output)[1][-1]
+        # z1 = (-normal1[0] * xx - normal1[1] * yy - d1) / normal1[2]
+        # ax2 = plt.axes(projection="3d")
+        # # fig = plt.figure()
+        # ax2.grid(True)
+        # # ax.scatter3D(x, y, z, c=LABELS[0], cmap=matplotlib.colors.ListedColormap(colors))
+        # # plt3d = plt.figure().gca(projection='3d')
+        # ax2.plot_surface(xx, yy, z1)
+        #
+        # from sklearn.svm import SVC
+        # clf = SVC(C=1e5, kernel='linear')
+        # clf.fit(WP, LABELS[1])
+        # w1,b1=clf.coef_, clf.intercept_
+        # C1 = np.concatenate((w1,np.reshape(b1,(1,1))),axis=1)
+        # C1 = np.transpose(C1)
+        # zc2 = (-C1[0] * xx - C1[1] * yy - d1) / C1[2]
+        # ax1.plot_surface(xx, yy, zc2)
+        #
+        # ax2.set_xlabel('X Label')
+        # ax2.set_ylabel('Y Label')
+        # ax2.set_zlabel('Z Label')
+        # plt.title("nn vs correct for second")
+        # # The fix
+        # for spine in ax2.spines.values():
+        #     spine.set_visible(False)
+        #
+        #
+        # # plt.tight_layout()
+        # plt.show()
+        # # plt3d.plot_surface(xx, yy, z1)
+        # plt.savefig("demo2.png")
+
+        ###
 
         # regularization_loss = 0.
         # model_variables = self.get_trainable_vars()
@@ -135,7 +184,12 @@ class BaseModel(object):
             # w = tf.convert_to_tensor(nn_output)
             # w = tf.reduce_mean(nn_output, axis=0)
             # w1 = tf.reshape(w, (5, 1))
+            labels1 = tf.cast(processed_data['labels'], dtype=tf.int32)
+            category_indices = labels1
+            unique_category_count = 2
+            y_input = tf.one_hot(category_indices, unique_category_count)
             predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (5,nn_output.shape[0]))),axis=0))
+
             # print("nn_output:", tf.reduce_mean(nn_output, axis=0).numpy())
             # print()
 
@@ -153,29 +207,47 @@ class BaseModel(object):
             from tensorflow.python.ops import math_ops
             from tensorflow.python.ops import nn_ops
 
-            # fake_labels= [1 ,-1,
-            #  -1, 1,
-            #  1, -1,
-            #  -1,1 ,
-            #  -1,1
-            #  -1,1
-            #  1, 1
-            #  -1, 1
-            #  1, -1,
-            #  1, -1]
+
             print("predicted: " + str(predicted))
             logits = math_ops.to_float(predicted)
-            labels = math_ops.to_float(processed_data['labels'])
-            logits.get_shape().assert_is_compatible_with(labels.get_shape())
+
+            batch_size=2
+            num_classes=2
+
+            output = tf.identity(tf.sign(predicted), name="prediction")
+            regularization_loss = tf.reduce_mean(tf.square(nn_output))
+            hinge_loss = tf.reduce_mean(
+                tf.square(
+                    tf.maximum(
+                        tf.zeros([batch_size, num_classes]), 1 - y_input * output
+                    )
+                )
+            )
+            penalty_parameter=1
+            loss = regularization_loss + penalty_parameter * hinge_loss
+            # logits.get_shape().assert_is_compatible_with(labels.get_shape())
+
+
+            correct_prediction = tf.equal(
+                tf.argmax(output, 1), tf.argmax(y_input, 1)
+            )
+
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            print ("accuracy: "+str(accuracy))
+
             all_ones = array_ops.ones_like(labels[0])
             # print("logit: "+ str(logits))
             losses = nn_ops.relu(
                 math_ops.subtract(all_ones, math_ops.multiply(labels, logits)))
+            cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=(labels+1)/2, logits=logits)
             hinge_loss = math_ops.reduce_sum(losses)
 
         # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
         # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
-            prediction_loss = hinge_loss*hinge_loss
+
+            C1=1
+            prediction_loss = C1* hinge_loss #+ cross_entropy_loss
             print(prediction_loss)
 
             # t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
@@ -193,12 +265,12 @@ class BaseModel(object):
 
             regularization_loss1 = tf.nn.l2_loss(nn_output[:-1])
 
-            C=1 #Penalty parameter of the error term
+            C=.1 #Penalty parameter of the error term
 
-            total_loss = prediction_loss +  0.5 * regularization_loss1
+            # total_loss = C* prediction_loss +  0.5 * regularization_loss1
             # print(total_loss)
             # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            # total_loss = C * (prediction_loss)
+            total_loss = C * (prediction_loss)
             # accuracy=countT/self.p.trainer.batch_size
 
 

@@ -56,10 +56,11 @@ def create_params(simulator_params):
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
+                        # optimizer=tf.keras.optimizers.SGD,
         
                         # Learning rate
                         lr=1e-4,
-                        
+                        # lr=1e-3,
                         # Learning schedule
                         learning_schedule=1,
         

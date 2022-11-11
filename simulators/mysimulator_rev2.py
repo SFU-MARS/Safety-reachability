@@ -266,8 +266,10 @@ class Simulator(SimulatorHelper):
         #                      [.5, 0, 0.1],        [.5, 0, -0.1],
         #                      [.55, 0.1, 0.05],    [.55, -0.1, -0.05]]
 
-        actions_waypoints = [[3,4,2],[1,4,2],[2,3,2] ,
-        [6,-1,1],[7,-1,1],[5,-3,1]]
+        # actions_waypoints = [[3,4,2],[1,4,2],[2,3,1] ,
+        # [6,-1,1],[7,-1,2],[5,-3,1]]
+        actions_waypoints = [[3, 4, 1], [1, 4, 1], [2, 3, 1],
+                             [6, -1, .5], [7, -1, .5], [5, -3, .5]]
         actions_waypoints = np.array(actions_waypoints)
 
         f=1
@@ -329,8 +331,8 @@ class Simulator(SimulatorHelper):
             # if 0 < target_state[0] < self.obstacle_map.map_bounds[1][0] and 0 < target_state[1] < self.obstacle_map.map_bounds[1][1]:
 
             count += 1
-            target_state[2]= xf[2] + config.heading_nk1()[0][0][0]
-            target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
+            # target_state[2]= xf[2] + config.heading_nk1()[0][0][0]
+            # target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
 
             # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
             # speedf = np.random.uniform(low=0, high=0.6, size=(1,))
@@ -348,6 +350,7 @@ class Simulator(SimulatorHelper):
                 # goal_state_local[2] = np.arctan2(np.sin(goal_state_local[2]), np.cos(goal_state_local[2]))
                 # goal_state_local = np.concatenate((goal_state_local, [goal_state[3]]))
                 goal_state_local=np.concatenate((xf,np.array(vf1)),axis=0)
+                # goal_state_local = xf
 
                 num_sample_generated += 1
 
