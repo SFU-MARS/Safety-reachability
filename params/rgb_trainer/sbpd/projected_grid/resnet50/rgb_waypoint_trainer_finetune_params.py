@@ -73,7 +73,7 @@ def create_params():
 
     # Change the learning rate and num_samples
     # p.trainer.lr = 1e-3
-    p.trainer.lr = 1e-6
+    p.trainer.lr = 1e-3
     # p.trainer.batch_size = 1#48 original, changed after error 36
     p.trainer.batch_size = 2 #60
     #
