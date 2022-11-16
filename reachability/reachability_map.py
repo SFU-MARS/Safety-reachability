@@ -2,7 +2,7 @@ import numpy as np
 import skfmm
 import os
 import scipy.io as sio
-# import matlab.engine
+import matlab.engine
 import copy
 import tensorflow as tf
 import time

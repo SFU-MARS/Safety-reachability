@@ -184,12 +184,34 @@ class BaseModel(object):
             # w = tf.convert_to_tensor(nn_output)
             # w = tf.reduce_mean(nn_output, axis=0)
             # w1 = tf.reshape(w, (5, 1))
-            labels1 = tf.cast(processed_data['labels'], dtype=tf.int32)
-            category_indices = labels1
-            unique_category_count = 2
-            y_input = tf.one_hot(category_indices, unique_category_count)
-            predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (5,nn_output.shape[0]))),axis=0))
+            labels1=[]
+            labels2 = []
+            labels = processed_data['labels']
+            labels1 = labels.tolist()
+            for label in labels1:
+                for l in label:
+                    print (l)
+                    if l==[1]:
+                        l=[1, -1]
 
+                    else:
+                        l = [-1, 1]
+
+                    labels2.append(l)
+            # labels1[labels1 == -1] = [1, -1]
+            # labels1[labels1 == [1]] = [-1, 1]
+
+            # labels1 = tf.cast(processed_data['labels'], dtype=tf.int32)
+            # category_indices = labels1
+            # unique_category_count = 2
+            # y_input = tf.one_hot(category_indices, unique_category_count)
+            y_input = np.reshape(np.array(labels2), (2,6,2))
+            # nn_output = tf.tile(nn_output, (2,1,1))
+            predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (5,nn_output.shape[0]))),axis=0))
+            # predicted = K.dot(x, tf.reshape(nn_output, (5, nn_output.shape[0])))
+            # predicted = tf.transpose(predicted)
+            num_classes = 2
+            # predicted1 = tf.tile(tf.expand_dims(predicted, axis=2),  (1,1,2))
             # print("nn_output:", tf.reduce_mean(nn_output, axis=0).numpy())
             # print()
 
@@ -214,33 +236,36 @@ class BaseModel(object):
             batch_size=2
             num_classes=2
 
-            output = tf.identity(tf.sign(predicted), name="prediction")
+            # output = tf.identity(tf.one_hot(tf.sign(tf.cast(processed_data['labels'], dtype=tf.int32)),2))
+
+
             regularization_loss = tf.reduce_mean(tf.square(nn_output))
-            hinge_loss = tf.reduce_mean(
-                tf.square(
-                    tf.maximum(
-                        tf.zeros([batch_size, num_classes]), 1 - y_input * output
-                    )
-                )
-            )
-            penalty_parameter=1
-            loss = regularization_loss + penalty_parameter * hinge_loss
-            # logits.get_shape().assert_is_compatible_with(labels.get_shape())
+            # output = tf.tile(nn_output, (num_classes,1,1))
+            # hinge_loss = tf.reduce_mean(
+            #     tf.square(
+            #         tf.maximum(
+            #             0., 1 - y_input * predicted1
+            #         )
+            #     )
+            # )
+            # penalty_parameter=1
+            # loss = regularization_loss + penalty_parameter * hinge_loss
+            # # logits.get_shape().assert_is_compatible_with(labels.get_shape())
+            #
+            # output = tf.identity(tf.sign(predicted1))
+            # correct_prediction = tf.equal(
+            #     tf.argmax(output, 2), tf.argmax(y_input, 2)
+            # )
+            #
+            # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            # print ("accuracy: "+str(accuracy))
 
-
-            correct_prediction = tf.equal(
-                tf.argmax(output, 1), tf.argmax(y_input, 1)
-            )
-
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            print ("accuracy: "+str(accuracy))
-
-            all_ones = array_ops.ones_like(labels[0])
+            all_ones = array_ops.ones_like(labels,dtype=tf.float32 )
             # print("logit: "+ str(logits))
             losses = nn_ops.relu(
                 math_ops.subtract(all_ones, math_ops.multiply(labels, logits)))
-            cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=(labels+1)/2, logits=logits)
+            # cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            #     labels=(labels+1)/2, logits=logits)
             hinge_loss = math_ops.reduce_sum(losses)
 
         # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))

@@ -83,11 +83,12 @@ class VisualNavigationDataSource(ImageDataSource):
         d2 = {}
         self.num_episode = 4
         self.episode_counter = 0
+        listofdict=[]
         while self.episode_counter<self.num_episode:
 
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
-            fake_labels= [ [-1,-1,-1, -1,-1,1 ],[-1,-1,-1, 1,1,-1 ],[-1,-1,-1, 1,1,-1 ] , [-1,-1,-1, -1,-1,1 ] ]
+            fake_labels= [ [-1,-1,-1, 1,1,1 ],[-1,-1,-1, 1,1,1 ] , [-1,-1,1, 1,1,1 ],[-1,-1,1, 1,1,1 ]  ]
             for labels in fake_labels:
             # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
                 simulator.reset()
@@ -96,8 +97,13 @@ class VisualNavigationDataSource(ImageDataSource):
                 # its corresponding image
                 dataForAnImage = simulator.simulate()
 
-
+                self.episode_counter +=1
                 dataForAnImage['labels']= np.expand_dims(np.reshape(np.array(labels), (6,1)),axis=0)
+
+
+                listofdict.append(dataForAnImage)
+
+
 
                 # if self.episode_counter%4!=0:
                 #
@@ -114,14 +120,33 @@ class VisualNavigationDataSource(ImageDataSource):
                 # else:
                 # print("The episode", self.episode_counter, "takes time", "elapsed")
 
-                here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1110-SVM4-2'
-                # here = os.path.dirname(os.path.abspath(__file__))
-                file_name = 'file' + str(self.episode_counter) + '.pkl'
+## writing multiple dictionaries in two files fro train and test
+                if self.episode_counter %2 == 0: # % number of datapoint in each file
 
-                with open(os.path.join(here, file_name), "wb") as f:
-                    pickle.dump(dataForAnImage, f)
-                    # pickle.dump(dd, f)
-                    # dd={}
+                    from collections import defaultdict
+
+                    dataForImages = defaultdict(list)
+                    dataForImages1 = defaultdict(list)
+
+                    for d in listofdict:
+                        for k, v in d.items():
+                            dataForImages[k].append(v)
+                            dataForImages1[k] = np.concatenate(dataForImages[k])
+
+
+
+
+                        # dataForImages = np.concatenate(listofdict)
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-easy'
+                    # here = os.path.dirname(os.path.abspath(__file__))
+                    file_name = 'file' + str(self.episode_counter) + '.pkl'
+
+                    with open(os.path.join(here, file_name), "wb") as f:
+                        pickle.dump(dataForImages1, f)
+                        # pickle.dump(dd, f)
+                        # dd={}
+                        listofdict=[]
+
 
 
         # Ensure that the episode simulated is valid
@@ -130,13 +155,13 @@ class VisualNavigationDataSource(ImageDataSource):
             # self.append_data_to_dictionary(dataForAnImage, simulator)
             # self.episode_counter += 1
 
-                end = time.time()
-                elapsed = end - start
+        end = time.time()
+        elapsed = end - start
 
-                # if (self.episode_counter == 257):
-                #     continue
-                print("The episode", self.episode_counter, "takes time", elapsed)
-                self.episode_counter += 1
+        # if (self.episode_counter == 257):
+        #     continue
+        print("The episode", self.episode_counter, "takes time", elapsed)
+        # self.episode_counter += 1
 
         # # Prepare the dictionary for saving purposes
         # self.prepare_and_save_the_data_dictionary(dataForAnImage, counter)
