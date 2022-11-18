@@ -127,11 +127,11 @@ class BaseModel(object):
 
         ###
 
-        # regularization_loss = 0.
-        # model_variables = self.get_trainable_vars()
-        # for model_variable in model_variables:
-        #     regularization_loss += tf.nn.l2_loss(model_variable)
-        # regularization_loss = self.p.loss.regn * regularization_loss
+        regularization_loss = 0.
+        model_variables = self.get_trainable_vars()
+        for model_variable in model_variables:
+            regularization_loss += tf.nn.l2_loss(model_variable)
+        regularization_loss = self.p.loss.regn * regularization_loss
         # processed_data['labels']=np.tile([.25,.25,0,0,.75], (6,1))
         if self.p.loss.loss_type == 'mse':
             prediction_loss = tf.losses.mean_squared_error(nn_output, processed_data['labels'])
@@ -205,7 +205,7 @@ class BaseModel(object):
             # category_indices = labels1
             # unique_category_count = 2
             # y_input = tf.one_hot(category_indices, unique_category_count)
-            y_input = np.reshape(np.array(labels2), (2,6,2))
+            # y_input = np.reshape(np.array(labels2), (nn_output.shape[0],6,2))
             # nn_output = tf.tile(nn_output, (2,1,1))
             predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (5,nn_output.shape[0]))),axis=0))
             # predicted = K.dot(x, tf.reshape(nn_output, (5, nn_output.shape[0])))
@@ -239,7 +239,7 @@ class BaseModel(object):
             # output = tf.identity(tf.one_hot(tf.sign(tf.cast(processed_data['labels'], dtype=tf.int32)),2))
 
 
-            regularization_loss = tf.reduce_mean(tf.square(nn_output))
+            # regularization_loss = tf.reduce_mean(tf.square(nn_output))
             # output = tf.tile(nn_output, (num_classes,1,1))
             # hinge_loss = tf.reduce_mean(
             #     tf.square(
@@ -290,19 +290,19 @@ class BaseModel(object):
 
             regularization_loss1 = tf.nn.l2_loss(nn_output[:-1])
 
-            C=.1 #Penalty parameter of the error term
-
-            # total_loss = C* prediction_loss +  0.5 * regularization_loss1
+            C=1 #Penalty parameter of the error term
+            total_loss = C * prediction_loss + regularization_loss + 1/2 * regularization_loss1
+            # total_loss = C* prediction_loss +  1/2 * regularization_loss1
             # print(total_loss)
             # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            total_loss = C * (prediction_loss)
+            # total_loss = C * (prediction_loss)
             # accuracy=countT/self.p.trainer.batch_size
 
 
         if return_loss_components_and_output:
-            return regularization_loss1, prediction_loss, total_loss, nn_output
+            return regularization_loss, prediction_loss, total_loss, nn_output
         elif return_loss_components:
-            return regularization_loss1, prediction_loss, total_loss
+            return regularization_loss, prediction_loss, total_loss
         else:
             return total_loss
                 # return regularization_loss

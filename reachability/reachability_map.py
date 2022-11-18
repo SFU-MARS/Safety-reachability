@@ -417,7 +417,7 @@ class ReachabilityMap(object):
         Compute avoid TTR map. Several "threads" are available
 
         """
-
+        print("--new TTC? ")
         # Set up matlab engine
         self.eng = matlab.engine.start_matlab()
         self.eng.workspace['MATLAB_PATH'] = self.p.MATLAB_PATH
@@ -456,7 +456,7 @@ class ReachabilityMap(object):
         self.start_pos_2d = start_position_n2[0]
         self.goal_pos_2d = goal_positions_n2[0]
 
-        self._reset_variables(update_reach_avoid_4d=True, update_avoid_4d_whole=True)
+        self._reset_variables(update_reach_avoid_4d=False, update_avoid_4d_whole=True)
         # self._compute_reachability_map()
 
     @staticmethod

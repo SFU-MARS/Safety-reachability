@@ -81,87 +81,125 @@ class VisualNavigationDataSource(ImageDataSource):
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
         d2 = {}
-        self.num_episode = 4
+        self.num_episode = 1200
         self.episode_counter = 0
-        listofdict=[]
+        listofdict0=[]
+        listofdict1 = []
         while self.episode_counter<self.num_episode:
 
         # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
             start = time.time()
             fake_labels= [ [-1,-1,-1, 1,1,1 ],[-1,-1,-1, 1,1,1 ] , [-1,-1,1, 1,1,1 ],[-1,-1,1, 1,1,1 ]  ]
-            for labels in fake_labels:
-            # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
-                simulator.reset()
-                # Run the planner for one step
-                # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
-                # its corresponding image
-                dataForAnImage = simulator.simulate()
+            # for labels in fake_labels:
+        # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
+            simulator.reset()
+            # Run the planner for one step
+            # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
+            # its corresponding image
+            dataForAnImage = simulator.simulate()
 
-                self.episode_counter +=1
-                dataForAnImage['labels']= np.expand_dims(np.reshape(np.array(labels), (6,1)),axis=0)
+            self.episode_counter +=1
+
+            if self.episode_counter <= 600 :
+
+                fake_label_train = [-1, -1, -1, 1, 1, 1]
+                dataForAnImage_tr=dataForAnImage
+                dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (6,1)),axis=0)
 
 
-                listofdict.append(dataForAnImage)
+                listofdict0.append(dataForAnImage_tr)
 
-
-
-                # if self.episode_counter%4!=0:
-                #
-                #
-                #     d1 = dataForAnImage
-                #
-                #     dd = defaultdict(list)
-                #
-                #     for d in (d1, d2):  # you can list as many input dicts as you want here
-                #         for key, value in d.items():
-                #             dd[key].append(value)
-                #     d2=dd
-                #
-                # else:
-                # print("The episode", self.episode_counter, "takes time", "elapsed")
-
-## writing multiple dictionaries in two files fro train and test
-                if self.episode_counter %2 == 0: # % number of datapoint in each file
+                if self.episode_counter == 600:
 
                     from collections import defaultdict
 
-                    dataForImages = defaultdict(list)
-                    dataForImages1 = defaultdict(list)
+                    dataForImages_t = defaultdict(list)
+                    dataForImages1_t = defaultdict(list)
 
-                    for d in listofdict:
+
+                    for d in listofdict0:
                         for k, v in d.items():
-                            dataForImages[k].append(v)
-                            dataForImages1[k] = np.concatenate(dataForImages[k])
+                            dataForImages_t[k].append(v)
+                            dataForImages1_t[k] = np.concatenate(dataForImages_t[k])
+
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1117-600'
+
+                    # here = os.path.dirname(os.path.abspath(__file__))
+                    file_name = 'file' + str(self.episode_counter) + '.pkl'
+
+
+                    with open(os.path.join(here, file_name), "wb") as f:
+                        pickle.dump(dataForImages1_t, f)
+
+
+            else:
+
+                fake_label_eval = [-1,-1,1, 1,1,1 ]
+                dataForAnImage_ev = dataForAnImage
+                dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (6, 1)), axis=0)
+
+                listofdict1.append(dataForAnImage_ev)
+
+
+            # if self.episode_counter%4!=0:
+            #
+            #
+            #     d1 = dataForAnImage
+            #
+            #     dd = defaultdict(list)
+            #
+            #     for d in (d1, d2):  # you can list as many input dicts as you want here
+            #         for key, value in d.items():
+            #             dd[key].append(value)
+            #     d2=dd
+            #
+            # else:
+            # print("The episode", self.episode_counter, "takes time", "elapsed")
+
+## writing multiple dictionaries in two files fro train and test
+            # if self.episode_counter %2 == 0: # % number of datapoint in each file
 
 
 
+                    # dataForImages = np.concatenate(listofdict)
 
-                        # dataForImages = np.concatenate(listofdict)
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-easy'
+                if self.episode_counter == 1200:
+
+                    from collections import defaultdict
+                    dataForImages_v = defaultdict(list)
+                    dataForImages1_v = defaultdict(list)
+
+                    for d in listofdict1:
+                        for k, v in d.items():
+                            dataForImages_v[k].append(v)
+                            dataForImages1_v[k] = np.concatenate(dataForImages_v[k])
+
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1117-600'
                     # here = os.path.dirname(os.path.abspath(__file__))
                     file_name = 'file' + str(self.episode_counter) + '.pkl'
 
                     with open(os.path.join(here, file_name), "wb") as f:
-                        pickle.dump(dataForImages1, f)
-                        # pickle.dump(dd, f)
-                        # dd={}
-                        listofdict=[]
+                        pickle.dump(dataForImages1_v, f)
+
+                    # pickle.dump(dd, f)
+                    # dd={}
 
 
 
-        # Ensure that the episode simulated is valid
-        # if simulator.valid_episode:
-            # Append the data to the current data dictionary
-            # self.append_data_to_dictionary(dataForAnImage, simulator)
-            # self.episode_counter += 1
 
-        end = time.time()
-        elapsed = end - start
-
-        # if (self.episode_counter == 257):
-        #     continue
-        print("The episode", self.episode_counter, "takes time", elapsed)
+    # Ensure that the episode simulated is valid
+    # if simulator.valid_episode:
+        # Append the data to the current data dictionary
+        # self.append_data_to_dictionary(dataForAnImage, simulator)
         # self.episode_counter += 1
+
+    # end = time.time()
+    # elapsed = end - start
+    #
+    # # if (self.episode_counter == 257):
+    # #     continue
+    # print("The episode", self.episode_counter, "takes time", elapsed)
+    # # self.episode_counter += 1
 
         # # Prepare the dictionary for saving purposes
         # self.prepare_and_save_the_data_dictionary(dataForAnImage, counter)

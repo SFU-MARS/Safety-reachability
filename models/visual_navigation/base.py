@@ -48,6 +48,7 @@ class VisualNavigationModelBase(BaseModel):
             raw_data = self.preprocess_nn_input(raw_data, is_training)
 
         img_nmkd = raw_data['image']
+        # img_nmkd=(img_nmkd - img_nmkd.mean(axis=0)) / (img_nmkd.std(axis=0) + 1e-8)
         img_nmkd1=np.expand_dims(img_nmkd, axis=0)
 
         waypointAction = raw_data['waypointAction']
@@ -61,7 +62,10 @@ class VisualNavigationModelBase(BaseModel):
         #     frames[:,i, :, :, :]= x
 
         vehicle_state = raw_data['start_pose']
-
+        # vehicle_state_max = np.reshape([0.6,3.14], (1,1,2))
+        # vehicle_state_min = np.reshape([0,-3.14] , (1,1,2))
+        # # vehicle_state = (vehicle_state - vehicle_state_min) / (vehicle_state_max - vehicle_state_min)
+        # vehicle_state = vehicle_state.astype(dtype=np.float32)
 
         # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
         # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
