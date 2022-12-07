@@ -1,6 +1,6 @@
 from models.visual_navigation.base import VisualNavigationModelBase
-from training_utils.architecture.resnet50_cnn import resnet50_cnn
-# from training_utils.architecture.simple_cnn import simple_cnn
+# from training_utils.architecture.resnet50_cnn import resnet50_cnn
+from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
 import numpy as np
 
@@ -13,10 +13,14 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         """
         Create the CNN architecture for the model.
         """
-        self.arch, self.is_batchnorm_training = resnet50_cnn(image_size=self.p.model.num_inputs.image_size,
+        self.arch , self.is_batchnorm_training= simple_cnn(image_size=self.p.model.num_inputs.image_size,
                                                              num_inputs=self.p.model.num_inputs.num_state_features,
                                                              num_outputs=self.p.model.num_outputs,
                                                              params=self.p.model.arch)
+        # self.arch, self.is_batchnorm_training = resnet50_cnn(image_size=self.p.model.num_inputs.image_size,
+        #                                                      num_inputs=self.p.model.num_inputs.num_state_features,
+        #                                                      num_outputs=self.p.model.num_outputs,
+        #                                                      params=self.p.model.arch)
 
         # Store a reference to the batch norm mean/variances in the
         # network. See predict_nn_output for more information
@@ -55,7 +59,9 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                 # Use precomputed batch norm statistics from imagenet training
                 tf.assign(self.is_batchnorm_training, False)
 
-            data[1] = tf.constant(data[1])
+            # data[1] = tf.constant(data[1])
+            # data[1] = tf.cast(data[1], tf.float32)
+            # data[0] = tf.cast(data[0], tf.float32)
             preds = self.arch.predict_on_batch(data)
 
             # preds=self.arch(data)
@@ -72,7 +78,9 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # values and then reassign them post prediction.
             old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
 
-            data[1] = tf.constant(data[1])
+            # data[1] = tf.constant(data[1])
+            # data[1] = tf.cast(data[1], tf.float32)
+            # data[0] = tf.cast(data[0], tf.float32)
             # preds = self.arch(data)
             preds = self.arch.predict_on_batch(data)
             [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in

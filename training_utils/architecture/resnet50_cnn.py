@@ -1,5 +1,7 @@
 import tensorflow as tf
-from training_utils.architecture.resnet50.resnet_50 import ResNet50 
+from training_utils.architecture.resnet50.resnet_50 import ResNet50
+from training_utils.architecture.simple_mlp import simple_mlp
+
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras import Input
 layers = tf.keras.layers
@@ -54,7 +56,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     # Flatten the image
     x = layers.Flatten()(x)
-
+     # = simple_mlp(input_flat)
     # Concatenate the image and the flat outputs
     x = layers.Concatenate(axis=1)([x, input_flat])
 
@@ -76,62 +78,62 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # # Load the Resnet50 weights
     # model.load_weights(params.resnet50_weights_path, by_name=True)
     #
-    resnet50.build(input_shape=(None, 224, 224, 3))
-    # print(resnet50.layers[-1])
-    # resnet50.summary()
-
-    model1 = models.Sequential()
-
-    input1=model1.add(layers.InputLayer(input_shape=(224, 224, 180), name="input_layer1"))
-    # input2=model1.add(layers.InputLayer(input_shape=(1, 1, 120), name="input_layer2"))
-    # inputs = tf.keras.layers.Dot(axes=1)([input1, input2])
-    # model1.add(layers.Dense(3,input_shape=(224, 224, 180)))
-    model1.add(layers.Conv2D(90, (3, 3),
-        strides=(1, 1),
-        padding='valid',
-         input_shape=(224, 224, 180)))
+    # resnet50.build(input_shape=(None, 224, 224, 3))
+    # # print(resnet50.layers[-1])
+    # # resnet50.summary()
+    #
+    # model1 = models.Sequential()
+    #
+    # input1=model1.add(layers.InputLayer(input_shape=(224, 224, 180), name="input_layer1"))
+    # # input2=model1.add(layers.InputLayer(input_shape=(1, 1, 120), name="input_layer2"))
+    # # inputs = tf.keras.layers.Dot(axes=1)([input1, input2])
+    # # model1.add(layers.Dense(3,input_shape=(224, 224, 180)))
+    # model1.add(layers.Conv2D(90, (3, 3),
+    #     strides=(1, 1),
+    #     padding='valid',
+    #      input_shape=(224, 224, 180)))
+    # # model1.add(layers.ZeroPadding2D(padding=(2, 2)))
+    # model1.add(layers.Conv2D(20, (3, 3),
+    #     strides=(1, 1),
+    #     padding='valid'
+    #      ))
+    # model1.add(layers.Conv2D(3, (3, 3),
+    #     strides=(1, 1),
+    #     padding='valid'
+    #     ))
+    #
     # model1.add(layers.ZeroPadding2D(padding=(2, 2)))
-    model1.add(layers.Conv2D(20, (3, 3),
-        strides=(1, 1),
-        padding='valid'
-         ))
-    model1.add(layers.Conv2D(3, (3, 3),
-        strides=(1, 1),
-        padding='valid'
-        ))
-
-    model1.add(layers.ZeroPadding2D(padding=(2, 2)))
-    model1.add(layers.ZeroPadding2D(padding=(1, 1)))
-    # model1.summary()
-
-    for layer in resnet50.layers[:-1]:
-    # for layer in model.layers[:-15]:
-    #     print(layer)
-        model1.add(layer)
-
-        # model1.summary()
-    # print(len(model1.layers))
-    # print(model1.layers[-1])
-
-    model1.build(input_shape=(224,224,180))
-
-    # model1.summary()
-    # model1.compile(optimizer='adam')
-
-    # model1.add(layers.MaxPooling2D(2, 2))
-
-
-    model3 = models.Sequential()
-    input2 = model3.add(layers.InputLayer(input_shape=(120,), name="input_layer2"))
-    model3.add(layers.Dense(60))
-    model3.add(layers.Dense(20))
-    model3.add(layers.Dense(2))
-    model3.build(input_shape=(120,))
-    # model3.summary()
-
-
-    input_image1 = layers.Input(shape=(224, 224, 180), dtype=dtype)
-    input_flat1 = layers.Input(shape=(120,), dtype=dtype)
+    # model1.add(layers.ZeroPadding2D(padding=(1, 1)))
+    # # model1.summary()
+    #
+    # for layer in resnet50.layers[:-1]:
+    # # for layer in model.layers[:-15]:
+    # #     print(layer)
+    #     model1.add(layer)
+    #
+    #     # model1.summary()
+    # # print(len(model1.layers))
+    # # print(model1.layers[-1])
+    #
+    # model1.build(input_shape=(224,224,180))
+    #
+    # # model1.summary()
+    # # model1.compile(optimizer='adam')
+    #
+    # # model1.add(layers.MaxPooling2D(2, 2))
+    #
+    #
+    # model3 = models.Sequential()
+    # input2 = model3.add(layers.InputLayer(input_shape=(120,), name="input_layer2"))
+    # model3.add(layers.Dense(60))
+    # model3.add(layers.Dense(20))
+    # model3.add(layers.Dense(2))
+    # model3.build(input_shape=(120,))
+    # # model3.summary()
+    #
+    #
+    # input_image1 = layers.Input(shape=(224, 224, 180), dtype=dtype)
+    # input_flat1 = layers.Input(shape=(120,), dtype=dtype)
 
     # input_image1 = Input(shape=(224, 224, 180), dtype=dtype)
     # input_flat1 = Input(shape=(120,), dtype=dtype)

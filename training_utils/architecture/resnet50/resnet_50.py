@@ -282,6 +282,27 @@ class ResNet50(tf.keras.Model):
     self.l4e = id_block([256, 256, 1024], stage=4, block='e')
     self.l4f = id_block([256, 256, 1024], stage=4, block='f')
 
+    self.l4g = id_block([256, 256, 1024], stage=4, block='g')
+    self.l4h = id_block([256, 256, 1024], stage=4, block='h')
+    self.l4i = id_block([256, 256, 1024], stage=4, block='i')
+    self.l4j = id_block([256, 256, 1024], stage=4, block='j')
+    self.l4k = id_block([256, 256, 1024], stage=4, block='k')
+    self.l4l = id_block([256, 256, 1024], stage=4, block='l')
+    self.l4m = id_block([256, 256, 1024], stage=4, block='m')
+    self.l4n = id_block([256, 256, 1024], stage=4, block='n')
+    self.l4o = id_block([256, 256, 1024], stage=4, block='o')
+    self.l4p = id_block([256, 256, 1024], stage=4, block='p')
+    self.l4q = id_block([256, 256, 1024], stage=4, block='q')
+    self.l4r = id_block([256, 256, 1024], stage=4, block='r')
+    self.l4s = id_block([256, 256, 1024], stage=4, block='s')
+    self.l4t = id_block([256, 256, 1024], stage=4, block='t')
+    self.l4u = id_block([256, 256, 1024], stage=4, block='u')
+    self.l4v = id_block([256, 256, 1024], stage=4, block='v')
+    self.l4w = id_block([256, 256, 1024], stage=4, block='w')
+
+
+
+
     self.l5a = conv_block([512, 512, 2048], stage=5, block='a')
     self.l5b = id_block([512, 512, 2048], stage=5, block='b')
     self.l5c = id_block([512, 512, 2048], stage=5, block='c')
@@ -346,6 +367,32 @@ class ResNet50(tf.keras.Model):
     x = self.l4d(x, training=training)
     x = self.l4e(x, training=training)
     x = self.l4f(x, training=training)
+
+    x = self.l4g(x, training=training)
+    x = self.l4h(x, training=training)
+    x = self.l4i(x, training=training)
+    x = self.l4j(x, training=training)
+    x = self.l4k(x, training=training)
+
+    x = self.l4l(x, training=training)
+    x = self.l4m(x, training=training)
+    x = self.l4n(x, training=training)
+    x = self.l4o(x, training=training)
+    x = self.l4p(x, training=training)
+
+    x = self.l4q(x, training=training)
+    x = self.l4r(x, training=training)
+    x = self.l4s(x, training=training)
+    x = self.l4t(x, training=training)
+    x = self.l4u(x, training=training)
+
+    x = self.l4v(x, training=training)
+    x = self.l4w(x, training=training)
+
+
+
+
+
 
     if output_layer == 4:
         return x

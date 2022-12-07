@@ -22,10 +22,16 @@ def create_params():
                  occupancy_grid_dx=[0.05, 0.05],
                  
                  # Architecture parameters
-                 arch=DotMap(num_conv_layers=5,
+                 arch=DotMap(num_conv_layers=3,
+
+                             num_conv_filters=[64,256,512],
+
+                             size_conv_filters=[3,3,3],
+
+                             size_maxpool_filters=[2,2,2],
                      
                              # Number of fully connected hidden layers
-                             num_hidden_layers=5,
+                             num_hidden_layers=6,
                              
                              # Number of neurons per hidden layer
                              num_neurons_per_layer=128,

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from training_utils.architecture.simple_mlp import simple_mlp
-# from training_utils.architecture.resnet50.resnet_50 import ResNet50
-# from training_utils.architecture.resnet50_cnn import resnet50_cnn
+from training_utils.architecture.resnet50.resnet_50 import ResNet50
+from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from "@tensorflow/tfjs" import * as tf
 import numpy as np
 K = tf.keras.backend
@@ -34,7 +34,7 @@ class BaseModel(object):
         # processed_data = tf.Variable(processed_data)
 
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
-        print("nn_output: "+str(nn_output.numpy()))
+        # print("nn_output: "+str(nn_output.numpy()))
         import numpy as np
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
@@ -47,13 +47,17 @@ class BaseModel(object):
         # y = np.expand_dims(processed_data['Action_waypoint'][0][:, 1], axis=0)
         # y = processed_data['Action_waypoint'][0][:, 1]
         # z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
-        # WP=processed_data['Action_waypoint'][0]
-        # LABELS=processed_data['labels']
-        # normal = np.array(nn_output)[0][:-1]
+        WP=processed_data['Action_waypoint'][0]
+        LABELS=processed_data['labels']
+        normal = np.array(nn_output)[0]
+        print ("normal: "+ str(normal))
+
         # from sklearn.svm import SVC
         # clf = SVC(C=1e5, kernel='linear')
         # clf.fit(WP, LABELS[0])
         # w,b = clf.coef_, clf.intercept_
+        # print ("w&b: "+str(w) + str(b))
+
         # # x_points = np.linspace(-1, 1)  # generating x-points from -1 to 1
         # # y_points = -(w[0] / w[1]) * x_points - b / w[1]  # getting
         # # plt.plot(x_points, y_points, c='r')
@@ -178,28 +182,27 @@ class BaseModel(object):
             # t = tf.tile(nn_output, (50, 1))
             # processed_data['Action_waypoint'] = processed_data['Action_waypoint'] / np.linalg.norm(processed_data['Action_waypoint'])
 
-            x = K.concatenate((processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))), axis=1)
-            # x = K.concatenate((processed_data['Action_waypoint'][:50], tf.ones((nn_output.shape[0], 1, 1))), axis=1)
+            x = tf.concat((processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))), axis=1)
+
             # x = K.reshape(x, (50, 5))
             # w = tf.convert_to_tensor(nn_output)
             # w = tf.reduce_mean(nn_output, axis=0)
             # w1 = tf.reshape(w, (5, 1))
-            labels1=[]
-            labels2 = []
+            # labels1=[]
+            # labels2 = []
             labels = processed_data['labels']
-            labels1 = labels.tolist()
-            for label in labels1:
-                for l in label:
-                    print (l)
-                    if l==[1]:
-                        l=[1, -1]
+            # labels1 = labels.tolist()
+            # for label in labels1:
+            #     for l in label:
+            #         print (l)
+            #         if l==[1]:
+            #             l=[1, -1]
+            #
+            #         else:
+            #             l = [-1, 1]
+            #
+            #         labels2.append(l)
 
-                    else:
-                        l = [-1, 1]
-
-                    labels2.append(l)
-            # labels1[labels1 == -1] = [1, -1]
-            # labels1[labels1 == [1]] = [-1, 1]
 
             # labels1 = tf.cast(processed_data['labels'], dtype=tf.int32)
             # category_indices = labels1
@@ -230,8 +233,9 @@ class BaseModel(object):
             from tensorflow.python.ops import nn_ops
 
 
-            print("predicted: " + str(predicted))
-            logits = math_ops.to_float(predicted)
+            # print("predicted: " + str(predicted))
+            # logits = math_ops.to_float(predicted)
+            logits = predicted
 
             batch_size=2
             num_classes=2
@@ -259,14 +263,17 @@ class BaseModel(object):
             #
             # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             # print ("accuracy: "+str(accuracy))
-
-            all_ones = array_ops.ones_like(labels,dtype=tf.float32 )
+            # losses= tf.losses.hinge_loss(
+            #     (labels+1)/2,
+            #     logits)
+            all_ones = tf.ones_like(labels,dtype=tf.float32 )
             # print("logit: "+ str(logits))
             losses = nn_ops.relu(
-                math_ops.subtract(all_ones, math_ops.multiply(labels, logits)))
+                tf.subtract(all_ones, tf.multiply(labels, logits)))
+
             # cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
             #     labels=(labels+1)/2, logits=logits)
-            hinge_loss = math_ops.reduce_sum(losses)
+            hinge_loss = tf.reduce_mean(losses)
 
         # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
         # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
@@ -291,11 +298,11 @@ class BaseModel(object):
             regularization_loss1 = tf.nn.l2_loss(nn_output[:-1])
 
             C=1 #Penalty parameter of the error term
-            total_loss = C * prediction_loss + regularization_loss + 1/2 * regularization_loss1
+            # total_loss = C * prediction_loss + regularization_loss + 1/2 * regularization_loss1
             # total_loss = C* prediction_loss +  1/2 * regularization_loss1
             # print(total_loss)
             # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            # total_loss = C * (prediction_loss)
+            total_loss = C * (prediction_loss)
             # accuracy=countT/self.p.trainer.batch_size
 
 

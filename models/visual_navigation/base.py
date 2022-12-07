@@ -62,6 +62,11 @@ class VisualNavigationModelBase(BaseModel):
         #     frames[:,i, :, :, :]= x
 
         vehicle_state = raw_data['start_pose']
+        # np.mean(self.training_info_dict['data']['start_pose'], axis=0) #
+        # mean_t= [[0.3496886,  0.06099968]]
+        # np.var(self.training_info_dict['data']['start_pose'], axis=0) #
+        # var_t= [[0.02119822, 3.3798633]]
+        # vehicle_state= (vehicle_state - mean_t)/var_t
         # vehicle_state_max = np.reshape([0.6,3.14], (1,1,2))
         # vehicle_state_min = np.reshape([0,-3.14] , (1,1,2))
         # # vehicle_state = (vehicle_state - vehicle_state_min) / (vehicle_state_max - vehicle_state_min)

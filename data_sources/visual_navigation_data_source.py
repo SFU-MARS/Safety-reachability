@@ -102,12 +102,12 @@ class VisualNavigationDataSource(ImageDataSource):
 
             if self.episode_counter <= 600 :
 
-                fake_label_train = [-1, -1, -1, 1, 1, 1]
-                dataForAnImage_tr=dataForAnImage
-                dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (6,1)),axis=0)
+                # fake_label_train = [-1, -1, -1, 1, 1, 1]
+                # dataForAnImage_tr=dataForAnImage
+                # dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (6,1)),axis=0)
 
 
-                listofdict0.append(dataForAnImage_tr)
+                listofdict0.append(dataForAnImage)
 
                 if self.episode_counter == 600:
 
@@ -119,10 +119,19 @@ class VisualNavigationDataSource(ImageDataSource):
 
                     for d in listofdict0:
                         for k, v in d.items():
-                            dataForImages_t[k].append(v)
-                            dataForImages1_t[k] = np.concatenate(dataForImages_t[k])
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1117-600'
+                            try:
+
+                                dataForImages_t[k].append(v)
+
+                                dataForImages1_t[k] = np.concatenate(dataForImages_t[k])
+
+                            except:
+                                pass
+
+
+
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
 
                     # here = os.path.dirname(os.path.abspath(__file__))
                     file_name = 'file' + str(self.episode_counter) + '.pkl'
@@ -134,11 +143,11 @@ class VisualNavigationDataSource(ImageDataSource):
 
             else:
 
-                fake_label_eval = [-1,-1,1, 1,1,1 ]
-                dataForAnImage_ev = dataForAnImage
-                dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (6, 1)), axis=0)
+                # fake_label_eval = [-1,-1,1, 1,1,1 ]
+                # dataForAnImage_ev = dataForAnImage
+                # dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (6, 1)), axis=0)
 
-                listofdict1.append(dataForAnImage_ev)
+                listofdict1.append(dataForAnImage)
 
 
             # if self.episode_counter%4!=0:
@@ -170,11 +179,20 @@ class VisualNavigationDataSource(ImageDataSource):
                     dataForImages1_v = defaultdict(list)
 
                     for d in listofdict1:
-                        for k, v in d.items():
-                            dataForImages_v[k].append(v)
-                            dataForImages1_v[k] = np.concatenate(dataForImages_v[k])
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1117-600'
+                        if d['waypointAction'].shape[1]==20:
+                            for k, v in d.items():
+
+
+                                    dataForImages_v[k].append(v)
+
+                                    dataForImages1_v[k] = np.concatenate(dataForImages_v[k])
+
+
+                        else:
+                            pass
+
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
                     # here = os.path.dirname(os.path.abspath(__file__))
                     file_name = 'file' + str(self.episode_counter) + '.pkl'
 

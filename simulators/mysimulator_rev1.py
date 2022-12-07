@@ -348,7 +348,7 @@ class Simulator(SimulatorHelper):
                 target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
 
                 # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
-                speedf = np.random.uniform(low=0, high=0.6, size=(3,))
+                speedf = np.random.uniform(low=0, high=0.6, size=(1,))
                 # speedf = [v0]
                 # print('speedf is' ,v0)
 
@@ -452,7 +452,7 @@ class Simulator(SimulatorHelper):
 
                         start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
 
-                        start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
+                        start_pose=np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy()))
                         waypointAction.append(np.array(goal_state_local))
                         image=rgb_image_1mk3
 
@@ -582,22 +582,25 @@ class Simulator(SimulatorHelper):
 
 
 
-                            start_pose.append(np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy())))
+                            start_pose=np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy()))
                             waypointAction.append(np.array(construc_point_local))
-                            image.append(rgb_image_1mk3)
+                            image=rgb_image_1mk3
 
                         #endif
 
                     # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
                     #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
-        dataForAnImage={'start_pose':np.array(start_pose),
-                    'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
+        # dataForAnImage={'start_pose':np.array(start_pose),
+        #             'image': np.array(image).squeeze(),'waypointAction':np.array(waypointAction), 'labels': np.array(self.labels)}
 
-        count1=self.labels.count(1)
-        count0=self.labels.count(-1)
-
-        print("count1", str(count1))
-        print("count0", str(count0))
+        dataForAnImage={'start_pose':np.expand_dims(np.reshape(np.array(start_pose),(1,2)), axis=0),
+                'image': np.array(image),'waypointAction':np.expand_dims(np.array(waypointAction), axis=0), 'labels':np.expand_dims(np.reshape(np.array(self.labels), (-1,1)),axis=0)}
+        #
+        # count1=self.labels.count(1)
+        # count0=self.labels.count(-1)
+        #
+        # print("count1", str(count1))
+        # print("count0", str(count0))
 
         # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
 
@@ -1307,7 +1310,7 @@ def get_simulator(self):
 
 
 # Function to take states, inputs and return the flat flag
-def vehicle_flat_forward(x, u):
+def vehicle_flat_forward(x, u, params={}):
     # Get the parameter values
 
     # Create a list of arrays to store the flat output and its derivatives
@@ -1340,7 +1343,7 @@ def vehicle_flat_forward(x, u):
 
 
 # Function to take the flat flag and return states, inputs
-def vehicle_flat_reverse(zflag):
+def vehicle_flat_reverse(zflag, params={}):
     # Get the parameter values
 
     # Create a vector to store the state and inputs

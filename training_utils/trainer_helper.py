@@ -78,6 +78,7 @@ class TrainerHelper(object):
 
                 # [var.name for var in tape.watched_variables()]
                 grads = tape.gradient(loss, model.get_trainable_vars())
+                # print ("grads: "+ str(grads))
                 # for grad in grads:
                 #     if grad == None:
                 #         grad = tf.constant([0])
@@ -220,11 +221,12 @@ class TrainerHelper(object):
             return
         elif self.p.learning_schedule == 2:
             # self.lr.assign(1/(epoch+1000))
+            self.lr.assign(self.lr/(1 + (epoch / 2)))
             # Decay the learning rate by the decay factor after every few epochs
-            if epoch % self.p.lr_decay_frequency == 0:
-                self.lr.assign(self.lr * self.p.lr_decay_factor)
-            else:
-                return
+            # if epoch % self.p.lr_decay_frequency == 0:
+            #     self.lr.assign(self.lr * self.p.lr_decay_factor)
+            # else:
+            #     return
         else:
             raise NotImplementedError
 

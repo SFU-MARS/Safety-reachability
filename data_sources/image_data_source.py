@@ -321,7 +321,10 @@ class ImageDataSource(DataSource):
         # Load the pickle file into memory if necessary
         self._load_data_into_info_dict(self.training_dataset, file_idx,
                                        self.training_info_dict)
-
+        # np.mean(self.training_info_dict['data']['start_pose'], axis=0) # [[0.3496886  0.06099968]]
+        # np.var(self.training_info_dict['data']['start_pose'], axis=0) #[[0.02119822 3.3798633]]
+        # self.training_info_dict['data']['image']=(self.training_info_dict['data']['image']-np.mean(self.training_info_dict['data']['image'], axis=0))/np.std(self.training_info_dict['data']['image'], axis=0)
+        # self.training_info_dict['data']['image'] = (np.clip(self.training_info_dict['data']['image'],-1.,1.) +1.) / 2.
         # _load_data_into
         # Get the start index relative to the start of this data_files data
         start_index += -self.training_info_dict['num_samples'] + n
