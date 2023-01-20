@@ -314,9 +314,10 @@ class Simulator(SimulatorHelper):
         # Plot the 5x5 meter occupancy grid centered around the camera
         dpt_image_1mk1 , _,_ = r._get_depth_image(camera_grid_world_pos_12,  camera_pos_13[:, 2:3], self.params.obstacle_map_params.dx, 1500,  pos_3, human_visible=False)#np.prod(self.params.obstacle_map_params.map_size_2)
         rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12,  camera_pos_13[:, 2:3])
-        img = np.concatenate((np.expand_dims(dpt_image_1mk1[:, :, :, 0],axis=3), rgb_image_1mk3), axis=3)
-        # dpt_image_1mk1[0, :, :, 0] is the depth image
-        #
+        img = np.concatenate((dpt_image_1mk1, rgb_image_1mk3), axis=3)
+        # img = np.concatenate((np.expand_dims(dpt_image_1mk1[:, :, :, 0],axis=3), rgb_image_1mk3), axis=3)
+        # dpt_image_1mk1[0, :, :, 0] is the depth imageW
+        # dpt_image_1mk1[0, :, :, 1] is mask
         # rgb_image_1mk3, depth_image_1mk1 = render_rgb_and_depth(r, camera_pos_13, dx_m, human_visible=True)
         fig = plt.figure(figsize=(30, 10))
         # ax = fig.add_subplot(1, 3, 1)
@@ -337,7 +338,7 @@ class Simulator(SimulatorHelper):
         # ax.imshow(dpt_image_1mk1[0, :, :, 1].astype(np.uint8), cmap='gray')
         # ax.set_xticks([])
         # ax.set_yticks([])
-        # ax.set_title('?')
+        # ax.set_title('mask')
         #
         #
         # fig.savefig(filename, bbox_inches='tight', pad_inches=0)
