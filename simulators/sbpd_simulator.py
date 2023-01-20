@@ -1,5 +1,6 @@
 from obstacles.sbpd_map import SBPDMap
-from simulators.mysimulator_rev1 import Simulator
+# from simulators.mysimulator_rev1 import Simulator
+from simulators.mysimulator_rev3 import Simulator
 # from simulators.simulator import Simulator
 # from simulators.sst_simulator import SSTSimulator as Simulator
 

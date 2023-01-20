@@ -36,7 +36,7 @@ class ReachabilityMap(object):
         self.goal_pos_2d = goal_pos_2d
         self.p = params
 
-        self._reset_variables(update_reach_avoid_4d=True, update_avoid_4d_whole=True)
+        # self._reset_variables(update_reach_avoid_4d=True, update_avoid_4d_whole=True)
         # self._reset_variables(update_reach_avoid_4d=False, update_avoid_4d_whole=True)#no reach update for my code
     def _reset_variables(self, update_reach_avoid_4d=False, update_avoid_4d_whole=False):
         """

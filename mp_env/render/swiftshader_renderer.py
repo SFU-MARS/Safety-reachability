@@ -755,21 +755,34 @@ class SwiftshaderRenderer():
     z_far, rgb_shader, d_shader, im_resize):
     self.init_renderer_egl(width, height)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    if d_shader is not None and rgb_shader is not None:
-      logging.fatal('Does not support setting both rgb_shader and d_shader.')
+    # if d_shader is not None and rgb_shader is not None:
+    #   logging.fatal('Does not support setting both rgb_shader and d_shader.')
 
+    # if d_shader is not None:
+    #   assert rgb_shader is None
+    #   shader = d_shader
+    #   self.modality = 'disparity'
+    #
+    # if rgb_shader is not None:
+    #   assert d_shader is None
+    #   shader = rgb_shader
+    #   self.modality = 'rgb'
+    #
+    # self.create_shaders(os.path.join(dir_path, shader+'.vp'),
+    #                     os.path.join(dir_path, shader + '.fp'))
+    self.egl_program = {'rgb': None, 'disparity': None}
+    self.modalities = []
     if d_shader is not None:
-      assert rgb_shader is None
-      shader = d_shader
-      self.modality = 'disparity'
+      self.modalities.append('disparity')
+      self.create_shaders(os.path.join(dir_path, d_shader+'.vp'),
+                          os.path.join(dir_path, d_shader + '.fp'),
+                          shader=d_shader)
 
     if rgb_shader is not None:
-      assert d_shader is None
-      shader = rgb_shader
-      self.modality = 'rgb'
-
-    self.create_shaders(os.path.join(dir_path, shader+'.vp'),
-                        os.path.join(dir_path, shader + '.fp'))
+      self.modalities.append('rgb')
+      self.create_shaders(os.path.join(dir_path, rgb_shader+'.vp'),
+                          os.path.join(dir_path, rgb_shader + '.fp'),
+                          shader=rgb_shader)
     aspect = width*1./(height*1.)
     self.set_camera(fov_vertical=fov_vertical, fov_horizontal=fov_horizontal,
       z_near=z_near, z_far=z_far, aspect=aspect)
@@ -835,7 +848,7 @@ class SwiftshaderRenderer():
     self.height = height
     self.width = width
 
-  def create_shaders(self, v_shader_file, f_shader_file):
+  def create_shaders(self, v_shader_file, f_shader_file,shader):
     v_shader = glCreateShader(GL_VERTEX_SHADER)
     with open(v_shader_file, 'r') as f:
       ls = ''
@@ -865,9 +878,18 @@ class SwiftshaderRenderer():
     glBindAttribLocation(egl_program, 0, "aPosition")
     glBindAttribLocation(egl_program, 1, "aTextureCoord")
 
-    self.egl_program = egl_program
     self.egl_mapping['vertexs'] = 0
     self.egl_mapping['vertexs_tc'] = 1
+
+    if shader == 'rgb_flat_color':
+      self.egl_program['rgb'] = egl_program
+    elif shader == 'depth_rgb_encoded':
+      self.egl_program['disparity'] = egl_program
+    else:
+      assert(False)
+    # self.egl_program = egl_program
+    # self.egl_mapping['vertexs'] = 0
+    # self.egl_mapping['vertexs_tc'] = 1
 
     glClearColor(0.0, 0.0, 0.0, 1.0);
     # Before enabling culling check if the triangles are oriented consistnetly or not.
@@ -890,11 +912,26 @@ class SwiftshaderRenderer():
     c[1,1] = 2.0*z_near/height
     c = c.T
 
-    projection_matrix_o = glGetUniformLocation(egl_program, 'uProjectionMatrix')
+    # projection_matrix_o = glGetUniformLocation(egl_program, 'uProjectionMatrix')
+    # projection_matrix = np.eye(4, dtype=np.float32)
+    # projection_matrix[...] = c
+    # projection_matrix = np.reshape(projection_matrix, (-1))
+    # glUniformMatrix4fv(projection_matrix_o, 1, GL_FALSE, projection_matrix)
     projection_matrix = np.eye(4, dtype=np.float32)
     projection_matrix[...] = c
     projection_matrix = np.reshape(projection_matrix, (-1))
-    glUniformMatrix4fv(projection_matrix_o, 1, GL_FALSE, projection_matrix)
+
+    if self.egl_program['rgb'] is not None:
+        glUseProgram(self.egl_program['rgb'])
+        projection_matrix_o = glGetUniformLocation(self.egl_program['rgb'], 'uProjectionMatrix')
+        glUniformMatrix4fv(projection_matrix_o, 1, GL_FALSE, projection_matrix)
+
+    if self.egl_program['disparity'] is not None:
+        glUseProgram(self.egl_program['disparity'])
+        projection_matrix_o = glGetUniformLocation(self.egl_program['disparity'], 'uProjectionMatrix')
+        glUniformMatrix4fv(projection_matrix_o, 1, GL_FALSE, projection_matrix)
+
+    self.projection_matrix = projection_matrix.astype(np.double)
 
   def load_default_object(self):
     v = np.array([[0.0, 0.5, 0.0, 1.0, 1.0, 0.0, 1.0],
@@ -913,7 +950,10 @@ class SwiftshaderRenderer():
 
     self.num_to_render = 6;
 
-  def _actual_render(self):
+  def _actual_render(self,mode):
+
+    assert(mode in self.egl_program.keys())
+    glUseProgram(self.egl_program[mode])
     for entity in self.entities.values():
       if entity['visible']:
         vbo = entity['vbo']
@@ -931,16 +971,16 @@ class SwiftshaderRenderer():
         # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glDrawArrays(GL_TRIANGLES, 0, num)
 
-  def render(self, take_screenshot=False, output_type=0):
+  def render(self, modality, take_screenshot=False, output_type=0):
     with self.render_timer.record():
-      self._actual_render()
+      self._actual_render(modality)
     self.render_timer.display(log_at=100, log_str='render timer: ', type='time')
 
     np_rgb_img = None
     np_d_img = None
     c = 1000.
     if take_screenshot:
-      if self.modality == 'rgb':
+      if modality == 'rgb':
         # Even though we dont want the alpha channel, opengl crashes if you
         # dont read it. Bad OpenGL.
         screenshot_rgba = np.zeros((self.height, self.width, 4), dtype=np.uint8)
@@ -955,7 +995,7 @@ class SwiftshaderRenderer():
           np_rgb_img = cv2.resize(np_rgb_img, None, None, fx=self.im_resize,
             fy=self.im_resize, interpolation=cv2.INTER_AREA)
 
-      if self.modality == 'disparity':
+      if modality == 'disparity':
         screenshot_d = np.zeros((self.height, self.width, 4), dtype=np.uint8)
         glReadPixels(0, 0, self.width, self.height, GL_RGBA, GL_UNSIGNED_BYTE, screenshot_d)
         np_d_img = screenshot_d[::-1,:,:3];
@@ -1072,8 +1112,18 @@ class SwiftshaderRenderer():
     view_matrix = view_matrix.T
     # print np.concatenate((R, t, view_matrix), axis=1)
     view_matrix = np.reshape(view_matrix, (-1))
-    view_matrix_o = glGetUniformLocation(self.egl_program, 'uViewMatrix')
-    glUniformMatrix4fv(view_matrix_o, 1, GL_FALSE, view_matrix)
+    # view_matrix_o = glGetUniformLocation(self.egl_program, 'uViewMatrix')
+    # glUniformMatrix4fv(view_matrix_o, 1, GL_FALSE, view_matrix)
+    if self.egl_program['rgb'] is not None:
+      glUseProgram(self.egl_program['rgb'])
+      view_matrix_o = glGetUniformLocation(self.egl_program['rgb'], 'uViewMatrix')
+      glUniformMatrix4fv(view_matrix_o, 1, GL_FALSE, view_matrix)
+
+    if self.egl_program['disparity'] is not None:
+      glUseProgram(self.egl_program['disparity'])
+      view_matrix_o = glGetUniformLocation(self.egl_program['disparity'], 'uViewMatrix')
+      glUniformMatrix4fv(view_matrix_o, 1, GL_FALSE, view_matrix)
+
     return None, None #camera_xyz, q
 
   def clear_scene(self):

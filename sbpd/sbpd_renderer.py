@@ -20,10 +20,10 @@ class SBPDRenderer():
 
         d = sbpd.get_dataset(self.p.dataset_name, 'all', data_dir=self.p.sbpd_data_dir)
         self.building = d.load_data(self.p.building_name, self.p.robot_params, self.p.flip)
-        assert(len(self.p.camera_params.modalities) == 1)
+        # assert(len(self.p.camera_params.modalities) == 1)
         # Instantiating a camera/ shader object is only needed
         # for rgb and depth images
-        if 'rgb' in self.p.camera_params.modalities or 'depth' in self.p.camera_params.modalities:
+        if 'rgb' in self.p.camera_params.modalities or 'disparity' in self.p.camera_params.modalities:
             r_obj = sr.get_r_obj(self.p.camera_params)
             self.building.set_r_obj(r_obj)
             self.building.load_building_into_scene()
@@ -83,7 +83,7 @@ class SBPDRenderer():
 
         nodes_n3 = np.concatenate([starts_n2*1.,
                                    thetas_n1 / self.building.robot.delta_theta], axis=1)
-        imgs_nmk3 = self.building.render_nodes(nodes_n3)
+        imgs_nmk3 = self.building.render_nodes(nodes_n3,modality='rgb')
         return imgs_nmk3
 
     def _get_topview(self, starts_n2, thetas_n1, crop_size=[64, 64]):
@@ -113,8 +113,9 @@ class SBPDRenderer():
         crops_nmk1 = [np.logical_not(crop_mk[:, :, None])*1.0 for crop_mk in crops_nmk]
         return crops_nmk1
 
-    def _get_depth_image(self, starts_n2, thetas_n1, xy_resolution, map_size):
+    def _get_depth_image(self, starts_n2, thetas_n1, xy_resolution, map_size, pos_3, human_visible=True):
         """
+
         Render analytically projected depth images at the locations in
         starts, thetas. Bin data inside bins in a resolution of xy_resolution along x and y axis and
         z_bins in the z direction. Z Direction is the vertical z = 0 is floor. """
@@ -122,19 +123,48 @@ class SBPDRenderer():
         robot = self.building.robot
         z_bins = [-10, robot.base, robot.base + robot.height]
 
-        nodes_n3 = np.concatenate([starts_n2, thetas_n1 / self.building.robot.delta_theta], axis=1)
-        imgs = self.building.render_nodes(nodes_n3)
-        tt = np.array(imgs)
+        nodes_n3 = np.concatenate([starts_n2*1., thetas_n1 / self.building.robot.delta_theta], axis=1)
+        # Disparity in centimeters
+        disparity_imgs_cm = np.array(self.building.render_nodes(nodes_n3, 'disparity', human_visible=human_visible))
+
+        depth_imgs_meters = 100. / disparity_imgs_cm[..., 0]
+
+        # Optionally Clip Depth Readings
+        # if self.p.camera_params.max_depth_meters < np.inf:
+        #     inf_mask = np.isinf(depth_imgs_meters)
+        #     max_depth_mask = depth_imgs_meters >= self.p.camera_params.max_depth_meters
+        #     mask = np.logical_and(np.logical_not(inf_mask), max_depth_mask)
+        #     depth_imgs_meters[mask] = self.p.camera_params.max_depth_meters
 
         assert (r_obj.fov_horizontal == r_obj.fov_vertical)
+        # Generate a Point Cloud from the Depth Image
+        # (In the Camera Coordinate System)
         cm = du.get_camera_matrix(r_obj.width, r_obj.height, r_obj.fov_vertical)
-        XYZ = du.get_point_cloud_from_z(100. / tt[..., 0], cm)
+        XYZ = du.get_point_cloud_from_z(depth_imgs_meters, cm)
         XYZ = XYZ * 100.  # convert to centimeters
+
+        # Transform from the camera coordinate system
+        # to the geocentric coordinate system (align the point cloud to the ground plane)
         XYZ = du.make_geocentric(XYZ, robot.sensor_height, robot.camera_elevation_degree)
+
+        # Note: Added here to get the depth image in the current frame
+        # Transform from the ground plane to the robots current
+        # location in the map
+        XYZ = self.transform_to_current_frame(XYZ[0], pos_3)
+        XYZ = XYZ[None, :, :, :]
+
         count, isvalid = du.bin_points(XYZ * 1., map_size, z_bins, xy_resolution)
         count = [x[0, ...] for x in np.split(count, count.shape[0], 0)]
         isvalid = [x[0, ...] for x in np.split(isvalid, isvalid.shape[0], 0)]
-        return imgs, count, isvalid
+
+        return disparity_imgs_cm, count, isvalid
+
+    def transform_to_current_frame(self, XYZ, current_loc):
+        R = du.get_r_matrix([0., 0., 1.], angle=current_loc[2] - np.pi / 2.)
+        XYZ = np.matmul(XYZ.reshape(-1, 3), R.T).reshape(XYZ.shape)
+        XYZ[:, :, 0] = XYZ[:, :, 0] + current_loc[0] * 100.  # convert to centimeters
+        XYZ[:, :, 1] = XYZ[:, :, 1] + current_loc[1] * 100.  # convert to centimeters
+        return XYZ
 
     def get_config(self):
         """

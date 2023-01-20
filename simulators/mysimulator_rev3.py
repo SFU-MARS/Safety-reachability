@@ -73,6 +73,10 @@ import control.flatsys as fs
 import math
 import pickle
 
+from sklearn.datasets import make_blobs
+from mpl_toolkits.mplot3d import Axes3D
+
+
 def create_params():
     p = DotMap()
     p.seed = 1
@@ -251,27 +255,22 @@ class Simulator(SimulatorHelper):
         #num = 10000
         num_samples = 1
 
-
-        # actions_waypoints = [[0.1, 0.05, .8],     [0.1, -0.05, -.8],
-        #                      [0.15, -0.1, -0.7],  [0.15, 0.1, 0.7],
-        #                      [0.2, 0.1, 0.55],    [0.2, -0.1, -0.55],
-        #                      [0.25, -0.05, -0.3], [0.25, 0.05, 0.3],
-        #                      [0.35, -0.1, -0.6],  [0.35, 0.1, 0.6],
-        #                      [0.35, -0.05, -0.2], [0.35, 0.05, 0.2],
-        #                      [0.4, 0.1, 0.7],     [0.4, -0.1, -.7],
-        #                      [0.45, -0.1, -0.2],  [0.45, 0.1, 0.2],
-        #                      [.5, 0, 0.1],        [.5, 0, -0.1],
-        #                      [.55, 0.1, 0.05],    [.55, -0.1, -0.05]]
-
-        # actions_waypoints = [[3,4,2],[1,4,2],[2,3,1] ,
-        # [6,-1,1],[7,-1,2],[5,-3,1]]
-        actions_waypoints = [[3, 4, 1], [1, 4, 1], [2, 3, 1],
-                             [6, -1, .5], [7, -1, .5], [5, -3, .5]]
-        actions_waypoints = [[2,2],[2,-2],[-2,2],[1,-1],[1,1],[-1,1]]
+        cluster_centers = [(1,0), (-1,0)]
+        num_classes = len(cluster_centers)
+        num_samples_total = 600
+        X, y= make_blobs(n_samples=num_samples_total, centers = cluster_centers, n_features=2, cluster_std=0.01 , random_state=42)
+        # we need to add 1 to X values (we can say its bias)
+        # X1 = np.c_[np.ones((X.shape[0])), X]
+        # fig = plt.figure()
+        # # ax = fig.add_subplot(111, projection='3d')
+        # ax = fig.add_subplot(111)
+        # ax.scatter(X[:, 0], X[:, 1], marker='o', c=y)
+        actions_waypoints = np.array(X)
+        # plt.show()
 
         f=1
 
-        x0 = np.concatenate((config.position_and_heading_nk3()[0][0].numpy(), config.speed_nk1()[0][0].numpy()))
+        # x0 = np.concatenate((config.position_and_heading_nk3()[0][0].numpy(), config.speed_nk1()[0][0].numpy()))
 
                 # for v0 in speed:
         #
@@ -298,7 +297,52 @@ class Simulator(SimulatorHelper):
         count1=[]
         count0=[]
 
+        r = SBPDRenderer.get_renderer_already_exists()
+        dx_cm, traversible = r.get_config()
+        dx_m = dx_cm / 100.
+        # print(type(simulator.start_config.trainable_variables[0]))
+        # camera_pos_13 = self.heading_nk1_next[0]
+        # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
+        # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
+        # camera_pos_13 = np.array([[7.5, 12., -1.3]])
+        camera_pos_13 = config.position_and_heading_nk3()[0].numpy()
+        camera_grid_world_pos_12 = (config.position_nk2()[0] / dx_m).numpy()
+        pos_3 = camera_pos_13[0, :3]
+        # image of current state
+        #
 
+        # Plot the 5x5 meter occupancy grid centered around the camera
+        dpt_image_1mk1 , _,_ = r._get_depth_image(camera_grid_world_pos_12,  camera_pos_13[:, 2:3], self.params.obstacle_map_params.dx, 1500,  pos_3, human_visible=False)#np.prod(self.params.obstacle_map_params.map_size_2)
+        rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12,  camera_pos_13[:, 2:3])
+        img = np.concatenate((np.expand_dims(dpt_image_1mk1[:, :, :, 0],axis=3), rgb_image_1mk3), axis=3)
+        # dpt_image_1mk1[0, :, :, 0] is the depth image
+        #
+        # rgb_image_1mk3, depth_image_1mk1 = render_rgb_and_depth(r, camera_pos_13, dx_m, human_visible=True)
+        fig = plt.figure(figsize=(30, 10))
+        # ax = fig.add_subplot(1, 3, 1)
+        # ax.imshow(rgb_image_1mk3[0].astype(np.uint8))
+        # ax.set_xticks([])
+        # ax.set_yticks([])
+        # ax.set_title('RGB')
+        # plt.show()
+
+        # filename='example2.png'
+        # ax = fig.add_subplot(1, 3, 2)
+        # ax.imshow(dpt_image_1mk1[0, :, :, 0].astype(np.uint8), cmap='gray')
+        # ax.set_xticks([])
+        # ax.set_yticks([])
+        # ax.set_title('Depth')
+
+        # ax = fig.add_subplot(1, 3, 2)
+        # ax.imshow(dpt_image_1mk1[0, :, :, 1].astype(np.uint8), cmap='gray')
+        # ax.set_xticks([])
+        # ax.set_yticks([])
+        # ax.set_title('?')
+        #
+        #
+        # fig.savefig(filename, bbox_inches='tight', pad_inches=0)
+
+        # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
 
         for xf in actions_waypoints:
 
@@ -311,14 +355,15 @@ class Simulator(SimulatorHelper):
             # therefore, we need to use a boolean var to track whether or not we will continue processing the
             # current waypoint
 
-            Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
-                               -np.sin(config.heading_nk1()[0][0][0]),
-                               config.position_nk2()[0][0][0]],
-                              [np.sin(config.heading_nk1()[0][0][0]),
-                               np.cos(config.heading_nk1()[0][0][0]),
-                               config.position_nk2()[0][0][1]],
-                              [0, 0, 1]]
-            target_state = np.array(Transformation).dot([xf[0], xf[1], 1])
+            # Transformation = [[np.cos(config.heading_nk1()[0][0][0]),
+            #                    -np.sin(config.heading_nk1()[0][0][0]),
+            #                    config.position_nk2()[0][0][0]],
+            #                   [np.sin(config.heading_nk1()[0][0][0]),
+            #                    np.cos(config.heading_nk1()[0][0][0]),
+            #                    config.position_nk2()[0][0][1]],
+            #                   [0, 0, 1]]
+            # target_state = np.array(Transformation).dot([xf[0], xf[1], 1])
+
             # phi1 = phi % 2 * math.pi
             # goal_heading_nk1=phi1-math.pi
             # # if goal_heading_nk1 < np.float32(-np.pi):
@@ -327,27 +372,29 @@ class Simulator(SimulatorHelper):
             # #     goal_heading_nk1 = goal_heading_nk1 - 2 * np.pi
             # if 0 < target_state[0] < self.obstacle_map.map_bounds[1][0] and 0 < target_state[1] < self.obstacle_map.map_bounds[1][1]:
 
-            count += 1
+            # count += 1
             # target_state[2]= xf[2] + config.heading_nk1()[0][0][0]
             # target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
 
             # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
             # speedf = np.random.uniform(low=0, high=0.6, size=(1,))
-            speedf = [0]
+            speedHeadingf = [[0,0]]
             # print('speedf is' ,v0)
 
-            for vf in speedf:
+            for vf in speedHeadingf:
 
                 processWaypoint = True
 
                 vf1=[vf]
-                goal_state = [y for x in [target_state, vf1] for y in x]
+                goal_state_local = np.concatenate((xf, np.array(vf)), axis=0)
+                # goal_state_local = [y for x in [xf, vf1] for y in x]
                 # goal_state_local = np.array(np.linalg.inv(Transformation)).dot([goal_state[0], goal_state[1], 1])
                 # goal_state_local[2] = goal_state[2] - config.heading_nk1()[0][0][0]
                 # goal_state_local[2] = np.arctan2(np.sin(goal_state_local[2]), np.cos(goal_state_local[2]))
                 # goal_state_local = np.concatenate((goal_state_local, [goal_state[3]]))
-                goal_state_local=np.concatenate((xf,np.array(vf1)),axis=0)
-                # goal_state_local = xf
+
+                # goal_state_local=np.concatenate((xf,np.array(vf1)),axis=0)
+                # goal_state_local = goal_state
 
                 num_sample_generated += 1
 
@@ -359,21 +406,7 @@ class Simulator(SimulatorHelper):
 
                 # print("num samples collected: ", count)
                 # print(" ")
-                r = SBPDRenderer.get_renderer_already_exists()
-                dx_cm, traversible = r.get_config()
-                dx_m = dx_cm / 100.
-                    # print(type(simulator.start_config.trainable_variables[0]))
-                    # camera_pos_13 = self.heading_nk1_next[0]
-                    # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
-                    # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                camera_pos_13 = config.heading_nk1()[0]
-                camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-
-                    # image of current state
-                rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-
-                img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
+                # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
                     #        # In the topview the positive x axis points to the right and
                     # the positive y axis points up. The robot is located at
                     # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
@@ -383,50 +416,23 @@ class Simulator(SimulatorHelper):
                 # local_point_camera=np.array(local_point[0][0])// dx_m+start[0], np.array(local_point[0][1])/ dx_m+start[1]
                 # local_pts_camera.append(local_point_camera)
                 n = 1
-                start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
 
-                start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
-
-                start_pose=np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy()))
                 waypointAction.append(goal_state_local)
-                image=rgb_image_1mk3
 
-            # dataForAnImage={'start_pose':np.array(start_pose)*(np.array(waypointAction).shape[0]),
-            #     'image': np.array(image)*(np.array(waypointAction).shape[0]),'waypointAction':np.array(waypointAction), 'labels': np.transpose(np.array(self.labels))}
-# fake_labels = [1, -1,
-#                -1, 1,
-#                1, -1,
-#                -1, 1,
-#                -1, 1,
-#                -1, 1,
-#                1, 1,
-#                -1, 1,
-#                1, -1,
-#                1, -1]
-
-# self.label0 = fake_labels []
-
-
-
-
+        start_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.heading_nk1()[0][0][0]
+        start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * config.speed_nk1()
+        start_pose = np.concatenate((start_speed_nk1.numpy(), start_heading_nk1.numpy()))
+        # image = dpt_image_1mk1
+        image = img
 
         dataForAnImage={'start_pose':np.expand_dims(np.reshape(np.array(start_pose),(1,2)), axis=0),
                 'image': np.array(image),'waypointAction':np.expand_dims(np.array(waypointAction), axis=0)}
     # dataForAnImage={'start_pose':np.reshape(np.squeeze(np.array(start_pose)),(1,1, 2)),
     #             'image': np.array(image),'waypointAction':np.expand_dims(np.array(waypointAction), axis=0), 'labels':np.expand_dims(np.transpose(np.array(self.labels)), axis=0) }
 
-# count1=self.labels.count(1)
-# count0=self.labels.count(-1)
-#
-# print("count1", str(count1))
-# print("count0", str(count0))
-
-    # dataForAnImage_TF=tf.data.Dataset.from_tensor_slices((np.array(start_pose),np.array(image).squeeze(), np.array(waypointAction), np.array(self.labels)))
-
-            # episode_counter=self.episode_counter
 
 
-        return dataForAnImage
+        return dataForAnImage , y
 
     # plt.scatter(start[0], start[1], marker='*', color='green',s=200, label='start')
     # plt.scatter(local_pts_camera[0],local_pts_camera[1],marker='+',color='red',s=200, label='waypoints')
@@ -436,7 +442,18 @@ class Simulator(SimulatorHelper):
     # plt.arrow(local_pts_camera[0],local_pts_camera[1], start_speed_nk1*np.cos(start_heading_nk1), start_speed_nk1*np.sin(start_heading_nk1), width = 0.15)
     # plt.legend(loc='lower left')
     # plt.show()
+    @staticmethod
+    def render_rgb_and_depth(r, camera_pos_13, dx_m, human_visible=True):
+        # Convert from real world units to grid world units
+        camera_grid_world_pos_12 = camera_pos_13[:, :2]/dx_m
 
+        # Render RGB and Depth Images. The shape of the resulting
+        # image is (1 (batch), m (width), k (height), c (number channels))
+        rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3], human_visible=True)
+
+        depth_image_1mk1, _, _ = r._get_depth_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3], xy_resolution=.05, map_size=1500, pos_3=camera_pos_13[0, :3], human_visible=True)
+
+        return rgb_image_1mk3, depth_image_1mk1
 
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate a

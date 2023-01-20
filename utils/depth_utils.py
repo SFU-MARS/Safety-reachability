@@ -17,6 +17,7 @@
 """
 from . import utils
 import numpy as np
+from argparse import Namespace
 ANGLE_EPS = 0.001
 
 def normalize(v):
@@ -39,7 +40,9 @@ def get_camera_matrix(width, height, fov):
     xc = (width-1.) / 2.
     zc = (height-1.) / 2.
     f = (width / 2.) / np.tan(np.deg2rad(fov / 2.))
-    camera_matrix = utils.Foo(xc=xc, zc=zc, f=f)
+    camera_matrix = {'xc': xc, 'zc': zc, 'f': f}
+    camera_matrix = Namespace(**camera_matrix)
+    # camera_matrix = utils.Foo(xc=xc, zc=zc, f=f)
     return camera_matrix
 
 def get_point_cloud_from_z(Y, camera_matrix):

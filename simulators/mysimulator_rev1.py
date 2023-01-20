@@ -416,7 +416,7 @@ class Simulator(SimulatorHelper):
 
                         num_sample_generated +=1
 
-                        print("label of this action-waypoint is: ", self.label0)
+                        # print("label of this action-waypoint is: ", self.label0)
 
 
                         # self.Q.append(self.Q0)

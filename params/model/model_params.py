@@ -17,7 +17,7 @@ def create_params():
 
                  # Number of the outputs to the model
                  # num_outputs=3,  # (x, y, theta) waypoint
-                 num_outputs= 5,
+                 num_outputs= 6,
                  # Occupancy grid discretization
                  occupancy_grid_dx=[0.05, 0.05],
                  
@@ -43,7 +43,7 @@ def create_params():
                              output_layer_activation_func=tf.keras.activations.linear,
                              
                              # Whether to use dropout in the fully connected layers
-                             use_dropout=False,
+                             use_dropout=True,
                              
                              # Dropout rate (in case dropout is used)
                              dropout_rate=0.2,

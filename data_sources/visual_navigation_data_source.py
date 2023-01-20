@@ -81,7 +81,11 @@ class VisualNavigationDataSource(ImageDataSource):
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
         d2 = {}
-        self.num_episode = 1200
+        self.num_episode = 12000
+        data_points_per_file=1000
+        # self.num_episode = 2
+        # data_points_per_file=1
+
         self.episode_counter = 0
         listofdict0=[]
         listofdict1 = []
@@ -96,20 +100,23 @@ class VisualNavigationDataSource(ImageDataSource):
             # Run the planner for one step
             # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
             # its corresponding image
-            dataForAnImage = simulator.simulate()
+            dataForAnImage , y = simulator.simulate()
 
             self.episode_counter +=1
 
-            if self.episode_counter <= 600 :
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0118-2'
+
+            if self.episode_counter <= self.num_episode * 0.8 :
 
                 # fake_label_train = [-1, -1, -1, 1, 1, 1]
-                # dataForAnImage_tr=dataForAnImage
-                # dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (6,1)),axis=0)
+                fake_label_train= 2*y-1
+                dataForAnImage_tr=dataForAnImage
+                dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (-1,1)),axis=0)
 
 
                 listofdict0.append(dataForAnImage)
 
-                if self.episode_counter == 600:
+                if  self.episode_counter % data_points_per_file ==0 :
 
                     from collections import defaultdict
 
@@ -127,25 +134,31 @@ class VisualNavigationDataSource(ImageDataSource):
                                 dataForImages1_t[k] = np.concatenate(dataForImages_t[k])
 
                             except:
-                                pass
+                                print("exception")
+                                self.episode_counter -=1
 
 
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
+
 
                     # here = os.path.dirname(os.path.abspath(__file__))
-                    file_name = 'file' + str(self.episode_counter) + '.pkl'
+                    file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
 
 
                     with open(os.path.join(here, file_name), "wb") as f:
+
+                        print ("dumping")
                         pickle.dump(dataForImages1_t, f)
+                    listofdict0 = []
 
 
             else:
 
-                # fake_label_eval = [-1,-1,1, 1,1,1 ]
-                # dataForAnImage_ev = dataForAnImage
-                # dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (6, 1)), axis=0)
+                # fake_label_eval = [1,1,1, -1,-1,-1 ]
+                # fake_label_eval = -(2 * y - 1)
+                fake_label_eval = (2*y-1)
+                dataForAnImage_ev = dataForAnImage
+                dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (-1, 1)), axis=0)
 
                 listofdict1.append(dataForAnImage)
 
@@ -172,7 +185,7 @@ class VisualNavigationDataSource(ImageDataSource):
 
                     # dataForImages = np.concatenate(listofdict)
 
-                if self.episode_counter == 1200:
+                if self.episode_counter % data_points_per_file ==0:
 
                     from collections import defaultdict
                     dataForImages_v = defaultdict(list)
@@ -180,7 +193,8 @@ class VisualNavigationDataSource(ImageDataSource):
 
                     for d in listofdict1:
 
-                        if d['waypointAction'].shape[1]==20:
+                        #if d['waypointAction'].shape[1]==20:
+                        try:
                             for k, v in d.items():
 
 
@@ -189,15 +203,18 @@ class VisualNavigationDataSource(ImageDataSource):
                                     dataForImages1_v[k] = np.concatenate(dataForImages_v[k])
 
 
-                        else:
-                            pass
+                        except:
+                            self.episode_counter -= 1
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
+
+
+                    # here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
                     # here = os.path.dirname(os.path.abspath(__file__))
-                    file_name = 'file' + str(self.episode_counter) + '.pkl'
+                    file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
 
                     with open(os.path.join(here, file_name), "wb") as f:
                         pickle.dump(dataForImages1_v, f)
+                    listofdict1=[]
 
                     # pickle.dump(dd, f)
                     # dd={}

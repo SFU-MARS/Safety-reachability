@@ -32,6 +32,9 @@ class TrainerHelper(object):
         epoch_performance_training = []
         epoch_performance_validation = []
 
+        epoch_performance_training1 = []
+        epoch_performance_validation1 = []
+
         # Instantiate one figure and axis object for plotting losses over training
         self.losses_fig = plt.figure()
         self.losses_ax = self.losses_fig.add_subplot(111)
@@ -46,6 +49,8 @@ class TrainerHelper(object):
             # Define the metrics to keep a track of average loss over the epoch.
             training_loss_metric = tfe.metrics.Mean()
             validation_loss_metric = tfe.metrics.Mean()
+            training_loss_metric1 = tfe.metrics.Mean()
+            validation_loss_metric1 = tfe.metrics.Mean()
             # epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
 
             # For loop over the training samples
@@ -68,8 +73,9 @@ class TrainerHelper(object):
 
                     tape.watch(model.get_trainable_vars())
                     # tape.watch(training_batch)
-
+                    # counter1=0
                     loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
+                    # print ("final loss: "+ str(loss.numpy()))
 
                     # behavior during training versus inference (e.g. Dropout).
 
@@ -92,7 +98,9 @@ class TrainerHelper(object):
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
                                                    validation_loss_metric)
-
+                # Record the average acc for the training and the validation batch
+                self.record_average_loss_for_batch1(model, training_batch, validation_batch, training_loss_metric1,
+                                                   validation_loss_metric1)
             # Do all the things required at the end of epochs including saving the checkpoints
 
             # images=training_batch['image']
@@ -120,10 +128,14 @@ class TrainerHelper(object):
             # plt.colorbar()
             # plt.show()
             epoch_performance_training.append(training_loss_metric.result().numpy())
-            print("performance_training: "+ str(epoch_performance_training))
+            print("loss_training: "+ str(epoch_performance_training))
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
-            print("performance_validation: "+ str(epoch_performance_validation))
-            self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation, model,
+            print("loss_validation: "+ str(epoch_performance_validation))
+            epoch_performance_training1.append(training_loss_metric1.result().numpy())
+            print("acc_training: " + str(epoch_performance_training1))
+            epoch_performance_validation1.append(validation_loss_metric1.result().numpy())
+            print("acc_validation: " + str(epoch_performance_validation1))
+            self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,epoch_performance_training1, epoch_performance_validation1, model,
                                          callback_fn)
             
     def restore_checkpoint(self, model):
@@ -182,14 +194,26 @@ class TrainerHelper(object):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, _ = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric(prediction_loss_training)
         # print(training_loss_metric)
         validation_loss_metric(prediction_loss_validation)
 
-    def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation, model,
+    def record_average_loss_for_batch1(self, model, training_batch, validation_batch, training_loss_metric1,
+                                      validation_loss_metric1):
+        """
+        Record the average loss for the batch and update the metric.
+        """
+        regn_loss_training, prediction_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        # Now add the loss values to the metric aggregation
+        training_loss_metric1(accuracy_training)
+        # print(training_loss_metric)
+        validation_loss_metric1(accuracy_validation)
+
+    def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,epoch_performance_training1, epoch_performance_validation1, model,
                                 callback_fn=None):
         """
         Finish the epoch processing for example recording the average epoch loss for the training and the validation
@@ -198,9 +222,12 @@ class TrainerHelper(object):
         # Print the average loss for the last epoch
         print('Epoch %i: training loss %0.3f, validation loss %0.3f' % (epoch, epoch_performance_training[-1],
                                                                         epoch_performance_validation[-1]))
+        print('Epoch %i: training acc %0.3f, validation acc %0.3f' % (epoch, epoch_performance_training1[-1],
+                                                                        epoch_performance_validation1[-1]))
         
         # Plot the loss curves
         self.plot_training_and_validation_losses(epoch_performance_training, epoch_performance_validation)
+        self.plot_training_and_validation_acc(epoch_performance_training1, epoch_performance_validation1)
         
         # Update the learning rate
         self.adjust_learning_rate(epoch)
@@ -242,3 +269,15 @@ class TrainerHelper(object):
         ax.plot(validation_performance, 'b-', label='Validation')
         ax.legend()
         fig.savefig(os.path.join(self.session_dir, 'loss_curves.pdf'))
+    def plot_training_and_validation_acc(self, training_performance1, validation_performance1):
+        """
+        Plot the loss curves for the training and the validation datasets over epochs.
+        """
+        fig = self.losses_fig
+        ax = self.losses_ax
+        ax.clear()
+
+        ax.plot(training_performance1, 'r-', label='Training')
+        ax.plot(validation_performance1, 'b-', label='Validation')
+        ax.legend()
+        fig.savefig(os.path.join(self.session_dir, 'acc_curves.pdf'))

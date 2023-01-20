@@ -1,6 +1,6 @@
 from models.visual_navigation.base import VisualNavigationModelBase
-# from training_utils.architecture.resnet50_cnn import resnet50_cnn
-from training_utils.architecture.simple_cnn import simple_cnn
+from training_utils.architecture.resnet50_cnn import resnet50_cnn
+# from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
 import numpy as np
 
@@ -13,14 +13,14 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         """
         Create the CNN architecture for the model.
         """
-        self.arch , self.is_batchnorm_training= simple_cnn(image_size=self.p.model.num_inputs.image_size,
-                                                             num_inputs=self.p.model.num_inputs.num_state_features,
-                                                             num_outputs=self.p.model.num_outputs,
-                                                             params=self.p.model.arch)
-        # self.arch, self.is_batchnorm_training = resnet50_cnn(image_size=self.p.model.num_inputs.image_size,
+        # self.arch , self.is_batchnorm_training= simple_cnn(image_size=self.p.model.num_inputs.image_size,
         #                                                      num_inputs=self.p.model.num_inputs.num_state_features,
         #                                                      num_outputs=self.p.model.num_outputs,
         #                                                      params=self.p.model.arch)
+        self.arch, self.is_batchnorm_training = resnet50_cnn(image_size=self.p.model.num_inputs.image_size,
+                                                             num_inputs=self.p.model.num_inputs.num_state_features,
+                                                             num_outputs=self.p.model.num_outputs,
+                                                             params=self.p.model.arch)
 
         # Store a reference to the batch norm mean/variances in the
         # network. See predict_nn_output for more information
