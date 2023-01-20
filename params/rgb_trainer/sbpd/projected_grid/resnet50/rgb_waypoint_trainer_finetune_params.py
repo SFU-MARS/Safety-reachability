@@ -110,7 +110,8 @@ def create_params():
     #p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2020-09-10_10-14-56/checkpoints/ckpt-5' #Test last neural network for example, check point is nn parameters
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2021-06-20_14-56-40/checkpoints/ckpt-5'
-    p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
+    # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
+    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-01-19_01-49-14/checkpoints/ckpt-7"
     # Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
     #  should be the building name
