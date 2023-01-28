@@ -50,8 +50,8 @@ class BaseModel(object):
         # z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
         WP=processed_data['Action_waypoint'][0]
         LABELS=processed_data['labels']
-        normal = np.array(nn_output)[0]
-        # print ("NN's normal: "+ str(normal))
+        normal = np.array(nn_output)
+        print ("NN's normal: "+ str(normal))
 
         from sklearn.svm import SVC
         clf = SVC(C=1e6, kernel='linear')
@@ -134,9 +134,9 @@ class BaseModel(object):
         ###
 
         regularization_loss = 0.
-        model_variables = self.get_trainable_vars()
-        for model_variable in model_variables:
-            regularization_loss += tf.nn.l2_loss(model_variable)
+        # model_variables = self.get_trainable_vars()
+        # for model_variable in model_variables:
+        #     regularization_loss += tf.nn.l2_loss(model_variable)
         regularization_loss = self.p.loss.regn * regularization_loss
         # processed_data['labels']=np.tile([.25,.25,0,0,.75], (6,1))
         if self.p.loss.loss_type == 'mse':
@@ -238,6 +238,8 @@ class BaseModel(object):
             print ("prediction is " +str(prediction) )
             accuracy = np.count_nonzero(prediction == labels) / np.size(labels)
             print ("correctly predicted: "+str(accuracy))
+            if (accuracy== 1.) :
+                pass
             # predicted(predicted.numpy()>0) = 1
 
             # print ("correctly predicted: "+str(np.count_nonzero(np.clip(predicted.numpy(), a_min=-1, a_max=1) == labels)))
@@ -327,7 +329,8 @@ class BaseModel(object):
 
             #regularization_loss1 = self.p.loss.regn * tf.nn.l2_loss(nn_output[:-1])
             regularization_loss_svm = 0
-            regularization_loss_svm = 1/2 * self.p.loss.lam * tf.nn.l2_loss(nn_output[:-1]) # regularizer?
+            regularization_loss_svm = 1/2 * self.p.loss.lam * tf.nn.l2_loss(nn_output.numpy()[:,:-1])
+            # regularizer?
             # regularization_loss_svm = self.p.loss.regn * regularization_loss_svm
             # print("regularization_loss_svm : " + str(regularization_loss_svm.numpy()))
             C=1 #Penalty parameter of the error term

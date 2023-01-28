@@ -437,7 +437,7 @@ class SystemConfig(Trajectory):
                  dtype=tf.float32, variable=True, direct_init=False,
                  valid_horizons_n1=None,
                  track_trajectory_acceleration=True):
-        assert(k == 1)
+        # assert(k == 1)
         # Don't pass on valid_horizons_n1 as a SystemConfig has no horizon
         super(SystemConfig, self).__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
                                            heading_nk1, angular_speed_nk1,

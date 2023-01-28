@@ -73,8 +73,8 @@ def create_params():
                                                     # 'zero': the heading is initialized to zero.
                                                     # 'random': the heading is initialized randomly within the given
                                                     # bounds.
-                                                    # reset_type='zero',
-                                                    reset_type='random',
+                                                    reset_type='zero',
+                                                    # reset_type='random',
                                                     bounds=[-np.pi, np.pi-1e-10]
                                                 ),
                                                 speed=DotMap(
@@ -85,8 +85,8 @@ def create_params():
                                                 ),
                                                 ang_speed=DotMap(
                                                     # For description of reset types see heading parameters above.
-                                                    # reset_type='zero',
-                                                    reset_type='random',
+                                                    reset_type='zero',
+                                                    # reset_type='random',
                                                     bounds=[-0.5, 0.5],
                                                     gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )

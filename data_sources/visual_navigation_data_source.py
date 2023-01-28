@@ -104,7 +104,7 @@ class VisualNavigationDataSource(ImageDataSource):
 
             self.episode_counter +=1
 
-            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0118-2'
+            here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0118-2'#0127
 
             if self.episode_counter <= self.num_episode * 0.8 :
 

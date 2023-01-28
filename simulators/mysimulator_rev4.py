@@ -319,7 +319,7 @@ class Simulator(SimulatorHelper):
         # dpt_image_1mk1[0, :, :, 0] is the depth imageW
         # dpt_image_1mk1[0, :, :, 1] is mask
         # rgb_image_1mk3, depth_image_1mk1 = render_rgb_and_depth(r, camera_pos_13, dx_m, human_visible=True)
-        fig = plt.figure(figsize=(30, 10))
+        # fig = plt.figure(figsize=(30, 10))
         # ax = fig.add_subplot(1, 3, 1)
         # ax.imshow(rgb_image_1mk3[0].astype(np.uint8))
         # ax.set_xticks([])
@@ -374,19 +374,23 @@ class Simulator(SimulatorHelper):
             # if 0 < target_state[0] < self.obstacle_map.map_bounds[1][0] and 0 < target_state[1] < self.obstacle_map.map_bounds[1][1]:
 
             # count += 1
-            # target_state[2]= xf[2] + config.heading_nk1()[0][0][0]
-            # target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
+            Headingf= [0]
+
+            target_state[2]= xf[2] + config.heading_nk1()[0][0][0]
+            target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
 
             # speedf = np.float16(np.random.uniform(low=0, high=0.6, size=(3,)))
             # speedf = np.random.uniform(low=0, high=0.6, size=(1,))
-            speedHeadingf = [[0,0]]
+            Heading_speedf = [[0,0]]
             # print('speedf is' ,v0)
 
-            for vf in speedHeadingf:
+            for vf in Heading_speedf:
 
                 processWaypoint = True
 
-                vf1=[vf]
+
+                target_state[2] = vf[0] + config.heading_nk1()[0][0][0]
+                target_state[2] = np.arctan2(np.sin(target_state[2]), np.cos(target_state[2]))
                 goal_state_local = np.concatenate((xf, np.array(vf)), axis=0)
                 # goal_state_local = [y for x in [xf, vf1] for y in x]
                 # goal_state_local = np.array(np.linalg.inv(Transformation)).dot([goal_state[0], goal_state[1], 1])
