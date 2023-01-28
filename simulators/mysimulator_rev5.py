@@ -425,7 +425,7 @@ class Simulator(SimulatorHelper):
                 crop_size = [64, 64]
                 robot = [0, (crop_size[0] - 1) / 2]
                 start_angular_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * config.angular_speed_nk1()[0][0][0]
-                start_pose = np.concatenate((start_speed_nk1.numpy(), start_angular_speed_nk1.numpy(), axis=0)) #angular velocity
+                start_pose = np.concatenate((start_speed_nk1.numpy(), start_angular_speed_nk1.numpy()), axis=0) #angular velocity
                 waypointAction.append(np.array(actions_waypoints_local [counter]))
                 image = rgb_image_1mk3
 
