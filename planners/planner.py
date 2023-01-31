@@ -57,16 +57,16 @@ class Planner(object):
     def empty_data_dict():
         """Returns a dictionary with keys mapping to empty lists
         for each datum computed by a planner."""
-        data = {'system_config': [],
-                'waypoint_config': [],
-                'trajectory': [],
-                'spline_trajectory': [],
-                'planning_horizon': [],
-                'K_nkfd': [],
-                'k_nkf1': [],
-                'img_nmkd': []}
+        # data = {'system_config': [],
+        #         'waypoint_config': [],
+        #         'trajectory': [],
+        #         'spline_trajectory': [],
+        #         'planning_horizon': [],
+        #         'K_nkfd': [],
+        #         'k_nkf1': [],
+        #         'img_nmkd': []}
 
-        # data = {'start_pose': [], 'waypointAction': [], 'labels': [], 'image': []}
+        data = {'start_pose': [], 'waypointAction': [], 'labels': [], 'image': []}
 
 
         return data

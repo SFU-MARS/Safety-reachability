@@ -24,7 +24,8 @@ def test_sine_function_training():
     p.model.arch.use_dropout = False
     
     p.trainer.seed = 1
-    p.trainer.num_epochs = 2
+    p.trainer.num_
+    epochs = 2
     p.trainer.num_samples = 500
     p.trainer.batch_size = 100
     

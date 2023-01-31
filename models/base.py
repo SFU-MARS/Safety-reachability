@@ -134,9 +134,9 @@ class BaseModel(object):
         ###
 
         regularization_loss = 0.
-        # model_variables = self.get_trainable_vars()
-        # for model_variable in model_variables:
-        #     regularization_loss += tf.nn.l2_loss(model_variable)
+        model_variables = self.get_trainable_vars()
+        for model_variable in model_variables:
+            regularization_loss += tf.nn.l2_loss(model_variable)
         regularization_loss = self.p.loss.regn * regularization_loss
         # processed_data['labels']=np.tile([.25,.25,0,0,.75], (6,1))
         if self.p.loss.loss_type == 'mse':
@@ -312,7 +312,7 @@ class BaseModel(object):
 
             C1=1
             hinge_loss = C1* hinge_loss #+ cross_entropy_loss
-            print("hinge_loss: " + str(hinge_loss.numpy()))
+            # print("hinge_loss: " + str(hinge_loss.numpy()))
 
             # t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
             # threshold = 1

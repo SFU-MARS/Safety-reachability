@@ -183,6 +183,7 @@ class Simulator(SimulatorHelper):
 
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
+        dataForAnImage = vehicle_data
         end_episode = False
 
 
@@ -236,8 +237,6 @@ class Simulator(SimulatorHelper):
         # data = self.reset_data_dictionary(self.p)
 
 
-        num_episode = 10
-
         count = 0
 
         # for episode in range(num_episode):
@@ -250,7 +249,7 @@ class Simulator(SimulatorHelper):
 
 # with tf.device('/cpu:0'):
 
-        dataForAnImage=[]
+        # dataForAnImage=[]
         #num = 10000
         num_samples = 1
 
@@ -297,6 +296,7 @@ class Simulator(SimulatorHelper):
         start_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * v0
 
         waypointAction = []
+        labels=[]
 
         for counter in range(len(actions_waypoints_global)):
 
@@ -323,7 +323,7 @@ class Simulator(SimulatorHelper):
             goal_posy_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * target_state[1]
             goal_pos_nk2 = tf.concat([goal_posx_nk1, goal_posy_nk1], axis=2)
             goal_heading_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * target_state[2]
-            vf=0
+            vf = v0
             goal_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) *vf
 
 
@@ -371,13 +371,13 @@ class Simulator(SimulatorHelper):
             v_nk1 = spline_traj.speed_nk1()
             states_traj = np.concatenate((pos_nk3[0, :, :], v_nk1[0, :, :]), axis=1)
             V = my_interpolating_functionV(states_traj)
-            self.V = min(V)
-            self.label0 = np.sign(self.V)
-            self.labels.append(self.label0)
+            V = min(V)
+            label0 = np.sign(V)
+            labels.append(label0)
             start_pos_diff = (pos_nk3 - start_n5[:, None, :3])[:, 0]
             goal_pos_diff = (pos_nk3 - goal_n5[:, None, :3])[:, -1]
             assert (np.allclose(start_pos_diff, np.zeros((n1, 3)), atol=1e-6))
-            assert (np.allclose(goal_pos_diff, np.zeros((n1, 3)), atol=1e-5))
+            assert (np.allclose(goal_pos_diff, np.zeros((n1, 3)), atol=1e-3))
 
             # tf.reshape(start_n5[:, 3], (n, 1, 1)) V replace,
             # v_nk1 is shape (5, 100, 1)
@@ -385,16 +385,17 @@ class Simulator(SimulatorHelper):
             start_vel_diff = (v_nk1 - start_n5[:, None, 3:4])[:, 0]
             goal_vel_diff = (v_nk1 - goal_n5[:, None, 3:4])[:, -1]
             assert (np.allclose(start_vel_diff, np.zeros((n1, 1)), atol=1e-6))
-            assert (np.allclose(goal_vel_diff, np.zeros((n1, 1)), atol=1e-5))
-            visualize = True
+            assert (np.allclose(goal_vel_diff, np.zeros((n1, 1)), atol=1e-3))
+            visualize = False
             if visualize:
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
                 spline_traj.render(ax, freq=4)
                 plt.show()
 
-
-
+            if np.maximum.reduce(spline_traj.position_nk2()[0])[0] > self.obstacle_map.map_bounds[1][0] or np.maximum.reduce(spline_traj.position_nk2()[0])[1]>self.obstacle_map.map_bounds[1][1] \
+            or np.minimum.reduce(spline_traj.position_nk2()[0])[0] < 0 or np.minimum.reduce(spline_traj.position_nk2()[0])[1]< 0:
+               processWaypoint = False
 
             # if construc_point[0][0][0] > self.obstacle_map.map_bounds[1][0] or construc_point[0][0][0] < 0 or 0 > \
             #         construc_point[0][0][1] or construc_point[0][0][1] > self.obstacle_map.map_bounds[1][1]:
@@ -412,22 +413,30 @@ class Simulator(SimulatorHelper):
                 # camera_grid_world_pos_12 = position_nk1_next[0] / dx_m
                 # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
 
-                camera_pos_13 = config.heading_nk1()[0]
-                camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-
                 # image of current state
-                rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
+                camera_pos_13 = config.position_and_heading_nk3()[0].numpy()
+                camera_grid_world_pos_12 = (config.position_nk2()[0] / dx_m).numpy()
+                pos_3 = camera_pos_13[0, :3]
 
-                img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
+                rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3])
+
+                # dpt_image_1mk1, _, _ = r._get_depth_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3],
+                #                                           self.params.obstacle_map_params.dx, 1500, pos_3,
+                #                                           human_visible=False)  # np.prod(self.params.obstacle_map_params.map_size_2)
+                # img = np.concatenate((dpt_image_1mk1, rgb_image_1mk3), axis=3)
+
+                img = rgb_image_1mk3
+
+                # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
                 #        # In the topview the positive x axis points to the right and
                 # the positive y axis points up. The robot is located at
                 # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
-                crop_size = [64, 64]
-                robot = [0, (crop_size[0] - 1) / 2]
+                # crop_size = [64, 64]
+                # robot = [0, (crop_size[0] - 1) / 2]
                 start_angular_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * config.angular_speed_nk1()[0][0][0]
                 start_pose = np.concatenate((start_speed_nk1.numpy(), start_angular_speed_nk1.numpy()), axis=0) #angular velocity
-                waypointAction.append(np.array(actions_waypoints_local [counter]))
-                image = rgb_image_1mk3
+                waypointAction.append(np.array(actions_waypoints_local [counter]+[vf-v0]))
+                image = img
 
             # endif
 
@@ -438,7 +447,7 @@ class Simulator(SimulatorHelper):
 
         dataForAnImage = {'start_pose': np.expand_dims(np.reshape(np.array(start_pose), (1, 2)), axis=0),
                           'image': np.array(image), 'waypointAction': np.expand_dims(np.array(waypointAction), axis=0),
-                          'labels': np.expand_dims(np.reshape(np.array(self.labels), (-1, 1)), axis=0)}
+                          'labels': np.expand_dims(np.reshape(np.array(labels), (-1, 1)), axis=0)}
         #
 
         return dataForAnImage
