@@ -274,6 +274,9 @@ class Simulator(SimulatorHelper):
         #
 
         d = self.start_config.speed_nk1()[0][0][0].numpy() / 2
+        d1
+        d2
+        
         xr = self.start_config.position_nk2()[0][0].numpy()[0]
         yr = self.start_config.position_nk2()[0][0].numpy()[1]
         theta= self.start_config.heading_nk1()[0][0][0].numpy()
@@ -323,7 +326,7 @@ class Simulator(SimulatorHelper):
             goal_posy_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * target_state[1]
             goal_pos_nk2 = tf.concat([goal_posx_nk1, goal_posy_nk1], axis=2)
             goal_heading_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * target_state[2]
-            vf = v0
+            vf = 0
             goal_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) *vf
 
 
@@ -370,8 +373,9 @@ class Simulator(SimulatorHelper):
             pos_nk3 = spline_traj.position_and_heading_nk3()
             v_nk1 = spline_traj.speed_nk1()
             states_traj = np.concatenate((pos_nk3[0, :, :], v_nk1[0, :, :]), axis=1)
-            V = my_interpolating_functionV(states_traj)
-            V = min(V)
+            # V = my_interpolating_functionV(states_traj)
+            # V = min(V)
+            V = my_interpolating_functionV(states_traj[-1])
             label0 = np.sign(V)
             labels.append(label0)
             start_pos_diff = (pos_nk3 - start_n5[:, None, :3])[:, 0]
@@ -419,7 +423,8 @@ class Simulator(SimulatorHelper):
                 pos_3 = camera_pos_13[0, :3]
 
                 rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3])
-
+                # plt.imshow(rgb_image_1mk3[0])
+                # plt.show()
                 # dpt_image_1mk1, _, _ = r._get_depth_image(camera_grid_world_pos_12, camera_pos_13[:, 2:3],
                 #                                           self.params.obstacle_map_params.dx, 1500, pos_3,
                 #                                           human_visible=False)  # np.prod(self.params.obstacle_map_params.map_size_2)
@@ -435,7 +440,7 @@ class Simulator(SimulatorHelper):
                 # robot = [0, (crop_size[0] - 1) / 2]
                 start_angular_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * config.angular_speed_nk1()[0][0][0]
                 start_pose = np.concatenate((start_speed_nk1.numpy(), start_angular_speed_nk1.numpy()), axis=0) #angular velocity
-                waypointAction.append(np.array(actions_waypoints_local [counter]+[vf-v0]))
+                waypointAction.append(np.array(actions_waypoints_local [counter]+[0]))
                 image = img
 
             # endif

@@ -141,7 +141,7 @@ class VisualNavigationDataSource(ImageDataSource):
                         # here = os.path.dirname(os.path.abspath(__file__))
                     file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0130nesbi'
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0131'
                     with open(os.path.join(here, file_name), "wb") as f:
 
                         print ("dumping")
