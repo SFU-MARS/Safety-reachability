@@ -274,9 +274,9 @@ class Simulator(SimulatorHelper):
         #
 
         d = self.start_config.speed_nk1()[0][0][0].numpy() / 2
-        d1
-        d2
-        
+        # d1
+        # d2
+        #
         xr = self.start_config.position_nk2()[0][0].numpy()[0]
         yr = self.start_config.position_nk2()[0][0].numpy()[1]
         theta= self.start_config.heading_nk1()[0][0][0].numpy()

@@ -196,7 +196,7 @@ class BaseModel(object):
                 (processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))),
                 axis=1)
             # x = self.polynomial_kernel(x, x)
-            # x = self.gaussian_kernel(x, x)
+            x = self.gaussian_kernel(x, x)
 
             # x = K.reshape(x, (50, 5))
             # w = tf.convert_to_tensor(nn_output)

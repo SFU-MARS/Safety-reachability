@@ -31,7 +31,7 @@ def create_params(simulator_params):
                     # Weight regularization co-efficient
                     regn=1e-6,
                     # regn=1e-8,
-                    lam=1e-6,
+                    lam=1,
 
                     # Velocity Smoothing co-efficient for end-to-end networks
                     smoothing_coeff=0.0
@@ -66,7 +66,7 @@ def create_params(simulator_params):
         
                         # Learning schedule adjustment parameters
                         lr_decay_frequency=1,
-                        lr_decay_factor=10-6,
+                        lr_decay_factor=0.95,
         
                         # Checkpoint settings
                         max_num_ckpts_to_keep=int(1e2),

@@ -250,8 +250,8 @@ class TrainerHelper(object):
             # self.lr.assign(1/(epoch+1000))
             self.lr.assign(self.lr/(1 + (epoch / 2)))
             # Decay the learning rate by the decay factor after every few epochs
-            # if epoch % self.p.lr_decay_frequency == 0:
-            #     self.lr.assign(self.lr * self.p.lr_decay_factor)
+            if epoch % self.p.lr_decay_frequency == 0:
+                self.lr.assign(self.lr * self.p.lr_decay_factor)
             # else:
             #     return
         else:

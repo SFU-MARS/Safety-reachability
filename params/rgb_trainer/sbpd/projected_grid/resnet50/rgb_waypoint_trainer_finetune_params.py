@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 5 #6 with kernel
+    p.model.num_outputs = 3 #6 with kernel
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -73,8 +73,8 @@ def create_params():
 
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
-    p.trainer.lr = 1e-6
-    p.trainer.batch_size = 4#48 original, changed after error 36
+    p.trainer.lr = 1e-5
+    p.trainer.batch_size = 32#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(10000) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(40)
+    p.trainer.num_samples = int(4000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -90,12 +90,12 @@ def create_params():
 
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
-    p.trainer.restore_from_ckpt = False
+    p.trainer.restore_from_ckpt = True
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 50
+    p.trainer.num_epochs = 100
 
     # Change the Data Processing parameters
-    # p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
+    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
 
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
@@ -111,7 +111,8 @@ def create_params():
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2020-09-10_10-14-56/checkpoints/ckpt-5' #Test last neural network for example, check point is nn parameters
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2021-06-20_14-56-40/checkpoints/ckpt-5'
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
-    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-01-19_01-49-14/checkpoints/ckpt-7"
+    # p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-01-19_01-49-14/checkpoints/ckpt-7"
+    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-02-02_15-37-16/checkpoints/ckpt-7"
     # Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
     #  should be the building name
@@ -144,7 +145,7 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-easy']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0131']#1117-600
+        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0201']#1117-600
     p.data_creation.data_points = int(1e3/2)
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     p.data_creation.data_points_per_file= 20

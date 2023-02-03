@@ -81,8 +81,8 @@ class VisualNavigationDataSource(ImageDataSource):
         # Reset the data dictionary
         # data = self.reset_data_dictionary(self.p)
         d2 = {}
-        self.num_episode = 40
-        data_points_per_file = 4
+        self.num_episode = 4000
+        data_points_per_file = 100
         # self.num_episode = 2
         # data_points_per_file=1
 
@@ -141,7 +141,7 @@ class VisualNavigationDataSource(ImageDataSource):
                         # here = os.path.dirname(os.path.abspath(__file__))
                     file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
 
-                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0131'
+                    here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0201'
                     with open(os.path.join(here, file_name), "wb") as f:
 
                         print ("dumping")
