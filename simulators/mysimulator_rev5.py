@@ -273,29 +273,36 @@ class Simulator(SimulatorHelper):
         #
         #
 
-        d = self.start_config.speed_nk1()[0][0][0].numpy() / 2
-        # d1
-        # d2
-        #
+        d0 = self.start_config.speed_nk1()[0][0][0].numpy() / 2
+        d1 = self.start_config.speed_nk1()[0][0][0].numpy() / 3
+        d2 = self.start_config.speed_nk1()[0][0][0].numpy() / 4
+
         xr = self.start_config.position_nk2()[0][0].numpy()[0]
         yr = self.start_config.position_nk2()[0][0].numpy()[1]
         theta= self.start_config.heading_nk1()[0][0][0].numpy()
         phi = np.pi / 4
 
         # actions_waypoints = [[0.4, 0 , 0], [0.4, 0.1, 0], [0.4, -0.1, 0]]
-        actions_waypoints_global = [[xr + d * np.cos(theta), yr + d * np.sin(theta), theta],
-                                    [xr + d * np.cos(theta + phi), yr + d * np.sin(theta + phi), theta + phi],
-                                    [xr + d * np.cos(theta - phi), yr + d * np.sin(theta - phi), theta - phi]]
+        actions_waypoints_global = [[xr + d0 * np.cos(theta), yr + d0 * np.sin(theta), theta],
+                                    [xr + d1 * np.cos(theta + phi), yr + d1 * np.sin(theta + phi), theta],
+                                    [xr + d2 * np.cos(theta - phi), yr + d2 * np.sin(theta - phi), theta]]
+        # actions_waypoints_global = [[xr + d * np.cos(theta), yr + d * np.sin(theta), theta],
+        #                             [xr + d * np.cos(theta + phi), yr + d * np.sin(theta + phi), theta + phi],
+        #                             [xr + d * np.cos(theta - phi), yr + d * np.sin(theta - phi), theta - phi]]
 
-        actions_waypoints_local = [[d * np.cos(theta), d * np.sin(theta), 0],
-                                   [d * np.cos(theta + phi), d * np.sin(theta + phi), phi],
-                                   [d * np.cos(theta - phi), d * np.sin(theta - phi), -phi]]
+
+        # actions_waypoints_local = [[d * np.cos(theta), d * np.sin(theta), 0],
+        #                            [d * np.cos(theta + phi), d * np.sin(theta + phi), phi],
+        #                            [d * np.cos(theta - phi), d * np.sin(theta - phi), -phi]]
+        actions_waypoints_local = [[d0 * np.cos(theta), d0 * np.sin(theta), 0],
+                                   [d1 * np.cos(theta), d1 * np.sin(theta), 0],
+                                   [d2 * np.cos(theta), d2 * np.sin(theta), 0]]
 
         v0 = config.speed_nk1()[0][0][0]
 
         # Initial SystemConfig is [0, 0, 0, v0, 0]
         n1 = 1
-        k1 = 100
+        k1 = int(1/dt)
         start_speed_nk1 = tf.ones((n1, 1, 1), dtype=tf.float32) * v0
 
         waypointAction = []
@@ -381,7 +388,7 @@ class Simulator(SimulatorHelper):
             start_pos_diff = (pos_nk3 - start_n5[:, None, :3])[:, 0]
             goal_pos_diff = (pos_nk3 - goal_n5[:, None, :3])[:, -1]
             assert (np.allclose(start_pos_diff, np.zeros((n1, 3)), atol=1e-6))
-            assert (np.allclose(goal_pos_diff, np.zeros((n1, 3)), atol=1e-3))
+            assert (np.allclose(goal_pos_diff, np.zeros((n1, 3)), atol=1e-4))
 
             # tf.reshape(start_n5[:, 3], (n, 1, 1)) V replace,
             # v_nk1 is shape (5, 100, 1)

@@ -133,7 +133,7 @@ class TrainerFrontendHelper(object):
             self.create_trainer()
             
             # Maybe restore a checkpoint
-            self.maybe_restore_checkpoint()
+            # self.maybe_restore_checkpoint()
 
             # Start the training
             self.trainer.train(model=self.model, data_source=self.data_source,
