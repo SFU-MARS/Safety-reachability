@@ -43,60 +43,85 @@ class VisualNavigationModelBase(BaseModel):
         """
         Create the occupancy grid and other inputs for the neural network.
         """
+
         
         if self.p.data_processing.input_processing_function is not None:
             raw_data = self.preprocess_nn_input(raw_data, is_training)
+        #their code
+        # Get the input image (n, m, k, d)
+        # batch size n x (m x k pixels) x d channels
+    
+        img_nmkd = raw_data['img_nmkd']
 
-        img_nmkd = raw_data['image']
-        # img_nmkd=(img_nmkd - img_nmkd.mean(axis=0)) / (img_nmkd.std(axis=0) + 1e-8)
-        img_nmkd1=np.expand_dims(img_nmkd, axis=0)
-
-        waypointAction = raw_data['waypointAction']
-
-        waypointAction1 = np.expand_dims(waypointAction, axis=0)
-        # x=[]
-        # frames = np.empty( [1, 50,224,224,3])
-        #
-        # for i in range(50):
-        #     x=waypointAction[i]
-        #     frames[:,i, :, :, :]= x
-
-        vehicle_state = raw_data['start_pose']
-        # np.mean(self.training_info_dict['data']['start_pose'], axis=0) #
-        # mean_t= [[0.3496886,  0.06099968]]
-        # np.var(self.training_info_dict['data']['start_pose'], axis=0) #
-        # var_t= [[0.02119822, 3.3798633]]
-        # vehicle_state= (vehicle_state - mean_t)/var_t
-        # vehicle_state_max = np.reshape([0.6,3.14], (1,1,2))
-        # vehicle_state_min = np.reshape([0,-3.14] , (1,1,2))
-        # # vehicle_state = (vehicle_state - vehicle_state_min) / (vehicle_state_max - vehicle_state_min)
-        # vehicle_state = vehicle_state.astype(dtype=np.float32)
-
+        # Concatenate the goal position in an egocentric frame with vehicle's speed information
+        # goal_position = self._goal_position(raw_data)
+        vehicle_controls = self._vehicle_controls(raw_data)
         # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
-        # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
-        # state_featuures_n4 = np.array(vehicle_state)
-        state_featres_n2 = np.squeeze(vehicle_state)
-        state_features_n21 = np.reshape(state_featres_n2,(-1,2))
-        # state_features_n2=tf.convert_to_tensor(state_features_n2)
-        # state_features_n21=np.expand_dims(state_features_n2, axis=0)
+
         # Optimal Supervision
-        # optimal_labels_n = self._optimal_labels(raw_data)
-        optimal_labels_n = raw_data['labels']
-        optimal_labels_n1=np.expand_dims(optimal_labels_n, axis=0)
+        optimal_labels_n = self._optimal_labels(raw_data)
 
         # Prepare and return the data dictionary
         data = {}
-
-        # normalized_img = img_nmkd /255
-
+        state_featres_n2 = np.squeeze(vehicle_controls)
+        state_features_n21 = np.reshape(state_featres_n2, (-1, 2))
         data['inputs'] = [img_nmkd, state_features_n21]
-
-        data['labels'] = optimal_labels_n
-        data['Action_waypoint'] = waypointAction
-        # data['Action_waypoint'] = np.expand_dims((np.squeeze(waypointAction)), axis=0)
-
+        data['labels'] = raw_data['labels']
+        data['Action_waypoint'] = raw_data['all_waypoint_ego']
         return data
-    
+
+        #my code data generation
+        #
+        # img_nmkd = raw_data['image']
+        # # img_nmkd = raw_data['img_nmkd']
+        # # img_nmkd=(img_nmkd - img_nmkd.mean(axis=0)) / (img_nmkd.std(axis=0) + 1e-8)
+        # img_nmkd1=np.expand_dims(img_nmkd, axis=0)
+        #
+        # waypointAction = raw_data['waypointAction']
+        #
+        # waypointAction1 = np.expand_dims(waypointAction, axis=0)
+        # # x=[]
+        # # frames = np.empty( [1, 50,224,224,3])
+        # #
+        # # for i in range(50):
+        # #     x=waypointAction[i]
+        # #     frames[:,i, :, :, :]= x
+        #
+        # vehicle_state = raw_data['start_pose']
+        # # np.mean(self.training_info_dict['data']['start_pose'], axis=0) #
+        # # mean_t= [[0.3496886,  0.06099968]]
+        # # np.var(self.training_info_dict['data']['start_pose'], axis=0) #
+        # # var_t= [[0.02119822, 3.3798633]]
+        # # vehicle_state= (vehicle_state - mean_t)/var_t
+        # # vehicle_state_max = np.reshape([0.6,3.14], (1,1,2))
+        # # vehicle_state_min = np.reshape([0,-3.14] , (1,1,2))
+        # # # vehicle_state = (vehicle_state - vehicle_state_min) / (vehicle_state_max - vehicle_state_min)
+        # # vehicle_state = vehicle_state.astype(dtype=np.float32)
+        #
+        # # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
+        # # state_features_n4 = np.array(tf.concat([vehicle_state, vehicle_controls], axis=1))
+        # # state_featuures_n4 = np.array(vehicle_state)
+        # state_featres_n2 = np.squeeze(vehicle_state)
+        # state_features_n21 = np.reshape(state_featres_n2,(-1,2))
+        # # state_features_n2=tf.convert_to_tensor(state_features_n2)
+        # # state_features_n21=np.expand_dims(state_features_n2, axis=0)
+        # # Optimal Supervision
+        # # optimal_labels_n = self._optimal_labels(raw_data)
+        # optimal_labels_n = raw_data['labels']
+        # optimal_labels_n1=np.expand_dims(optimal_labels_n, axis=0)
+        #
+        # # Prepare and return the data dictionary
+        # data = {}
+        #
+        # # normalized_img = img_nmkd /255
+        #
+        # data['inputs'] = [img_nmkd, state_features_n21]
+        #
+        # data['labels'] = optimal_labels_n
+        # data['Action_waypoint'] = waypointAction
+        # # data['Action_waypoint'] = np.expand_dims((np.squeeze(waypointAction)), axis=0)
+        # return data
+
     def make_processing_functions(self):
         """
         Initialize the processing functions if required.
@@ -138,8 +163,8 @@ class VisualNavigationModelBase(BaseModel):
 
         if self.p.data_processing.input_processing_function in \
                 ['resnet50_keras_preprocessing', 'resnet50_keras_preprocessing_and_distortion']:
-            # raw_data['img_nmkd'] = tf.keras.applications.resnet50.preprocess_input(raw_data['img_nmkd'], mode='caffe')
-            raw_data['image'] = tf.keras.applications.resnet50.preprocess_input(raw_data['image'], mode='caffe')
+            raw_data['img_nmkd'] = tf.keras.applications.resnet50.preprocess_input(raw_data['img_nmkd'], mode='caffe')
+            # raw_data['image'] = tf.keras.applications.resnet50.preprocess_input(raw_data['image'], mode='caffe')
             # raw_data['image'] = np.squeeze(raw_data['image'])
 
 

@@ -61,28 +61,28 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 3 #6 with kernel
+    p.model.num_outputs = 4#4 WO kernel , 501
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
     # Image size to [224, 224, 3]
-    p.model.num_inputs.image_size = [224, 224, 5]
+    p.model.num_inputs.image_size = [224, 224, 3]
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
 
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
-    p.trainer.lr = 1e-5
-    p.trainer.batch_size = 4#48 original, changed after error 36
+    p.trainer.lr = 1e-4
+    p.trainer.batch_size = 36#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
-    # p.trainer.num_samples = int(10000) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(40)
+    # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
+    p.trainer.num_samples = int(1000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = True
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 100
+    p.trainer.num_epochs = 10
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -112,8 +112,9 @@ def create_params():
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2021-06-20_14-56-40/checkpoints/ckpt-5'
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
     # p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-01-19_01-49-14/checkpoints/ckpt-7"
-    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-02-02_15-37-16/checkpoints/ckpt-7"
-    # Change the data_dir
+    p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-02-10_22-14-19/checkpoints/ckpt-100"
+    # p.trainer.ckpt_path =  "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-02-09_16-54-22/checkpoints/ckpt-100"
+    36# Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
     #  should be the building name
     # TODO: In training, we have to render images for each area individually. That is,
@@ -144,11 +145,20 @@ def create_params():
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-all1'] #test 2 datapoint IN EACH FILE
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-easy']
+    # p.data_creation.data_dir = [
+    #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0215-more-toy-circle-gauss0.0001-lesswp']#1117-600
+    #
+    # p.data_creation.data_dir = [
+    #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-rbf-gridsearch']#1117-600
+    #
+    # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0217-30wp-theta0bin1']
+    # p.data_creation.data_dir = [
+    #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0203']#1117-600
-    p.data_creation.data_points = 40
+        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0']
+    p.data_creation.data_points = 1e3
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
-    p.data_creation.data_points_per_file= 4
+    p.data_creation.data_points_per_file= 1e2
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
     p.test.number_tests = 200

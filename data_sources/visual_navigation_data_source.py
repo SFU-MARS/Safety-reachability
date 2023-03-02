@@ -48,8 +48,8 @@ class VisualNavigationDataSource(ImageDataSource):
         Returns n, the batch size of the data inside
         this data dictionary.
         """
-        # return data['vehicle_state_nk3'].shape[0]
-        return data['image'].shape[0]
+        return data['vehicle_state_nk3'].shape[0]
+        # return data['image'].shape[0]
 
         # return len(data)
     

@@ -86,13 +86,13 @@ class ImageDataSource(DataSource):
                     filename, _ = self._extract_file_name_and_number(data_file, data_directory)
                     # img_nmkd=[]
                     # Render the images from the simulator
-                    # img_nmkd = simulator.get_observation_from_data_dict_and_model(data, self.model) #!
+                    img_nmkd = simulator.get_observation_from_data_dict_and_model(data, self.model) #!
                     # for i in range (120):
                     #     img_nmkd.append(data[i]["image"])
         
                     # Save the image augmented data to the new directory
                     img_filename = os.path.join(new_data_dirs[-1], filename)
-                    # data['img_nmkd'] = np.array(img_nmkd)
+                    data['img_nmkd'] = np.array(img_nmkd)
 
 
                     with open(img_filename, 'wb') as f:
@@ -340,10 +340,10 @@ class ImageDataSource(DataSource):
         else:  # The batch is split over two data_files
             
             # Get the remaining data from the first data_file
-            # training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
-            #                                              data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
             training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
-                                                         data_shuffle_idxs[start_index: start_index+1])
+                                                         data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
+            # training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
+            #                                              data_shuffle_idxs[start_index: start_index+1])
 
             remaining_num_samples = self.p.trainer.batch_size - self._get_n(training_batch0)
            
@@ -488,8 +488,8 @@ class ImageDataSource(DataSource):
         idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] +1
         # idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0]
         try:
-            # idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
-            idx_valid = np.where(np.cumsum(data['num_samples_n1']) >= vs)[0][0] + 1
+            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
+            # idx_valid = np.where(np.cumsum(data['num_samples_n1']) >= vs)[0][0] + 1
             idx_valid += (idx_train)
             # idx_valid += (60)
         except IndexError:  # There is not enough data to create a validation set:

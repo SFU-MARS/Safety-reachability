@@ -255,7 +255,8 @@ class Simulator(SimulatorHelper):
         #num = 10000
         num_samples = 1
 
-        cluster_centers = [(1,0), (-1,0)]
+        # cluster_centers = [(1,0), (-1,0)]
+        cluster_centers =[(1,0), (-1,0)]
         num_classes = len(cluster_centers)
         num_samples_total = 600
         X, y= make_blobs(n_samples=num_samples_total, centers = cluster_centers, n_features=2, cluster_std=0.01 , random_state=42)

@@ -193,7 +193,6 @@ class DataSource(object):
 
             with open(example_file, 'rb') as handle:
                 data = pickle.load(handle)
-
             self.data_tags = list(data.keys())
             # self.data_tags = list(data[0].keys())
         else:

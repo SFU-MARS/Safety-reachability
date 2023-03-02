@@ -5,6 +5,11 @@ from training_utils.architecture.resnet50_cnn import resnet50_cnn
 # from "@tensorflow/tfjs" import * as tf
 import numpy as np
 K = tf.keras.backend
+from sklearn.kernel_approximation import RBFSampler
+from sklearn import svm
+# from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import learning_curve, GridSearchCV , StratifiedKFold
+
 class BaseModel(object):
     """
     A base class for an input-output model that can be trained.
@@ -48,16 +53,16 @@ class BaseModel(object):
         # y = np.expand_dims(processed_data['Action_waypoint'][0][:, 1], axis=0)
         # y = processed_data['Action_waypoint'][0][:, 1]
         # z = np.expand_dims(processed_data['Action_waypoint'][0][:, 2], axis=0)
-        WP=processed_data['Action_waypoint'][0]
+        WP=processed_data['Action_waypoint']
         LABELS=processed_data['labels']
         normal = np.array(nn_output)
-        print ("NN's normal: "+ str(normal))
+        # print ("NN's normal: "+ str(normal))
 
         from sklearn.svm import SVC
         clf = SVC(C=1e6, kernel='linear')
         # clf = SVC( kernel='linear')
-        clf.fit(WP, LABELS[0])
-        w,b = clf.coef_, clf.intercept_
+        # clf.fit(WP, LABELS[0])
+        # w,b = clf.coef_, clf.intercept_
         # print ("w&b: "+str(w) + str(b))
 
         # # x_points = np.linspace(-1, 1)  # generating x-points from -1 to 1
@@ -141,9 +146,9 @@ class BaseModel(object):
         # processed_data['labels']=np.tile([.25,.25,0,0,.75], (6,1))
         if self.p.loss.loss_type == 'mse':
             # prediction_loss = tf.losses.mean_squared_error(nn_output, processed_data['labels'])
-            svm = np.concatenate((w[0], b), axis=0)
-            svm1 = np.tile(svm, (self.p.trainer.batch_size, 1))
-            prediction_loss =  tf.losses.mean_squared_error(nn_output, svm1)
+            # svm = np.concatenate((w[0], b), axis=0)
+            # svm1 = np.tile(svm, (self.p.trainer.batch_size, 1))
+            # prediction_loss =  tf.losses.mean_squared_error(nn_output, svm1)
             x = tf.concat(
                 (processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))),
                 axis=1)
@@ -157,193 +162,105 @@ class BaseModel(object):
         elif self.p.loss.loss_type == 'l2_loss':
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
         elif self.p.loss.loss_type == 'hinge':
-            # import numpy as np
-            # nn_output1=np.zeros((60,5))
-            # prediction_loss1=np.zeros((60,1))
-            # prediction_loss0 = np.zeros((60, 1))
-            # epochs=10
-            # rate=1/epochs
-            # reg_parm=0.1
-            # output_list=[]
-            # countT=0
-            #
+            best_params = []
+            sigma_sq_all =[]
+            C_all =[]
 
-            # for i in range(self.p.trainer.batch_size):
-            #
-            #     x = tf.contrib.eager.Variable(tf.random_normal([4], mean=1.0, stddev=0.35))
-            #     # tf.assign(x, np.squeeze(processed_data['Action_waypoint'][0:4, :, :]))
-            #     tf.assign(x, processed_data['Action_waypoint'][i, :])
-            #     x1 = tf.reshape(x, (4, 1))
-            #     # x_trans = tf.transpose(x)
-            #     x_conc = tf.concat((x1, tf.ones((1, 1))), axis=0)
-            #     w = tf.convert_to_tensor(nn_output)
-            #     z = tf.matmul(w, x_conc)
-            #     new_predicted = np.array([-1 if i == 0 else i for i in z])
-            #     # y = tf.reshape(tf.convert_to_tensor(processed_data['labels'][i, :]), (60, 1))
-            #     y = tf.convert_to_tensor(processed_data['labels'][i, :, :])
-            #     y1 = tf.cast(y, tf.float32)
-            #     output_list.append(tf.maximum(0, 1 - tf.matmul(z,  y1)))
-            #     if tf.matmul(z, y1) >= 0:
-            #         countT+=1
-            from tensorflow.python.framework import ops
-        # with ops.name_scope(scope, "hinge_loss", (nn_output, processed_data)) as scope:
-            # t=np.tile(nn_output,(data[1].shape[0],1,1))
-            # data[0]=t.reshape(data[1].shape[0],224,224,3)
-            # t = tf.tile(nn_output, (50, 1))
-            # processed_data['Action_waypoint'] = processed_data['Action_waypoint'] / np.linalg.norm(processed_data['Action_waypoint'])
-            # x=processed_data['Action_waypoint'][0]
             x = tf.concat(
-                (processed_data['Action_waypoint'][0], tf.ones((processed_data['Action_waypoint'][0].shape[0], 1))),
-                axis=1)
-            # x = self.polynomial_kernel(x, x)
-            x = self.gaussian_kernel(x, x)
+                (processed_data['Action_waypoint'],
+                 tf.ones((processed_data['Action_waypoint'].shape[0], processed_data['Action_waypoint'].shape[1], 1))),
+                axis=2)
 
-            # x = K.reshape(x, (50, 5))
-            # w = tf.convert_to_tensor(nn_output)
-            # w = tf.reduce_mean(nn_output, axis=0)
-            # w1 = tf.reshape(w, (5, 1))
-            # labels1=[]
-            # labels2 = []
-            labels = processed_data['labels']
-            # print("labels: "+str(labels[0]))
-            # labels1 = labels.tolist()
-            # for label in labels1:
-            #     for l in label:
-            #         print (l)
-            #         if l==[1]:
-            #             l=[1, -1]
-            #
-            #         else:
-            #             l = [-1, 1]
-            #
-            #         labels2.append(l)
+            ## kernels:
+            # rbf_feature = RBFSampler(gamma=1, random_state=1, n_components=100)
+            # x_rbf = [rbf_feature.fit_transform(x1) for x1 in x]
+            # x = x_rbf
+
+            # nr_comp=10
+            # rbf_feature = RBFSampler(gamma=0.7, random_state=1, n_components=nr_comp)
 
 
-            # labels1 = tf.cast(processed_data['labels'], dtype=tf.int32)
-            # category_indices = labels1
-            # unique_category_count = 2
-            # y_input = tf.one_hot(category_indices, unique_category_count)
-            # y_input = np.reshape(np.array(labels2), (nn_output.shape[0],6,2))
-            # nn_output = tf.tile(nn_output, (2,1,1))
-            predicted = tf.transpose(tf.expand_dims(K.dot(x, tf.reshape(nn_output, (-1,nn_output.shape[0]))),axis=0))#6
-            # avg = tf.reduce_mean(nn_output, axis=0)
-            # avg = avg[:, None]
-            # print ("predicted is"+str(np.transpose(predicted.numpy())))
-            # predicted = tf.matmul(x, avg)
-            prediction = predicted.numpy()
-            prediction[np.where(prediction >= 0)] = 1
-            prediction[np.where(prediction < 0)] = -1
-            # counter1 +=1
-            print("label is " + str(labels))
-            print ("prediction is " +str(prediction) )
-            accuracy = np.count_nonzero(prediction == labels) / np.size(labels)
-            print ("correctly predicted: "+str(accuracy))
-            if (accuracy== 1.) :
-                pass
-            # predicted(predicted.numpy()>0) = 1
-
-            # print ("correctly predicted: "+str(np.count_nonzero(np.clip(predicted.numpy(), a_min=-1, a_max=1) == labels)))
-            # predicted = K.dot(x, tf.reshape(nn_output, (5, nn_output.shape[0])))
-            # predicted = tf.transpose(predicted)
-            num_classes = 2
-            # predicted1 = tf.tile(tf.expand_dims(predicted, axis=2),  (1,1,2))
-            # print("nn_output:", tf.reduce_mean(nn_output, axis=0).numpy())
-            # print()
-
-            # new_predicted = np.array([-1 if i <= 1 else 1 for i in predicted])
-            # hinge_loss = np.mean([max(0, 1 - x * y) for x, y in zip(processed_data['labels'], predicted)])
-            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in zip(np.squeeze(processed_data['labels']), predicted)])
-            # hinge_loss = tf.reduce_mean([max(0., 1 - y * wx) for y, wx in
-            #                 zip(processed_data['labels'], predicted)])
-            # hinge_loss = sum([max(0, 1 - wx * y) for wx, y in
-            #  zip(predicted, processed_data['labels'][:50])])
-            # hinge_loss =K.sum(1. - K.flatten(tf.cast(predicted, dtype=tf.float64)) * K.flatten(processed_data['labels'][:50]))
-            #tf.compat.v1.keras.losses.hinge
-
-            from tensorflow.python.ops import array_ops
-            from tensorflow.python.ops import math_ops
-            from tensorflow.python.ops import nn_ops
 
 
-            # print("predicted: " + str(predicted))
-            # logits = math_ops.to_float(predicted)
-            logits = predicted
+            # rbf_feature.fit_transform()
+            # kerneled_x = [self.gaussianKernelGramMatrixFull(tf.transpose(x1).numpy(), tf.transpose(x1).numpy())  for x1 in x]
+            # x = [self.polynomial_kernel(x1, x1) for x1 in x]
+            # gamma = 1 / (3 * X.var()) # 3 is the num of features
+            # self.sigma_sq = 1/ (2*gamma)
+            # sigma_sq_all =[]
+            # for x1 in x :
+            #     gamma = 1 / (4 * x1.numpy().var())
+            #     sigma_sq_all. append(1 / (2 * gamma))
 
-            batch_size=2
-            num_classes=2
 
-            # output = tf.identity(tf.one_hot(tf.sign(tf.cast(processed_data['labels'], dtype=tf.int32)),2))
+            predicted = []
+
+            # for w1 in nn_output:
+            #     for x1 in x:
+            #         t = tf.convert_to_tensor(x1, dtype=tf.float32)
+            #         predicted.append(K.dot(t, tf.expand_dims(w1, axis=1)))
+            predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(w1, axis=1)) for x1, w1 in zip(x, nn_output)]
+            # hinge_loss = tf.reduce_sum([tf.maximum(0, 1 - wx * y) for wx, y in
+            #                      zip(predicted, processed_data['labels'])])
+            hinge_losses = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
+                                 zip(predicted, processed_data['labels'])]
+            accuracy = []
+            prediction_total = []
+            for prediction, label in zip(predicted, processed_data['labels']):
+                prediction = prediction.numpy()
+                prediction[np.where(prediction >= 0)] = 1
+                prediction[np.where(prediction < 0)] = -1
+                prediction_total.append(prediction)
+                accuracy.append(np.count_nonzero(prediction == label) / np.size(label))
+            accuracy = np.mean(np.array(accuracy))
+            prediction_total = np.array(prediction_total)
+            import matplotlib
+            matplotlib.use('Qt4Agg')
+            from mpl_toolkits import mplot3d
+            from matplotlib.colors import ListedColormap
+            for WP, prediction, LABELS1 , C1 in zip(processed_data['Action_waypoint'], prediction_total, processed_data['labels'],nn_output.numpy() ):
+                fig, ax = plt.subplots()
+                ax = plt.axes(projection="3d")
+                mycmap = ListedColormap(["red", "green"])
+                ax.scatter3D(WP[:, 0], WP[:, 1],
+                             WP[:, 2], c=np.squeeze(LABELS1), marker='o', alpha=0.6, cmap=mycmap)
+                x = np.linspace(0, 2.5, 10)
+                y = np.linspace(-2, 2, 10)
+                xx, yy = np.meshgrid(x,y)
+                z = (-C1[0] * xx - C1[1] * yy - C1[3]) / C1[2]
+                # if z< np.pi/2 and z> -np.pi/2:
+                #     z1 = z
+                # elif z> 3*np.pi/2 and z<2*np.pi:
+                #     z1= z - 2*np.pi
+                # else:
 
 
-            # regularization_loss = tf.reduce_mean(tf.square(nn_output))
-            # output = tf.tile(nn_output, (num_classes,1,1))
-            # hinge_loss = tf.reduce_mean(
-            #     tf.square(
-            #         tf.maximum(
-            #             0., 1 - y_input * predicted1
-            #         )
-            #     )
-            # )
-            # penalty_parameter=1
-            # loss = regularization_loss + penalty_parameter * hinge_loss
-            # # logits.get_shape().assert_is_compatible_with(labels.get_shape())
-            #
-            # output = tf.identity(tf.sign(predicted1))
-            # correct_prediction = tf.equal(
-            #     tf.argmax(output, 2), tf.argmax(y_input, 2)
-            # )
-            #
-            # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            # print ("accuracy: "+str(accuracy))
-            # losses= tf.losses.hinge_loss(
-            #     (labels+1)/2,
-            #     logits)
-            all_ones = tf.ones_like(labels,dtype=tf.float32 )
-            # print("logit: "+ str(logits))
-            losses = nn_ops.relu(
-                tf.subtract(all_ones, tf.multiply(labels, logits)))
 
-            # cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-            #     labels=(labels+1)/2, logits=logits)
-            hinge_loss = tf.reduce_sum(losses)
+                # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
+                # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
+                ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
+                # wrongs = WP[np.where(prediction != LABELS1)]
+                # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
+                #              wrongs[:, 2], marker='*')
+                plt.show()
 
-        # hinge_loss = tf.keras.losses.hinge(K.flatten(predicted), K.flatten(processed_data['labels'][:50]))
-        # ywxmax=tf.maximum(0, tf.ones(60, 1) - tf.matmul(x, w1))
 
-            C1=1
-            hinge_loss = C1* hinge_loss #+ cross_entropy_loss
-            # print("hinge_loss: " + str(hinge_loss.numpy()))
+            print("correctly predicted in this batch: " + str(accuracy))
 
-            # t = [y * wx for y, wx in zip(np.squeeze(processed_data['labels'][:50]), predicted)]
-            # threshold = 1
-            # elements_gt = tf.math.greater(t, threshold)
-            # num_elements_gt = np.mean(tf.cast(elements_gt, tf.int32))
-            # print('accuracy:' + str(num_elements_gt))
-            # accuracy=num_elements_gt
-            # accuracy =tf.reduce_mean(tf.matmul(predicted, processed_data['labels'])>=1)
-            # ywxmax=tf.stack(output_list)
+            C = 1
+            # prediction_losses= [a*b for a,b in zip(C_all,hinge_losses)]
+            prediction_losses = hinge_losses
+            prediction_loss =  tf.reduce_sum( prediction_losses)
+            prediction_loss = C* prediction_loss
+            print("prediction_loss: " + str(prediction_loss.numpy()))
 
-            # x=tf.ones((60,1))-tf.matmul(tf.matmul(tf.concat([tf.transpose(processed_data['Action_waypoint'][0]), tf.ones((60,1))],axis=1), tf.transpose(nn_output)), processed_data['labels'][0])
-            # y=tf.maximum(tf.zeros((60,1)),x)
-            # prediction_loss1 = tf.reduce_sum(ywxmax)
-
-            #regularization_loss1 = self.p.loss.regn * tf.nn.l2_loss(nn_output[:-1])
             regularization_loss_svm = 0
             regularization_loss_svm = 1/2 * self.p.loss.lam * tf.nn.l2_loss(nn_output.numpy()[:,:-1])
-            # regularizer?
-            # regularization_loss_svm = self.p.loss.regn * regularization_loss_svm
-            # print("regularization_loss_svm : " + str(regularization_loss_svm.numpy()))
-            C=1 #Penalty parameter of the error term
-            # total_loss = C * prediction_loss + regularization_loss + 1/2 * regularization_loss1
-            prediction_loss = C* hinge_loss
-            print("prediction_loss: " + str(prediction_loss.numpy()))
             regularization_loss = regularization_loss + regularization_loss_svm
+            print("regularization_loss: " + str(regularization_loss.numpy()))
+
         total_loss = prediction_loss + regularization_loss
         print("total_loss: "+str(total_loss.numpy()))
-            # total_loss = C*(prediction_loss1)+ 0.5 * tf.cast(regularization_loss,dtype=tf.float64)
-            # total_loss = C * (prediction_loss)
-            # accuracy=countT/self.p.trainer.batch_size
-
 
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss, total_loss, nn_output
@@ -354,6 +271,12 @@ class BaseModel(object):
         else:
             return total_loss
                 # return regularization_loss
+
+    def gaussian_kernel(self, x1, x):
+        m = x.shape[0]
+        n = x1.shape[0]
+        op = [[self.__similarity(x1[x_index], x[l_index]) for l_index in range(m)] for x_index in range(n)]
+        return np.array(op)
     
     def get_trainable_vars(self):
         """
@@ -398,12 +321,26 @@ class BaseModel(object):
     def __similarity(self,x,l):
         return np.exp(-sum((x-l)**2)/(2*self.sigma_sq))
 
-    def gaussian_kernel(self,x1,x):
-        m=x.shape[0]
-        n=x1.shape[0]
-        op=[[self.__similarity(x1[x_index],x[l_index]) for l_index in range(m)] for x_index in range(n)]
-        return tf.convert_to_tensor(op)
 
+    @staticmethod
+    def gaussianKernelGramMatrixFull( X1, X2, sigma=0.1):
+        """(Pre)calculates Gram Matrix K"""
+
+        gram_matrix = np.zeros((X1.shape[0], X2.shape[0]))
+        for i, x1 in enumerate(X1):
+            for j, x2 in enumerate(X2):
+                x1 = x1.flatten()
+                x2 = x2.flatten()
+                gram_matrix[i, j] = np.exp(- np.sum(np.power((x1 - x2), 2)) / float(2 * (sigma ** 2)))
+
+        return gram_matrix
+
+    # def gaussian_kernel(self,x1,x):
+    #     m=x.shape[0]
+    #     n=x1.shape[0]
+    #     op=[[self.__similarity(x1[x_index],x[l_index]) for l_index in range(m)] for x_index in range(n)]
+    #     return tf.convert_to_tensor(op)
+    #
     def polynomial_kernel(self, x1, x, p=3):
         m=x.shape[0]
         n=x1.shape[0]
