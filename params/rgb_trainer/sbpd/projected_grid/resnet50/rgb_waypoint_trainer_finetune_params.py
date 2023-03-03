@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 4#4 WO kernel , 501
+    p.model.num_outputs = 40#4 WO kernel , 501
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = True
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 10
+    p.trainer.num_epochs = 50
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'

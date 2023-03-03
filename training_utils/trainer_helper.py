@@ -146,7 +146,7 @@ class TrainerHelper(object):
         self.checkpoint = tfe.Checkpoint(optimizer=self.create_optimizer(), model=model.arch)
         
         # Restore the checkpoint
-        self.checkpoint.restore(self.p.ckpt_path)
+        # self.checkpoint.restore(self.p.ckpt_path)
     
     def save_checkpoint(self, epoch, model):
         """
@@ -194,8 +194,8 @@ class TrainerHelper(object):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _,  accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric(prediction_loss_training)
         # print(training_loss_metric)
@@ -206,8 +206,8 @@ class TrainerHelper(object):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric1(accuracy_training)
         # print(training_loss_metric)

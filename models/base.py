@@ -9,6 +9,7 @@ from sklearn.kernel_approximation import RBFSampler
 from sklearn import svm
 # from sklearn.grid_search import GridSearchCV
 from sklearn.model_selection import learning_curve, GridSearchCV , StratifiedKFold
+from sklearn.decomposition import PCA
 
 class BaseModel(object):
     """
@@ -166,15 +167,22 @@ class BaseModel(object):
             sigma_sq_all =[]
             C_all =[]
 
+
+            X_40 = [ x[::100,:] for x in processed_data['Action_waypoint']]
+            labels_40 = [x[::100, :] for x in processed_data['labels']]
+
             x = tf.concat(
                 (processed_data['Action_waypoint'],
                  tf.ones((processed_data['Action_waypoint'].shape[0], processed_data['Action_waypoint'].shape[1], 1))),
                 axis=2)
 
+            X_40_1 = [x1[::100, :] for x1 in x]
+
+
             ## kernels:
-            # rbf_feature = RBFSampler(gamma=1, random_state=1, n_components=100)
-            # x_rbf = [rbf_feature.fit_transform(x1) for x1 in x]
-            # x = x_rbf
+            rbf_feature = RBFSampler(gamma=3, random_state=1, n_components=40)
+            x_rbf = [rbf_feature.fit_transform(x1) for x1 in X_40_1]
+            X_40_1 = x_rbf
 
             # nr_comp=10
             # rbf_feature = RBFSampler(gamma=0.7, random_state=1, n_components=nr_comp)
@@ -199,53 +207,124 @@ class BaseModel(object):
             #     for x1 in x:
             #         t = tf.convert_to_tensor(x1, dtype=tf.float32)
             #         predicted.append(K.dot(t, tf.expand_dims(w1, axis=1)))
-            predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(w1, axis=1)) for x1, w1 in zip(x, nn_output)]
+
+####for testing pca
+            predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(w1, axis=1)) for x1, w1 in zip(X_40_1, nn_output)]
             # hinge_loss = tf.reduce_sum([tf.maximum(0, 1 - wx * y) for wx, y in
             #                      zip(predicted, processed_data['labels'])])
             hinge_losses = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
-                                 zip(predicted, processed_data['labels'])]
-            accuracy = []
+                                 zip(predicted, labels_40)]
+
+            accuracy_total = []
             prediction_total = []
-            for prediction, label in zip(predicted, processed_data['labels']):
+
+
+
+            for prediction, label in zip(predicted, labels_40):
                 prediction = prediction.numpy()
                 prediction[np.where(prediction >= 0)] = 1
                 prediction[np.where(prediction < 0)] = -1
                 prediction_total.append(prediction)
-                accuracy.append(np.count_nonzero(prediction == label) / np.size(label))
-            accuracy = np.mean(np.array(accuracy))
+                accuracy = np.count_nonzero(prediction == label) / np.size(label)
+                accuracy_total.append(accuracy)
+
+####for testing pca
+
+### pca to 2d fro showing contour, 3 nn output ,
+            # hinge_losses = []
+            # for WP ,label , C1 in zip(X_40, labels_40,nn_output.numpy()):
+            #
+            #     pca = PCA(n_components=2)
+            #     Xreduced = pca.fit_transform(WP)
+            #     Xreduced_1 = tf.concat(
+            #         (Xreduced,
+            #          tf.ones(
+            #              (Xreduced.shape[0], 1))),
+            #         axis=1)
+            #     X0, X1 = Xreduced_1[:, 0], Xreduced_1[:, 1]
+            #
+            #     xx, yy = self.make_meshgrid(X0, X1)
+            #     prediction = K.dot(Xreduced_1, tf.expand_dims(C1, axis=1))
+            #     prediction = prediction.numpy()
+            #     prediction[np.where(prediction >= 0)] = 1
+            #     prediction[np.where(prediction < 0)] = -1
+            #     accuracy = np.count_nonzero(prediction == label) / np.size(label)
+            #
+            #     # hinge_loss = tf.reduce_sum([tf.maximum(0, 1 - wx * y) for wx, y in
+            #     #                      zip(predicted, processed_data['labels'])])
+            #     hinge_losses = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
+            #                          zip(predicted, labels_40)]
+            #
+            #     #plot_contours(ax, clf, xx, yy, cmap=plt.cm.coolwarm, alpha=0.8)
+            #     # [K.dot([x, y, 1], tf.expand_dims(C1, axis=1)) for x, y in zip(xx.ravel(), yy.ravel())]
+            #     Z_pre = K.dot(np.c_[xx.ravel(), yy.ravel()], tf.expand_dims(C1, axis=1))
+            #     Z_pre = Z_pre.numpy()
+            #     Z_pre[np.where(Z_pre >= 0)] = 1
+            #     Z_pre[np.where(Z_pre < 0)] = -1
+            #
+            #     # Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+            #     Z = Z_pre.reshape(xx.shape)
+            #     fig, ax = plt.subplots()
+            #     ax.contourf(xx, yy, Z)
+            #
+            #     ax.scatter(X0, X1, c=np.squeeze(label), cmap=plt.cm.coolwarm, s=20, edgecolors='k')
+            #     ax.set_ylabel('PC2')
+            #     ax.set_xlabel('PC1')
+            #     ax.set_xticks(())
+            #     ax.set_yticks(())
+            #     ax.set_title('using the PCA transformed/projected features, accuracy: ' +str(accuracy))
+            #     ax.legend()
+            #     plt.show()
+
+###
+
+# ### simple svm for 40 wp
+#             import matplotlib
+#             matplotlib.use('Qt4Agg')
+#             from mpl_toolkits import mplot3d
+#             from matplotlib.colors import ListedColormap
+#             for WP, prediction, label , C1 in zip(X_40, predicted, labels_40,nn_output.numpy() ):
+#
+#                 prediction = prediction.numpy()
+#                 prediction[np.where(prediction >= 0)] = 1
+#                 prediction[np.where(prediction < 0)] = -1
+#                 accuracy = np.count_nonzero(prediction == label) / np.size(label)
+#                 accuracy_total.append(accuracy)
+#                 fig, ax = plt.subplots()
+#                 ax = plt.axes(projection="3d")
+#                 mycmap = ListedColormap(["red", "green"])
+#                 ax.scatter3D(WP[:, 0], WP[:, 1],
+#                              WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+#                 ax.set_title ('accuracy: ' +str(accuracy))
+#                 x = WP[:, 0]
+#                 x_min, x_max = x.min() - 1, x.max() + 1
+#                 x = np.linspace(x_min, x_max, 10)
+#                 y = np.linspace(-2, 2, 10)
+#                 z = np.linspace(-np.pi/2, np.pi/2, 10)
+#                 xx, zz = np.meshgrid(x,z)
+#                 y1 = (-C1[0] * xx - C1[2] * zz - C1[3]) / C1[1]
+#                 # ax.plot_surface(xx, y1, zz, alpha=1, color='gray', linewidth=0)
+#                 # plt.show()
+#                 # if z< np.pi/2 and z> -np.pi/2:
+#                 #     z1 = z
+#                 # elif z> 3*np.pi/2 and z<2*np.pi:
+#                 #     z1= z - 2*np.pi
+#                 # else:
+#
+#
+#
+#                 # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
+#                 # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
+#                 # ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
+#                 ax.plot_wireframe(xx, y1, zz, alpha=1, color='gray')
+#                 # wrongs = WP[np.where(prediction != LABELS1)]
+#                 # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
+#                 #              wrongs[:, 2], marker='*')
+#                 plt.show()
+###
+            accuracy_mean = np.mean(np.array(accuracy_total))
             prediction_total = np.array(prediction_total)
-            import matplotlib
-            matplotlib.use('Qt4Agg')
-            from mpl_toolkits import mplot3d
-            from matplotlib.colors import ListedColormap
-            for WP, prediction, LABELS1 , C1 in zip(processed_data['Action_waypoint'], prediction_total, processed_data['labels'],nn_output.numpy() ):
-                fig, ax = plt.subplots()
-                ax = plt.axes(projection="3d")
-                mycmap = ListedColormap(["red", "green"])
-                ax.scatter3D(WP[:, 0], WP[:, 1],
-                             WP[:, 2], c=np.squeeze(LABELS1), marker='o', alpha=0.6, cmap=mycmap)
-                x = np.linspace(0, 2.5, 10)
-                y = np.linspace(-2, 2, 10)
-                xx, yy = np.meshgrid(x,y)
-                z = (-C1[0] * xx - C1[1] * yy - C1[3]) / C1[2]
-                # if z< np.pi/2 and z> -np.pi/2:
-                #     z1 = z
-                # elif z> 3*np.pi/2 and z<2*np.pi:
-                #     z1= z - 2*np.pi
-                # else:
-
-
-
-                # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
-                # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
-                ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
-                # wrongs = WP[np.where(prediction != LABELS1)]
-                # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
-                #              wrongs[:, 2], marker='*')
-                plt.show()
-
-
-            print("correctly predicted in this batch: " + str(accuracy))
+            print("correctly predicted in this batch: " + str(accuracy_mean))
 
             C = 1
             # prediction_losses= [a*b for a,b in zip(C_all,hinge_losses)]
@@ -267,10 +346,35 @@ class BaseModel(object):
         # elif return_loss_components:
         #     return regularization_loss, prediction_loss, total_loss
         elif return_loss_components:
-            return regularization_loss, prediction_loss, accuracy
+            return regularization_loss, prediction_loss, total_loss, accuracy_mean
         else:
             return total_loss
                 # return regularization_loss
+
+    # @staticmethod
+    def plot_contours(ax, clf, xx, yy, **params):
+        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        out = ax.contourf(xx, yy, Z, **params)
+        return out
+
+    # @staticmethod
+    def make_meshgrid(self, x, y, h=.2):
+        x_min, x_max = x.min() - 1, x.max() + 1
+        y_min, y_max = y.min() - 1, y.max() + 1
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+        return xx, yy
+
+    def RBF(self, X, gamma):
+
+        # Free parameter gamma
+        if gamma == None:
+            gamma = 1.0 / X.shape[1]
+
+        # RBF kernel Equation
+        K = np.exp(-gamma * np.sum((X - X[:, np.newaxis]) ** 2, axis=-1))
+
+        return K
 
     def gaussian_kernel(self, x1, x):
         m = x.shape[0]
