@@ -10,8 +10,8 @@ def create_params():
     p.grid = ProjectedImageSpaceGrid
 
     # Parameters for the uniform sampling grid
-    p.num_waypoints = 20000
-    p.num_theta_bins = 21
+    p.num_waypoints = 3
+    p.num_theta_bins = 1
     p.bound_min = [0., 0., -np.pi]
     p.bound_max = [0., 0., 0.]
 
@@ -83,7 +83,8 @@ def visualize_world_space_grid():
     fig = plt.figure()
     # Projected Grid
     ax1 = fig.add_subplot(221)
-    ax1.plot(wx_n11[:, 0, 0], wy_n11[:, 0, 0], 'o')
+    ax1.plot(wx_n11[1, 0, 0], wy_n11[1, 0, 0], 'o')
+    plt.show()
     # Projected x points
     ax2 = fig.add_subplot(222)
     ax2.hist(wx_n11[:, 0, 0])
@@ -95,7 +96,7 @@ def visualize_world_space_grid():
     ax4.hist(wtheta_n11[:, 0, 0])
     fig.savefig('projected_waypoints.pdf')
 
-if __name__ == '__main__':
-    np.random.seed(seed=1)
-    test_image_space_grid()
-    # visualize_world_space_grid()
+# if __name__ == '__main__':
+np.random.seed(seed=1)
+test_image_space_grid()
+visualize_world_space_grid()

@@ -167,22 +167,22 @@ class BaseModel(object):
             sigma_sq_all =[]
             C_all =[]
 
-
-            X_40 = [ x[::100,:] for x in processed_data['Action_waypoint']]
-            labels_40 = [x[::100, :] for x in processed_data['labels']]
+            sample =100
+            X_40 = [ x[::sample,:] for x in processed_data['Action_waypoint']]
+            labels_40 = [x[::sample, :] for x in processed_data['labels']]
 
             x = tf.concat(
                 (processed_data['Action_waypoint'],
                  tf.ones((processed_data['Action_waypoint'].shape[0], processed_data['Action_waypoint'].shape[1], 1))),
                 axis=2)
 
-            X_40_1 = [x1[::100, :] for x1 in x]
-
+            X_40_1 = [x1[::sample, :] for x1 in x]
+            all_waypoint_sampled = [ x[::sample,:] for x in raw_data['all_waypoint']]
 
             ## kernels:
-            rbf_feature = RBFSampler(gamma=3, random_state=1, n_components=40)
-            x_rbf = [rbf_feature.fit_transform(x1) for x1 in X_40_1]
-            X_40_1 = x_rbf
+            # rbf_feature = RBFSampler(gamma=50, random_state=1, n_components=40)
+            # x_rbf = [rbf_feature.fit_transform(x1) for x1 in X_40_1]
+            # X_40_1 = x_rbf
 
             # nr_comp=10
             # rbf_feature = RBFSampler(gamma=0.7, random_state=1, n_components=nr_comp)
@@ -217,7 +217,6 @@ class BaseModel(object):
 
             accuracy_total = []
             prediction_total = []
-
 
 
             for prediction, label in zip(predicted, labels_40):
@@ -278,50 +277,82 @@ class BaseModel(object):
 
 ###
 
-# ### simple svm for 40 wp
-#             import matplotlib
-#             matplotlib.use('Qt4Agg')
-#             from mpl_toolkits import mplot3d
-#             from matplotlib.colors import ListedColormap
-#             for WP, prediction, label , C1 in zip(X_40, predicted, labels_40,nn_output.numpy() ):
+### simple svm for 40 wp
+
+            from mpl_toolkits import mplot3d
+            import matplotlib
+            from matplotlib.colors import ListedColormap
+            import matplotlib.backends.backend_pdf
+            pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
+
+            for WP, prediction, label , C1, image , start_nk3, goal, wp in zip(X_40, predicted, labels_40,nn_output.numpy(), raw_data['img_nmkd'] , raw_data['start_state'] , raw_data['goal_position_n2'] , all_waypoint_sampled ):
+
+                fig = plt.figure()
+                ax1 = fig.add_subplot(221)
+                ax1.imshow(image.astype(np.uint8))
+                plt.grid()
+                # plt.show()
+
+
+                # matplotlib.use('Qt4Agg')
+                # fig = plt.figure()
+                ax2 = fig.add_subplot(222, projection='3d')
+                prediction = prediction.numpy()
+                prediction[np.where(prediction >= 0)] = 1
+                prediction[np.where(prediction < 0)] = -1
+                accuracy = np.count_nonzero(prediction == label) / np.size(label)
+                wrong= WP[np.where(prediction != label)[0]]
+                ax2.scatter3D(wrong[:, 0], wrong[:, 1],
+                             wrong[:, 2], s=80 , edgecolors="k" )
+
+                accuracy_total.append(accuracy)
+
+                mycmap = ListedColormap(["red", "green"])
+                ax2.scatter3D(WP[:, 0], WP[:, 1],
+                             WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+                ax2.set_title ('accuracy: ' +str(accuracy))
+                x = WP[:, 0]
+                x_min, x_max = x.min() - 1, x.max() + 1
+                x = np.linspace(x_min, x_max, 10)
+                y = np.linspace(-2, 2, 10)
+                z = np.linspace(-np.pi/2, np.pi/2, 10)
+                xx, zz = np.meshgrid(x,z)
+                y1 = (-C1[0] * xx - C1[2] * zz - C1[3]) / C1[1]
+                # ax.plot_surface(xx, y1, zz, alpha=1, color='gray', linewidth=0)
+                # plt.show()
+                # if z< np.pi/2 and z> -np.pi/2:
+                #     z1 = z
+                # elif z> 3*np.pi/2 and z<2*np.pi:
+                #     z1= z - 2*np.pi
+                # else:
+
+
+
+                # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
+                # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
+                # ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
+                ax2.plot_wireframe(xx, y1, zz, alpha=1, color='gray')
+                # wrongs = WP[np.where(prediction != LABELS1)]
+                # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
+                #              wrongs[:, 2], marker='*')
+
+                # plt.show()
+
+                from obstacles.sbpd_map import SBPDMap
+                # fig = plt.figure()
+                ax3 = fig.add_subplot(223)
+                obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
+                obstacle_map.render(ax3)
+                start = start_nk3[0]
+                ax3.plot(start[0], start[1], 'k*') #robot
+                goal_pos_n2 = goal
+                ax3.plot(goal_pos_n2[ 0], goal_pos_n2[1], 'b*')
+                pos_nk2 = wp[:, :2]
+                ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1] , c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+                # plt.show()
+                pdf.savefig(fig)
+            pdf.close()
 #
-#                 prediction = prediction.numpy()
-#                 prediction[np.where(prediction >= 0)] = 1
-#                 prediction[np.where(prediction < 0)] = -1
-#                 accuracy = np.count_nonzero(prediction == label) / np.size(label)
-#                 accuracy_total.append(accuracy)
-#                 fig, ax = plt.subplots()
-#                 ax = plt.axes(projection="3d")
-#                 mycmap = ListedColormap(["red", "green"])
-#                 ax.scatter3D(WP[:, 0], WP[:, 1],
-#                              WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
-#                 ax.set_title ('accuracy: ' +str(accuracy))
-#                 x = WP[:, 0]
-#                 x_min, x_max = x.min() - 1, x.max() + 1
-#                 x = np.linspace(x_min, x_max, 10)
-#                 y = np.linspace(-2, 2, 10)
-#                 z = np.linspace(-np.pi/2, np.pi/2, 10)
-#                 xx, zz = np.meshgrid(x,z)
-#                 y1 = (-C1[0] * xx - C1[2] * zz - C1[3]) / C1[1]
-#                 # ax.plot_surface(xx, y1, zz, alpha=1, color='gray', linewidth=0)
-#                 # plt.show()
-#                 # if z< np.pi/2 and z> -np.pi/2:
-#                 #     z1 = z
-#                 # elif z> 3*np.pi/2 and z<2*np.pi:
-#                 #     z1= z - 2*np.pi
-#                 # else:
-#
-#
-#
-#                 # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
-#                 # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
-#                 # ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
-#                 ax.plot_wireframe(xx, y1, zz, alpha=1, color='gray')
-#                 # wrongs = WP[np.where(prediction != LABELS1)]
-#                 # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
-#                 #              wrongs[:, 2], marker='*')
-#                 plt.show()
-###
             accuracy_mean = np.mean(np.array(accuracy_total))
             prediction_total = np.array(prediction_total)
             print("correctly predicted in this batch: " + str(accuracy_mean))

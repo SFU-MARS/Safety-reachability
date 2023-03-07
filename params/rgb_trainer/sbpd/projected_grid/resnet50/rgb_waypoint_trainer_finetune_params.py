@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 40#4 WO kernel , 501
+    p.model.num_outputs = 4#4 WO kernel , 501
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = True
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 50
+    p.trainer.num_epochs = 100
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -155,7 +155,7 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0']
+        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-added']
     p.data_creation.data_points = 1e3
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     p.data_creation.data_points_per_file= 1e2
