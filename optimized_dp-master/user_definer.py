@@ -32,8 +32,10 @@ my_car = DubinsCar4D_new2()
 # Load value from my map
 obstacles = np.load("obstacle_grid_4d_ver2.npy")
 
+
 # Velocity constraint - negative level set [0., 0.7]
 velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.7), Upper_Half_Space(g, 3, 0.0))
+
 # Combine it with the original obstacle map
 Initial_value_f = Union(-velocity_constr, obstacles)
 

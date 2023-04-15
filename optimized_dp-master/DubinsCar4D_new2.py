@@ -99,7 +99,7 @@ class DubinsCar4D_new2:
 
         x_dot[0] = state[3] * hcl.cos(state[2]) + dOpt[0]
         y_dot[0] = state[3] * hcl.sin(state[2]) + dOpt[1]
-        theta_dot[0] = uOpt[1]
-        v_dot[0] = uOpt[0] + dOpt[2]
+        theta_dot[0] = uOpt[1] + dOpt[2]
+        v_dot[0] = uOpt[0]
 
         return (x_dot[0], y_dot[0], theta_dot[0], v_dot[0])
