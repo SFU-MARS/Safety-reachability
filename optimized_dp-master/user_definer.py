@@ -38,7 +38,7 @@ velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.7), Upper_Half_Space(g, 
 Initial_value_f = Union(-velocity_constr, obstacles)
 
 # Look-back lenght and time step
-lookback_length = 10.0
+lookback_length = 4.0
 t_step = 0.05
 
 tau = np.arange(start = 0, stop = lookback_length + t_step, step = t_step)
