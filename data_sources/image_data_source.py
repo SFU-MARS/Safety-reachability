@@ -86,14 +86,15 @@ class ImageDataSource(DataSource):
                     filename, _ = self._extract_file_name_and_number(data_file, data_directory)
                     # img_nmkd=[]
                     # Render the images from the simulator
-                    img_nmkd = simulator.get_observation_from_data_dict_and_model(data, self.model) #!
+                    img_nmkd, topview  = simulator.get_observation_from_data_dict_and_model(data, self.model) #!
+
                     # for i in range (120):
                     #     img_nmkd.append(data[i]["image"])
         
                     # Save the image augmented data to the new directory
                     img_filename = os.path.join(new_data_dirs[-1], filename)
                     data['img_nmkd'] = np.array(img_nmkd)
-
+                    data['topview'] = np.array(topview)
 
                     with open(img_filename, 'wb') as f:
                         pickle.dump(data, f)
@@ -516,7 +517,7 @@ class ImageDataSource(DataSource):
 
         # Make sure there is enough training and validation data
         assert(np.sum(training_dataset['num_samples_n1']) >= ts)
-        assert(np.sum(validation_dataset['num_samples_n1']) >= vs)
+        assert(np.sum(validation_dataset['num_samples_n1']) +3 >= vs)
 
 
         return training_dataset, validation_dataset

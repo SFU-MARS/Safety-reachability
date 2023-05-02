@@ -39,6 +39,12 @@ class VisualNavigationModelBase(BaseModel):
         """
         return raw_data['vehicle_controls_nk2'][:, 0]
 
+    def _wp_speed(self, raw_data):
+        """
+        Return the vehicle linear and angular speed.
+        """
+        return raw_data['vehicle_controls_nk2'][:, -1]
+
     def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
         Create the occupancy grid and other inputs for the neural network.
@@ -51,7 +57,8 @@ class VisualNavigationModelBase(BaseModel):
         # Get the input image (n, m, k, d)
         # batch size n x (m x k pixels) x d channels
     
-        img_nmkd = raw_data['img_nmkd']
+        img_nmkd_d = raw_data['img_nmkd']
+        img_nmkd = img_nmkd_d [:,:,:,:3]
 
         # Concatenate the goal position in an egocentric frame with vehicle's speed information
         # goal_position = self._goal_position(raw_data)
@@ -65,9 +72,13 @@ class VisualNavigationModelBase(BaseModel):
         data = {}
         state_featres_n2 = np.squeeze(vehicle_controls)
         state_features_n21 = np.reshape(state_featres_n2, (-1, 2))
+        # Action_waypoint = raw_data['all_waypoint_ego']
         data['inputs'] = [img_nmkd, state_features_n21]
+        # data['inputs'] = [img_nmkd, Action_waypoint]
         data['labels'] = raw_data['labels']
+        # speeds = self._wp_speed(raw_data)[:,0:1]
         data['Action_waypoint'] = raw_data['all_waypoint_ego']
+        # data['Action_waypoint_withv'] = np.concatenate(raw_data['all_waypoint_ego'], speeds, axis=1)
         return data
 
         #my code data generation

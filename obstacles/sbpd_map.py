@@ -122,8 +122,9 @@ class SBPDMap(ObstacleMap):
         else:
             starts_n2 = self._point_to_map(pos_n3[:, :2])
             thetas_n1 = pos_n3[:, 2:3]
-            imgs = self._r.render_images(starts_n2, thetas_n1, **kwargs)
-        return imgs
+            imgs = self._r.render_images(starts_n2, thetas_n1,pos_n3, **kwargs)
+            topviews= self._r._get_topview(starts_n2, thetas_n1, **kwargs)
+        return imgs , topviews
 
     def render(self, ax, start_config=None):
         p = self.p

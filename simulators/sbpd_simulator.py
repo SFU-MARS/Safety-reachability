@@ -1,7 +1,7 @@
 from obstacles.sbpd_map import SBPDMap
 # from simulators.mysimulator_rev6 import Simulator
-from simulators.mysimulator_rev3_1 import Simulator
-# from simulators.simulator import Simulator
+# from simulators.mysimulator_rev3_1 import Simulator
+from simulators.simulator import Simulator
 # from simulators.sst_simulator import SSTSimulator as Simulator
 
 
@@ -30,9 +30,11 @@ class SBPDSimulator(Simulator):
         else:
             kwargs = {}
 
-        img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+        img_nmkd, topview = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
                                         **kwargs)
-        return img_nmkd
+        # top_view = self.get_topview(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+        #                                 **kwargs)
+        return img_nmkd , topview
 
     def _reset_obstacle_map(self, rng):
         """

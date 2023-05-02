@@ -724,7 +724,8 @@ class Simulator(SimulatorHelper):
                 # return True so the start is reset
                 return True
 
-            goal_112 = self.obstacle_map.sample_point_112(rng, free_xy_map_m2=free_xy)
+            goal_112 = self.obstacle_map.\
+                sample_point_112(rng, free_xy_map_m2=free_xy)
             print ('goal_112 is' , goal_112)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle goal position.')

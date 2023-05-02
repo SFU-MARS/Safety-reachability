@@ -133,11 +133,24 @@ class TrainerFrontendHelper(object):
             self.create_trainer()
             
             # Maybe restore a checkpoint
-            # self.maybe_restore_checkpoint()
+            self.maybe_restore_checkpoint()
 
+            C= [1e0, 1e1, 1e2,  1e3, 1e4]
+            # C= [2**(-3), 2**(0), 2**(3)]
+            # params =  [1e-4, 1e-3, 1e-2, 1e-1,1,  1e1,1e2] # gamma
+            params = [1, 1e-1, 1e-2, 1e-3]
+            # params = [2**(-6), 2**(-3), 2**(0), 2**(3)]
+            # params ={
+            # 'C': [1e0, 1e1, 1e2, 1e3, 1e4],
+            # 'gamma': [1e-4, 1e-3, 1e-2, 1e-1]}
+            # for C in Cs:
+            for c in C:
+
+                for param in params:
+            # for param in params:
             # Start the training
-            self.trainer.train(model=self.model, data_source=self.data_source,
-                               callback_fn=self.callback_fn)
+                    self.trainer.train( param,c,  model=self.model, data_source=self.data_source,
+                                   callback_fn=self.callback_fn)
 
     def callback_fn(self, lcl):
         """

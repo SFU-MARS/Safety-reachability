@@ -15,7 +15,8 @@ dictionary1=[]
 dict_list=[]
 num_sample_each_file=60
 
-data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1003'
+# data_directory= '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1003'
+data_directory= '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-added-fov'
 data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
 databig={}
 keys=[]
@@ -24,7 +25,10 @@ file_name=0
 for data_file in data_files:
     with open(data_file, 'rb') as f:
         data = pickle.load(f)
-        listofdict.append(data)
+        for label1 in data ['labels']:
+            if 1 in label1 and -1 in label1:
+                listofdict.append(data)
+
 #         a = data['labels'][:].squeeze()
 #         num_ones=(a == 1).sum()
 #

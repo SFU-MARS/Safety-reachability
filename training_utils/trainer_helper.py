@@ -9,6 +9,7 @@ import skimage.io
 import skimage.segmentation
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
 
 class TrainerHelper(object):
@@ -17,7 +18,7 @@ class TrainerHelper(object):
         self.p = params.trainer
         self.session_dir = params.session_dir
 
-    def train(self, model, data_source, callback_fn=None):
+    def train(self, param,c,  model, data_source,  callback_fn=None):
         """
         Train a given model.
         """
@@ -59,22 +60,56 @@ class TrainerHelper(object):
                 # Get a training and a validation batch
 
                 training_batch = data_source.generate_training_batch(j)
+
                 # plt.imshow(training_batch['image'][0].astype(np.int32))
                 # plt.grid(False)
                 # plt.show()
 
+                sample = 50 #600
+
+                X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
+                labels_40 = [x[::sample, :] for x in training_batch['labels']]
+                training_batch['labels'] = np.array(labels_40)
+                training_batch['all_waypoint_ego'] = np.array(X_40)
+
+                # scaler = MinMaxScaler()
+                # feat_train_sc = [scaler.fit_transform(X_train) for X_train in X_40]
+                scalers =[]
+                feat_train_sc_batch = []
+                feat_val_sc_batch = []
+                #
+                # for X_train in X_40:
+                #     scaler = MinMaxScaler().fit(X_train)
+                #     feat_train_sc = scaler.transform(X_train)
+                #     scalers.append(scaler)
+                #     feat_train_sc_batch.append(feat_train_sc)
+                # feat_train_sc_batch = np.array(feat_train_sc_batch)
+                # training_batch['all_waypoint_ego'] = feat_train_sc_batch
+
+
 
                 validation_batch = data_source.generate_validation_batch()
-                # plt.imshow(validation_batch['image'][0].astype(np.int32))
-                # plt.grid(False)
-                # plt.show()
+                X_40_v = [x[::sample, :] for x in validation_batch['all_waypoint_ego']]
+                labels_40_v = [x[::sample, :] for x in validation_batch['labels']]
+                validation_batch['labels'] = np.array(labels_40_v)
+                validation_batch['all_waypoint_ego'] = np.array(X_40_v)
+
+                # for scaler , X_val   in zip (scalers, X_40_v ):
+                #     feat_val_sc = scaler.transform(X_val)
+                #     feat_val_sc_batch.append(feat_val_sc)
+                # feat_val_sc_batch = np.array(feat_val_sc_batch)
+                # validation_batch['all_waypoint_ego'] = feat_val_sc_batch
+
+
 
                 with tf.GradientTape() as tape:
 
                     tape.watch(model.get_trainable_vars())
                     # tape.watch(training_batch)
                     # counter1=0
-                    loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
+
+
+                    loss = model.compute_loss_function(training_batch, param, c,  is_training=True, return_loss_components=False)
                     # print ("final loss: "+ str(loss.numpy()))
 
                     # behavior during training versus inference (e.g. Dropout).
@@ -97,10 +132,10 @@ class TrainerHelper(object):
                 # epoch_accuracy.update_state(accuracy)
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
-                                                   validation_loss_metric)
+                                                   validation_loss_metric, training_loss_metric1,validation_loss_metric1,  param, c)
                 # Record the average acc for the training and the validation batch
-                self.record_average_loss_for_batch1(model, training_batch, validation_batch, training_loss_metric1,
-                                                   validation_loss_metric1)
+                # self.record_average_loss_for_batch1(model, training_batch, validation_batch, training_loss_metric1,
+                #                                    validation_loss_metric1, param , c)
             # Do all the things required at the end of epochs including saving the checkpoints
 
             # images=training_batch['image']
@@ -136,7 +171,7 @@ class TrainerHelper(object):
             epoch_performance_validation1.append(validation_loss_metric1.result().numpy())
             print("acc_validation: " + str(epoch_performance_validation1))
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,epoch_performance_training1, epoch_performance_validation1, model,
-                                         callback_fn)
+                                         param,c,  callback_fn)
             
     def restore_checkpoint(self, model):
         """
@@ -148,12 +183,12 @@ class TrainerHelper(object):
         # Restore the checkpoint
         # self.checkpoint.restore(self.p.ckpt_path)
     
-    def save_checkpoint(self, epoch, model):
+    def save_checkpoint(self, epoch, model, param, c):
         """
         Create and save a checkpoint.
         """
         # Create the checkpoint directory if required
-        self.ckpt_dir = os.path.join(self.session_dir, 'checkpoints')
+        self.ckpt_dir = os.path.join(self.session_dir, 'checkpoints_g%0.4f_c%i'% (param,c))
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
             self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
@@ -189,32 +224,36 @@ class TrainerHelper(object):
 
         return self.p.optimizer(learning_rate=self.lr)
     
-    def record_average_loss_for_batch(self, model, training_batch, validation_batch, training_loss_metric,
-                                      validation_loss_metric):
+    def record_average_loss_for_batch(self, model ,training_batch, validation_batch, training_loss_metric,
+                                      validation_loss_metric, training_loss_metric1,validation_loss_metric1, param , c):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, _,  accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _,  accuracy_training = model.compute_loss_function(training_batch,param,c,  is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch,param, c, is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric(prediction_loss_training)
         # print(training_loss_metric)
         validation_loss_metric(prediction_loss_validation)
 
+        training_loss_metric1(accuracy_training)
+        # print(training_loss_metric)
+        validation_loss_metric1(accuracy_validation)
+
     def record_average_loss_for_batch1(self, model, training_batch, validation_batch, training_loss_metric1,
-                                      validation_loss_metric1):
+                                      validation_loss_metric1 ,param, c):
         """
         Record the average loss for the batch and update the metric.
         """
-        regn_loss_training, prediction_loss_training, _, accuracy_training = model.compute_loss_function(training_batch, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch,is_training=False,return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _, accuracy_training = model.compute_loss_function(training_batch,param,c, is_training=False,return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(validation_batch, param,c, is_training=False,return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric1(accuracy_training)
         # print(training_loss_metric)
         validation_loss_metric1(accuracy_validation)
 
-    def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,epoch_performance_training1, epoch_performance_validation1, model,
-                                callback_fn=None):
+    def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,epoch_performance_training1, epoch_performance_validation1, model
+                                ,param,c,  callback_fn=None):
         """
         Finish the epoch processing for example recording the average epoch loss for the training and the validation
         sets, save the checkpoint, adjust learning rates, hand over the control to the callback function etc.
@@ -226,14 +265,14 @@ class TrainerHelper(object):
                                                                         epoch_performance_validation1[-1]))
         
         # Plot the loss curves
-        self.plot_training_and_validation_losses(epoch_performance_training, epoch_performance_validation)
-        self.plot_training_and_validation_acc(epoch_performance_training1, epoch_performance_validation1)
+        self.plot_training_and_validation_losses(epoch_performance_training, epoch_performance_validation, param, c)
+        self.plot_training_and_validation_acc(epoch_performance_training1, epoch_performance_validation1, param, c)
         
         # Update the learning rate
         self.adjust_learning_rate(epoch)
         
         # Save the checkpoint
-        self.save_checkpoint(epoch, model)
+        self.save_checkpoint(epoch, model, param,c)
         
         # Pass the control to the callback function
         if callback_fn is not None:
@@ -248,7 +287,7 @@ class TrainerHelper(object):
             return
         elif self.p.learning_schedule == 2:
             # self.lr.assign(1/(epoch+1000))
-            self.lr.assign(self.lr/(1 + (epoch / 2)))
+            # self.lr.assign(self.lr/(1 + (epoch / 2)))
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
                 self.lr.assign(self.lr * self.p.lr_decay_factor)
@@ -257,7 +296,7 @@ class TrainerHelper(object):
         else:
             raise NotImplementedError
 
-    def plot_training_and_validation_losses(self, training_performance, validation_performance):
+    def plot_training_and_validation_losses(self, training_performance, validation_performance, param,c):
         """
         Plot the loss curves for the training and the validation datasets over epochs.
         """
@@ -268,8 +307,8 @@ class TrainerHelper(object):
         ax.plot(training_performance, 'r-', label='Training')
         ax.plot(validation_performance, 'b-', label='Validation')
         ax.legend()
-        fig.savefig(os.path.join(self.session_dir, 'loss_curves.pdf'))
-    def plot_training_and_validation_acc(self, training_performance1, validation_performance1):
+        fig.savefig(os.path.join(self.session_dir, 'loss_curves_g%0.4f_c%i.pdf'% (param ,c)))
+    def plot_training_and_validation_acc(self, training_performance1, validation_performance1, param,c):
         """
         Plot the loss curves for the training and the validation datasets over epochs.
         """
@@ -280,4 +319,4 @@ class TrainerHelper(object):
         ax.plot(training_performance1, 'r-', label='Training')
         ax.plot(validation_performance1, 'b-', label='Validation')
         ax.legend()
-        fig.savefig(os.path.join(self.session_dir, 'acc_curves.pdf'))
+        fig.savefig(os.path.join(self.session_dir, 'acc_curves_g%0.4f_c%i.pdf'% (param,c)))
