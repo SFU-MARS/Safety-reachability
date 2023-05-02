@@ -3,6 +3,7 @@
 *./idea/*
 *.lprof
 *.png
+*.mat
 /tmp
 /data
 *.prof
