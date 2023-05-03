@@ -35,9 +35,10 @@ class Planner(object):
         """ Evaluate the objective function on a trajectory
         generated through the control pipeline from start_config (world frame)."""
         waypts, horizons, trajectories_lqr, trajectories_spline, controllers = self.control_pipeline.plan(start_config, goal_config)
-        obj_val = self.obj_fn.evaluate_function(trajectories_lqr)
-        return obj_val, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
-
+        # obj_val = self.obj_fn.evaluate_function(trajectories_lqr) # Why evaluate lqr trajectory?
+        obj_val ,labels  = self.obj_fn.evaluate_function(trajectories_lqr)
+        # return obj_val, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
+        return obj_val, labels, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers ]
     def _init_control_pipeline(self):
         """If the control pipeline has exists already (i.e. precomputed),
         load it. Otherwise generate create it from scratch and save it."""
@@ -57,18 +58,17 @@ class Planner(object):
     def empty_data_dict():
         """Returns a dictionary with keys mapping to empty lists
         for each datum computed by a planner."""
-        # data = {'system_config': [],
-        #         'waypoint_config': [],
-        #         'trajectory': [],
-        #         'spline_trajectory': [],
-        #         'planning_horizon': [],
-        #         'K_nkfd': [],
-        #         'k_nkf1': [],
-        #         'img_nmkd': []}
-
-        data = {'start_pose': [], 'waypointAction': [], 'labels': [], 'image': []}
-
-
+        data = {'system_config': [],
+                'waypoint_config': [],
+                'all_waypoint':[],
+                'trajectory': [],
+                'spline_trajectory': [],
+                'planning_horizon': [],
+                'K_nkfd': [],
+                'k_nkf1': [],
+                'img_nmkd': [],
+                'labels': []}
+                # 'two_groups': []}
         return data
 
     @staticmethod
@@ -111,7 +111,7 @@ class Planner(object):
         data_last['waypoint_config'] = data['waypoint_config'][last_data_idx]
         data_last['trajectory'] = data['trajectory'][last_data_idx]
         data_last['spline_trajectory'] = data['spline_trajectory'][last_data_idx]
-        data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]] 
+        data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]]
         data_last['K_nkfd'] = data['K_nkfd'][last_data_idx]
         data_last['k_nkf1'] = data['k_nkf1'][last_data_idx]
         data_last['img_nmkd'] = data['img_nmkd'][last_data_idx]
@@ -125,6 +125,15 @@ class Planner(object):
         data['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), valid_mask)
         data['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), valid_mask)
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
+
+        data['all_waypoint'] = np.array(data['all_waypoint'])[valid_mask]
+        x = valid_mask
+        y = data['labels'] # is a list
+        res = [b for a, b in zip(x, y) if a]
+
+        # data['labels'] = np.array(np.concatenate(data['labels'], axis=0))[valid_mask]
+        data['labels'] = res
+
         return data, data_last, last_data_valid
 
 

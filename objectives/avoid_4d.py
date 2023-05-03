@@ -38,6 +38,15 @@ class Avoid4d(Objective):
 
         return self.avoid_4d_ttr_scale * avoid_4d_negative
 
+
+    def evaluate_avoid(self, trajectory):
+
+
+        avoid_4d = self.compute_avoid_4d(trajectory)
+
+        return avoid_4d
+
+
     def _freeze_cost_obstacle_enter(self, objective_values):
 
         obj_val_np = objective_values.numpy()

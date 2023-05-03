@@ -34,7 +34,7 @@ class QValueTrainer(TrainerFrontendHelper):
         return p
 
     def create_data_source(self, params=None):
-        from data_sources.visual_navigation_data_source import VisualNavigationDataSource
+        from data_sources.visual_navigation_data_source2 import VisualNavigationDataSource
         self.data_source = VisualNavigationDataSource(self.p)
 
         if hasattr(self, 'model'):

@@ -37,7 +37,7 @@ from dotmap import DotMap
 from systems.dynamics import Dynamics
 from systems.dubins_v4 import DubinsV4
 
-from data_sources.visual_navigation_data_source import VisualNavigationDataSource
+from data_sources.visual_navigation_data_source2 import VisualNavigationDataSource
 
 class SupervisedQ(object):
     # def __init__(self, params, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,

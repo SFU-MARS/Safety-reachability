@@ -30,14 +30,17 @@ class SamplingPlanner(Planner):
         starting from start_config.
             1. Uses a control pipeline to plan paths from start_config
             2. Evaluates the objective function on the resulting trajectories
-            3. Return the minimum cost waypoint, trajectory, and cost #change
+            3. Return the minimum cost waypoint, trajectory, and cost
         """
-        obj_vals, data = self.eval_objective(start_config)
+        obj_vals, labels, data = self.eval_objective(start_config)
+        # obj_vals, data = self.eval_objective(start_config)
         min_idx = tf.argmin(obj_vals)
         min_cost = obj_vals[min_idx]
 
-        waypts, horizons_s, trajectories_lqr, trajectories_spline, controllers = data
+        waypts, horizons_s, trajectories_lqr, trajectories_spline, controllers  = data
 
+        # self.allwaypts = waypts
+        self.allwaypts = waypts
         self.opt_waypt.assign_from_config_batch_idx(waypts, min_idx)
         self.opt_traj.assign_from_trajectory_batch_idx(trajectories_lqr, min_idx)
 
@@ -55,13 +58,24 @@ class SamplingPlanner(Planner):
 
         img_nmkd = self.simulator.get_observation(config=start_config) # Retrieve the image observed
 
+        # data = {'system_config': SystemConfig.copy(start_config),
+        #         'waypoint_config': SystemConfig.copy(self.opt_waypt),
+        #         'trajectory': Trajectory.copy(self.opt_traj),
+        #         'spline_trajectory': Trajectory.copy(trajectories_spline),
+        #         'planning_horizon': min_horizon,
+        #         'K_nkfd': K_nkfd,
+        #         'k_nkf1': k_nkf1,
+        #         'img_nmkd': img_nmkd}
+
         data = {'system_config': SystemConfig.copy(start_config),
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
+                'all_waypoint': SystemConfig.copy(self.allwaypts),
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'spline_trajectory': Trajectory.copy(trajectories_spline),
                 'planning_horizon': min_horizon,
                 'K_nkfd': K_nkfd,
                 'k_nkf1': k_nkf1,
-                'img_nmkd': img_nmkd}
+                'img_nmkd': img_nmkd,
+                'labels': labels}
 
         return data

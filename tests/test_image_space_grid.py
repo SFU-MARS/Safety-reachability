@@ -58,6 +58,7 @@ def test_image_space_grid():
         grid.generate_worldframe_waypoints_from_imageframe_waypoints(waypt_image_space[:, 0:1, :],
                                                                      waypt_image_space[:, 1:2, :],
                                                                      waypt_image_space[:, 2:3, :])
+
     waypt_image_space_estimated_x, waypt_image_space_estimated_y, waypt_image_space_estimated_theta, _, _ = \
         grid.generate_imageframe_waypoints_from_worldframe_waypoints(waypt_world_space_estimated_x,
                                                                      waypt_world_space_estimated_y,

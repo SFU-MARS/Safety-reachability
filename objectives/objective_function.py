@@ -38,6 +38,7 @@ class ObjectiveFunction(object):
         Evaluate each objective corresponding to a system trajectory.
         """
         objective_values_by_tag = []
+        avoid_values_by_tag=[]
         reachability_cost = False
 
         # judge the cost to use, if there is ReachAvoid4d, there must be reachability cost
@@ -49,6 +50,11 @@ class ObjectiveFunction(object):
             for objective in self.objectives:
                 if isinstance(objective, ReachAvoid4d) or isinstance(objective, Avoid4d) or isinstance(objective, GoalDistance):
                     objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
+                    if isinstance(objective, Avoid4d):
+                        avoid_values_by_tag.append([objective.tag, objective.evaluate_avoid(trajectory)])
+
+                # if isinstance(objective, Avoid4d) :
+                #     objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
         else:
             for objective in self.objectives:
                 objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
@@ -59,32 +65,51 @@ class ObjectiveFunction(object):
         #     # if isinstance(objective, ReachAvoid4d):
         #     objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
 
-        return objective_values_by_tag
+        return objective_values_by_tag ,avoid_values_by_tag
 
     def evaluate_function(self, trajectory):
         """
         Evaluate the entire objective function corresponding to a system trajectory.
         """
-        objective_values_by_tag = self.evaluate_function_by_objective(trajectory)
+        objective_values_by_tag, avoid_values_by_tag= self.evaluate_function_by_objective(trajectory)
         objective_function_values = 0.
         objective_distance_to_goal = 0.
         objective_function_values_init = 0.
+        labels=[]
 
         reachability_cost = False
 
         # Judge if we are using reachability cost
         for tag, objective_values in objective_values_by_tag:
             if tag == 'reach_avoid_4d':
+            # if tag == 'avoid_4d':
                 reachability_cost = True
 
         # No freezing cost!
         if reachability_cost:
-            for tag, objective_values in objective_values_by_tag: #
+            for tag, objective_values in objective_values_by_tag:
                 if tag == 'reach_avoid_4d' or 'avoid_4d':
+                # if tag == 'avoid_4d':
                     objective_function_values += self._reduce_objective_values(trajectory, objective_values)
+
+                    # labels = self._reduce_objective_values(trajectory, objective_values)
         else:
             for tag, objective_values in objective_values_by_tag:
                 objective_function_values += self._reduce_objective_values(trajectory, objective_values)
+
+        if reachability_cost:
+            for tag, objective_values in avoid_values_by_tag:
+                if tag == 'avoid_4d':
+                    obj = objective_values
+                    label_11 = (np.min(np.sign(obj.numpy()), axis=1)) # -1 and 1
+                    # label_01 = (np.min((obj.numpy()), axis=1))== 100
+                    # label_11 = 2 * label_01 - 1
+                    # labels = np.reshape(np.array(label_11), (1, -1))
+                    # labels = np.expand_dims(np.reshape(np.array(label_11), (-1, 1)), axis=0)
+                    labels = np.reshape(np.array(label_11), (-1, 1))
+
+
+
 
         # ## Freeze the sum of 2 costs, at the minimum of the sum of cost
         # if reachability_cost:
@@ -117,7 +142,8 @@ class ObjectiveFunction(object):
         #     for tag, objective_values in objective_values_by_tag:
         #         objective_function_values += self._reduce_objective_values(trajectory, objective_values)
 
-        return objective_function_values
+        # return objective_function_values
+        return objective_function_values, labels
 
     def _reduce_objective_values(self, trajectory, objective_values):
         """Reduce objective_values according to
@@ -126,11 +152,15 @@ class ObjectiveFunction(object):
             res = tf.reduce_mean(objective_values, axis=1)
         elif self.params.obj_type == 'valid_mean':
             valid_mask_nk = trajectory.valid_mask_nk
-            obj_sum = tf.reduce_sum(objective_values * valid_mask_nk, axis=1)# instead of sum, we need min
+            obj_sum = tf.reduce_sum(objective_values * valid_mask_nk, axis=1)
             res = obj_sum / trajectory.valid_horizons_n1[:, 0]
+            # valid_mask_nk = trajectory.valid_mask_nk
+
         else:
             assert (False)
         return res
+
+
 
     def _freeze_cost_v1(self, objective_values, objective_distance_to_goal):
 

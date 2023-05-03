@@ -74,15 +74,15 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-4
-    p.trainer.batch_size = 10#48 original, changed after error 36 , 20
+    p.trainer.batch_size = 36#48 original, changed after error 36 , 20
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
-    # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(100) #int(1000)
+    # p.trainer.num_samples = int(100) #to have one train and val with 20 wp
+    p.trainer.num_samples = int(9900) #int(1000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 10
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 400
+    p.trainer.num_epochs = 200
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -156,7 +156,7 @@ def create_params():
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-added-fov']
-    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6']
+    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/test']
 
     p.data_creation.data_points = 1e3
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates

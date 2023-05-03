@@ -67,19 +67,20 @@ class SBPDRenderer():
                 crop_size = [p.width, p.height]
             imgs = self._get_topview(starts_n2, thetas_n1, crop_size=crop_size)
         elif 'rgb' in p.modalities:
-            rgb_image_1mk3 = self._get_rgb_image(starts_n2, thetas_n1)
-        # elif 'disparity' in p.modalities:
-        #     pos_3 = np.concatenate(((starts_n2*0.05), thetas_n1) , axis=1)
-        for starts_2 ,thetas_1 , pos_3 in zip ( starts_n2 ,thetas_n1 , pos_n3):
-            dpt_image_1mk1, _, _ = self._get_depth_image(np.expand_dims(starts_2, axis=0), np.expand_dims(thetas_1, axis=0),0.05, 1500, pos_3,
-                                       human_visible=False)
-            dpt_image_nmk1.append(dpt_image_1mk1[0, :, :, :1])
+            imgs = self._get_rgb_image(starts_n2, thetas_n1)
 
-        # else:
-        #     assert(False)
-        dpt_image_nmk1= np.array(dpt_image_nmk1)
-        rgb_image_1mk3 = np.array(rgb_image_1mk3)
-        imgs = np.concatenate((dpt_image_nmk1, rgb_image_1mk3), axis=3)
+        # # elif 'disparity' in p.modalities:
+        # #     pos_3 = np.concatenate(((starts_n2*0.05), thetas_n1) , axis=1)
+        # for starts_2 ,thetas_1 , pos_3 in zip ( starts_n2 ,thetas_n1 , pos_n3):
+        #     dpt_image_1mk1, _, _ = self._get_depth_image(np.expand_dims(starts_2, axis=0), np.expand_dims(thetas_1, axis=0),0.05, 1500, pos_3,
+        #                                human_visible=False)
+        #     dpt_image_nmk1.append(dpt_image_1mk1[0, :, :, :1])
+        #
+        # # else:
+        # #     assert(False)
+        # dpt_image_nmk1= np.array(dpt_image_nmk1)
+        # rgb_image_1mk3 = np.array(rgb_image_1mk3)
+        # imgs = np.concatenate((dpt_image_nmk1, rgb_image_1mk3), axis=3)
         return np.array(imgs)
 
     def _get_rgb_image(self, starts_n2, thetas_n1):

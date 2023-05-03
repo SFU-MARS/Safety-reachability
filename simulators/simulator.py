@@ -75,7 +75,7 @@ class Simulator(SimulatorHelper):
         self.episode_type = episode_data['episode_type']
         self.valid_episode = episode_data['valid_episode']
         self.commanded_actions_1kf = episode_data['commanded_actions_1kf']
-        self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
+        # self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate a

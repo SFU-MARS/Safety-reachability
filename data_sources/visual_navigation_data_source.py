@@ -7,9 +7,9 @@ import tensorflow as tf
 from data_sources.image_data_source import ImageDataSource
 from systems.dubins_car import DubinsCar
 from utils import utils
-from sbpd.sbpd_renderer import SBPDRenderer
-import glob
-from collections import defaultdict
+
+import random
+
 
 class VisualNavigationDataSource(ImageDataSource):
 
@@ -25,10 +25,10 @@ class VisualNavigationDataSource(ImageDataSource):
         dir_name = 'img_data_{:s}'.format(camera_params.modalities[0])
         dir_name += '_{:d}_{:d}_{:d}'.format(camera_params.width, camera_params.height,
                                              camera_params.img_channels)
-       
+
         if camera_params.modalities[0] == 'occupancy_grid':
             dir_name += '_{:.3f}_{:.3f}'.format(*model_params.occupancy_grid_dx)
-        
+
         dir_name += '_{:.2f}_{:.2f}'.format(camera_params.fov_horizontal,
                                             camera_params.fov_vertical)
         dir_name += '_{:.2f}_{:.2f}'.format(camera_params.z_near,
@@ -42,17 +42,14 @@ class VisualNavigationDataSource(ImageDataSource):
                                                               robot_params.camera_elevation_degree,
                                                               robot_params.delta_theta)
         return dir_name
-        
+
     def _get_n(self, data):
         """
         Returns n, the batch size of the data inside
         this data dictionary.
         """
         return data['vehicle_state_nk3'].shape[0]
-        # return data['image'].shape[0]
 
-        # return len(data)
-    
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
 
@@ -71,300 +68,44 @@ class VisualNavigationDataSource(ImageDataSource):
         utils.log_dict_as_json(self.p, os.path.join(self.p.data_creation.data_dir, 'params.json'))
 
         # Initialize the simulator
-        simulator = self.p.simulator_params.simulator(self.p.simulator_params) # Get obstacle map and free_xy_map. (x,y)
+        simulator = self.p.simulator_params.simulator(
+            self.p.simulator_params)  # Get obstacle map and free_xy_map. (x,y)
 
         # Generate the data
         counter = 1
         num_points = 0
-        # while num_points < self.p.data_creation.data_points:
-        # if num_points less than total set up
-        # Reset the data dictionary
-        # data = self.reset_data_dictionary(self.p)
-        d2 = {}
-        self.num_episode = self.p.data_creation.data_points
-        data_points_per_file = self.p.data_creation.data_points_per_file
-        # self.num_episode = 2
-        # data_points_per_file=1
-
         self.episode_counter = 0
-        listofdict0=[]
-        listofdict1 = []
-        while self.episode_counter < self.num_episode:
+        while num_points < self.p.data_creation.data_points:  # if num_points less than total set up
+            # Reset the data dictionary
+            data = self.reset_data_dictionary(self.p)
 
-        # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
-            start = time.time()
-            # fake_labels= [ [-1,-1,-1, 1,1,1 ],[-1,-1,-1, 1,1,1 ] , [-1,-1,1, 1,1,1 ],[-1,-1,1, 1,1,1 ]  ]
-            # for labels in fake_labels:
-        # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
-            simulator.reset()
-            # Run the planner for one step
-            # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
-            # its corresponding image
-            dataForAnImage = simulator.simulate()
+            while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
+                start = time.time()
+                # Reset the simulator
+                # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
+                simulator.reset()
+                # Run the planner for one step
+                # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
+                # its corresponding image
+                simulator.simulate()
 
-            # if self.episode_counter <= self.num_episode * 0.8 :
-            #
-            #     # fake_label_train = [-1, -1, -1, 1, 1, 1]
-            #     fake_label_train= 2*y-1
-            #     dataForAnImage_tr=dataForAnImage
-            #     dataForAnImage_tr['labels']= np.expand_dims(np.reshape(np.array(fake_label_train), (-1,1)),axis=0)
-
-            if dataForAnImage['labels'].min() == -1 and dataForAnImage['labels'].max() == 1:
-                listofdict0.append(dataForAnImage)
-                self.episode_counter += 1
-
-                if  self.episode_counter % data_points_per_file == 0 :
-
-                    # from collections import defaultdict
-
-                    dataForImages_t = {'start_pose': [], 'waypointAction': [], 'labels': [], 'image': []}
-                    dataForImages1_t = {'start_pose': [], 'waypointAction': [], 'labels': [], 'image': []}
-
-
-                    for d in listofdict0:
-                        for k, v in d.items():
-
-                            try:
-
-                                dataForImages_t[k].append(v)
-
-                                dataForImages1_t[k] = np.concatenate(dataForImages_t[k])
-
-                            except:
-                                print("exception")
-                                self.episode_counter -= 1
-
-
-
-
-
-                        # here = os.path.dirname(os.path.abspath(__file__))
-                    file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
-
-                    here = self.p.data_creation.data_dir
-                        # '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0202'
-                    with open(os.path.join(here, file_name), "wb") as f:
-
-                        print ("dumping")
-                        pickle.dump(dataForImages1_t, f)
-                    listofdict0 = []
-
-
-            # else:
-            #
-            #     # fake_label_eval = [1,1,1, -1,-1,-1 ]
-            #     # fake_label_eval = -(2 * y - 1)
-            #     fake_label_eval = (2*y-1)
-            #     dataForAnImage_ev = dataForAnImage
-            #     dataForAnImage_ev['labels'] = np.expand_dims(np.reshape(np.array(fake_label_eval), (-1, 1)), axis=0)
-            #
-            #     listofdict1.append(dataForAnImage)
-
-
-            # if self.episode_counter%4!=0:
-            #
-            #
-            #     d1 = dataForAnImage
-            #
-            #     dd = defaultdict(list)
-            #
-            #     for d in (d1, d2):  # you can list as many input dicts as you want here
-            #         for key, value in d.items():
-            #             dd[key].append(value)
-            #     d2=dd
-            #
-            # else:
-            # print("The episode", self.episode_counter, "takes time", "elapsed")
-
-## writing multiple dictionaries in two files fro train and test
-            # if self.episode_counter %2 == 0: # % number of datapoint in each file
-
-
-
-                    # dataForImages = np.concatenate(listofdict)
-
-                # if self.episode_counter % data_points_per_file ==0:
-                #
-                #     from collections import defaultdict
-                #     dataForImages_v = defaultdict(list)
-                #     dataForImages1_v = defaultdict(list)
-                #
-                #     for d in listofdict1:
-                #
-                #         #if d['waypointAction'].shape[1]==20:
-                #         try:
-                #             for k, v in d.items():
-                #
-                #
-                #                     dataForImages_v[k].append(v)
-                #
-                #                     dataForImages1_v[k] = np.concatenate(dataForImages_v[k])
-                #
-                #
-                #         except:
-                #             self.episode_counter -= 1
-
-
-
-                    # here = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1130-600'
-                    # here = os.path.dirname(os.path.abspath(__file__))
-                    # file_name = 'file' + str(int(self.episode_counter/data_points_per_file)) + '.pkl'
-                    #
-                    # with open(os.path.join(here, file_name), "wb") as f:
-                    #     pickle.dump(dataForImages1_v, f)
-                    # listofdict1=[]
-
-                    # pickle.dump(dd, f)
-                    # dd={}
-
-
-
-
-    # Ensure that the episode simulated is valid
-    # if simulator.valid_episode:
-        # Append the data to the current data dictionary
-        # self.append_data_to_dictionary(dataForAnImage, simulator)
-        # self.episode_counter += 1
-
-    # end = time.time()
-    # elapsed = end - start
-    #
-    # # if (self.episode_counter == 257):
-    # #     continue
-    # print("The episode", self.episode_counter, "takes time", elapsed)
-    # # self.episode_counter += 1
-
-        # # Prepare the dictionary for saving purposes
-        # self.prepare_and_save_the_data_dictionary(dataForAnImage, counter)
-        #
-        # # Increase the counter
-        # counter += 1
-        # num_points += self._num_data_points(dataForAnImage)
-        # print(num_points)
-
-##Tara
-            # file_name = self.p.data_creation.data_dir+'/'+'file'+str(self.episode_counter)+' .pkl'
-            # f = open(file_name, 'wb')
-            # pickle.dump(dataForAnImage, f)
-            # f.close()
-            # self.episode_counter += 1
-
-
-            # with open(img_filename, 'wb') as f:
-            #     pickle.dump(data, f)
-
-            # List the data files in the directory
-        # data_files = glob.glob('self.p.data_creation.data_dir/*.pkl')
-        # # [for f in os.listdir(data_directory) if f.endswith('.pkl')]
-        #
-        # metadata = {}
-        #
-        # # Render the images
-        # for data_file in data_files:
-        #     with open(data_file, 'rb') as f:
-        #         data = pickle.load(f)
-        #
-        #         img_filename = os.path.join('self.p.data_creation.data_dir/', data_file)
-        #         metadata[img_filename] = self._get_n(data)
-        #
-        #     # Get the filename 'file{:d}.pkl' and file_number '{:d}'
-        #     # filename, _ = self._extract_file_name_and_number(data_file, data_directory)
-        #
-        #     # Render the images from the simulator
-        #     # img_nmkd = simulator.get_observation_from_data_dict_and_model(data, self.model)  # !
-        #
-        #     # Save the image augmented data to the new directory
-        #     # img_filename = os.path.join(new_data_dirs, filename)
-        #     # data['img_nmkd'] = np.array(img_nmkd)
-        #
-        #
-        #     # Add {Absolute file path: number of samples} to the
-        #     # metadata dictionary
-        #     metadata[img_filename] = self._get_n(data)
-        #
-        # # Save metadata
-        # new_data_dirs = self.p.data_creation.data_dir+'/'+'img_data_rgb_1024_1024_3_90.00_90.00_0.01_20.00_0.22_18_10_100_80_-45_1.000'
-        #
-        # metadata_filename = os.path.join(new_data_dirs, 'metadata.pkl')
-        # with open(metadata_filename, 'wb') as f:
-        #     pickle.dump(metadata, f)
-
-##end of Tara
                 # Ensure that the episode simulated is valid
-                # if simulator.valid_episode:
-                #     # Append the data to the current data dictionary
-                #     self.append_data_to_dictionary(data, simulator)
-                #     self.episode_counter += 1
-                #
-                # end = time.time()
-                # elapsed = end - start
-                # print("The episode", self.episode_counter, "takes time", elapsed)
+                if simulator.valid_episode:
+                    # Append the data to the current data dictionary
+                    self.append_data_to_dictionary(data, simulator)
+                    self.episode_counter += 1
+
+                end = time.time()
+                elapsed = end - start
+                print("The episode", self.episode_counter, "takes time", elapsed)
 
             # Prepare the dictionary for saving purposes
-            # self.prepare_and_save_the_data_dictionary(data, counter)
-            #
-            # # Increase the counter
-            # counter += 1
-            # num_points += self._num_data_points(data)
-            # print(num_points)
-##
+            self.prepare_and_save_the_data_dictionary(data, counter)
 
-        #
-        #
-        # ###Tara's code
-        # # Generate the data
-        # counter = 1
-        # num_points = 0
-        #
-        # self.episode_counter = 0
-        # num_episode = 5
-        # for self.episode_counter in range(num_episode):
-        # # while num_points < self.p.data_creation.data_points: # if num_points less than total set up
-        #     # Reset the data dictionary
-        #     data = self.reset_data_dictionary(self.p)
-        #
-        #     # for self.episode_counter in range (num_episode):
-        #     # while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
-        #     start = time.time()
-        #     # Reset the simulator
-        #     # For a simulator, compute goal_distance and angle_distance, and initiate trajectory data
-        #     simulator.reset()
-        #     #print(start_pos_2d)
-        #     # Run the planner for one step
-        #     # Sample a bunch of waypoints, evaluate the cost along the trajectory, and return optimal waypoints and
-        #     # its corresponding image
-        #     dataForAnImage=simulator.simulate()
-        #     # Ensure that the episode simulated is valid
-        #     # if simulator.valid_episode:
-        #     #     # Append the data to the current data dictionary
-        #     #     self.append_data_to_dictionary(data, simulator)
-        #     #     self.episode_counter += 1
-        #
-            #
-            # print("The episode", self.episode_counter, "takes time", elapsed)
-            # here ='/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp2'
-            # # here = os.path.dirname(os.path.abspath(__file__))
-            # file_name = 'file' + str(self.episode_counter) + '.pkl'
-            # with open(os.path.join(here, file_name), "wb") as f:
-            #     pickle.dump(dataForAnImage, f)
-        #
-        # ###Tara's code
-
-
-
-            #
-
-            # f = open(file_name, 'wb')
-            # pickle.dump(dataForAnImage, f)
-            # f.close()
-        #
-        # # Prepare the dictionary for saving purposes
-        # self.prepare_and_save_the_data_dictionary(data, counter)
-        #
-        # # Increase the counter
-        # counter += 1
-        # num_points += self._num_data_points(data)
-        # print(num_points)
+            # Increase the counter
+            counter += 1
+            num_points += self._num_data_points(data)
+            print(num_points)
 
     def _create_image_dataset(self):
         """
@@ -406,7 +147,7 @@ class VisualNavigationDataSource(ImageDataSource):
         # Episode type information
         data['episode_type_string_n1'] = []
         data['episode_number_n1'] = []
-        
+
         # Last step information
         # Saved separately from other episode information
         # So that we can decide whether to train on this or not
@@ -418,6 +159,11 @@ class VisualNavigationDataSource(ImageDataSource):
         data['last_step_optimal_waypoint_ego_n3'] = []
         data['last_step_optimal_control_nk2'] = []
         data['last_step_data_valid_n'] = []
+
+        data['start_state'] = []
+        data['all_waypoint_ego'] = []
+        data['all_waypoint'] = []
+        data['labels'] = []
 
         return data
 
@@ -446,12 +192,14 @@ class VisualNavigationDataSource(ImageDataSource):
         data_last_step = simulator.vehicle_data_last_step
         n = data_last_step['system_config'].n
 
-        data['last_step_vehicle_state_nk3'].append(simulator.vehicle_data_last_step['trajectory'].position_and_heading_nk3().numpy())
-        data['last_step_vehicle_controls_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+        data['last_step_vehicle_state_nk3'].append(
+            simulator.vehicle_data_last_step['trajectory'].position_and_heading_nk3().numpy())
+        data['last_step_vehicle_controls_nk2'].append(
+            simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
 
-        last_step_goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3)) 
+        last_step_goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3))
         last_step_waypoint_n13 = data_last_step['waypoint_config'].position_and_heading_nk3().numpy()
-        
+
         # Convert to egocentric coordinates
         start_nk3 = data_last_step['system_config'].position_and_heading_nk3().numpy()
         goal_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
@@ -460,17 +208,18 @@ class VisualNavigationDataSource(ImageDataSource):
                                                                                      last_step_waypoint_n13)
 
         data['last_step_goal_position_n2'].append(last_step_goal_n13[:, 0, :2])
-        
+
         data['last_step_goal_position_ego_n2'].append(goal_ego_n13[:, 0, :2])
-        
+
         data['last_step_optimal_waypoint_n3'].append(last_step_waypoint_n13[:, 0, :])
         data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13[:, 0, :])
 
-        data['last_step_optimal_control_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+        data['last_step_optimal_control_nk2'].append(
+            simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
         data['last_step_data_valid_n'].append([simulator.last_step_data_valid])
         return data
 
-    def append_data_to_dictionary0(self, data, simulator):
+    def append_data_to_dictionary(self, data, simulator):
         """
         Append the appropriate data from the simulator to the existing data dictionary.
         """
@@ -483,7 +232,7 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Convert to egocentric coordinates
         start_nk3 = simulator.vehicle_data['system_config'].position_and_heading_nk3().numpy()
-
+        data['start_state'].append(start_nk3)
         goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3))
         waypoint_n13 = simulator.vehicle_data['waypoint_config'].position_and_heading_nk3().numpy()
 
@@ -491,7 +240,17 @@ class VisualNavigationDataSource(ImageDataSource):
                                                                                  goal_n13)
         waypoint_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
                                                                                      waypoint_n13)
-
+        i = 0
+        for waypoints in simulator.vehicle_data['all_waypoint']:
+            waypoints_n13 = waypoints.position_and_heading_nk3().numpy()
+            data['all_waypoint'].append(np.squeeze(waypoints_n13))
+            start = np.tile(start_nk3[i], (np.shape(waypoints_n13)[0], 1, 1))
+            waypoints_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(start,
+                                                                                      waypoints_n13)
+            i += 1
+            data['all_waypoint_ego'].append(waypoints_ego[:, 0])  # 10521,3
+        # data['all_waypoint'].append(simulator.vehicle_data['all_waypoint'])
+        data['labels'].append(simulator.vehicle_data['labels'])
         # Goal Data
         data['goal_position_n2'].append(goal_n13[:, 0, :2])
         data['goal_position_ego_n2'].append(goal_ego_n13[:, 0, :2])
@@ -507,24 +266,89 @@ class VisualNavigationDataSource(ImageDataSource):
         data['optimal_control_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
 
         # Episode Type Information
-        data['episode_type_string_n1'].append([simulator.params.episode_termination_reasons[simulator.episode_type]]*n)
-        data['episode_number_n1'].append([self.episode_counter]*n)
+        data['episode_type_string_n1'].append(
+            [simulator.params.episode_termination_reasons[simulator.episode_type]] * n)
+        # print('typeeeeee')
+        # print(data['episode_type_string_n1'])
+        data['episode_number_n1'].append([self.episode_counter] * n)
 
         data = self._append_last_step_info_to_dictionary(data, simulator)
         return data
-
 
     def prepare_and_save_the_data_dictionary(self, data, counter):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
+        N = 2000  # MIN # OF WPS 4000
+        # N = 200
+        # randomRow = np.random.randint(3, size=N)
+        # arr[np.random.randint(arr.numpy().shape[0], size=N), :]
+        # random.sample(arr, N)
+        # idx = np.random.randint(arr.numpy().shape[0], size=4000)
         # Stack the lists
+        idx = []
+        # counter= 0
         data_tags = data.keys()
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        from mpl_toolkits import mplot3d
+        ax = plt.axes(projection="3d")
+
+        X = data['all_waypoint_ego'][0]
+        y = np.squeeze(data['labels'][0][0])
+        # ax.scatter(X[:, 0], X[:, 1], marker='o', c=y)
+        # ax.scatter3D(X[:, 0], X[:, 1],X[:, 2], marker='x', c=y)
+        # plt.show()
+
         for tag in data_tags:
-            data[tag] = np.concatenate(data[tag], axis=0)
+            # data[tag] = np.concatenate(data[tag], axis=0)
+            if tag != 'labels' and tag != 'all_waypoint_ego' and tag != 'all_waypoint':
+                data[tag] = np.concatenate(data[tag], axis=0)
+            elif tag == 'all_waypoint_ego':
+                # tag == 'all_waypoint_ego':
+                arr1 = []
+                arr2 = []
+                arr4 = []
+                indx = []
+                for arr in data[tag]:
+                    # idx. append(np.random.randint(arr.numpy().shape[0], size=1))
+                    # op = tf.gather(arr, idx, axis=0)
+                    fov = []
+                    for element in arr:
+                        if element[0] > (np.sign(element[1]) * element[1]):
+                            fov.append(np.expand_dims(element, axis=0))
+                    fov_array = np.array(fov)
+                    fov_array = np.squeeze(fov_array)
+                    indx.append(np.where(arr[:, 0] > np.sign(arr[:, 1]) * arr[:, 1])[0])
+                    # fov_array = arr[np.where(arr[:, 0] >= arr[:, 1])]
+                    arr2.append(np.expand_dims(fov_array[:N, :], axis=0))
+
+                data['all_waypoint_ego'] = np.concatenate(arr2, axis=0)
+                counter1 = 0
+                for arr3 in data['all_waypoint']:
+                    X = [arr3[index] for index in indx[counter1]]
+                    X = np.array(X)
+                    arr1.append(np.expand_dims(X[:N, :], axis=0))
+                    counter1 += 1
+                data['all_waypoint'] = np.concatenate(arr1, axis=0)
+                counter1 = 0
+                for arr3 in data['labels']:
+                    for arr5 in arr3:
+                        X = [arr5[index] for index in indx[counter1]]
+                        X = np.array(X)
+                        arr4.append(np.expand_dims(X[:N, :], axis=0))
+                        counter1 += 1
+                data['labels'] = np.concatenate(arr4, axis=0)
+
+                # arr1.append(np.expand_dims(op , axis=0))
+            else:
+                pass
 
         # Save the data
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
         with open(filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 
