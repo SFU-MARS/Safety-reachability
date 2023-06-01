@@ -19,7 +19,17 @@ class VoxelMap4d(object):
         self.map_size_float32_4 = tf.constant(map_size_4, dtype=tf.float32)
         self.voxel_function_4d = function_array_4d
 
-    def compute_voxel_function(self, position_nk2, heading_nk1, speed_nk1, invalid_value=100.):
+    def compute_voxel_function(self, position_nk2, heading_nk1, speed_nk1, invalid_value=100.,
+                                method="nearest_neighbor"):
+        if method == "nearest_neighbor":
+            return self.compute_voxel_function_NN(position_nk2, heading_nk1, speed_nk1, invalid_value=100.)
+        elif method == "interpolation":
+            return self.compute_voxel_function_interpolation(position_nk2, heading_nk1, speed_nk1, invalid_value=100.)
+        elif method == "qualinear":
+            return self.compute_voxel_function_quadlinear(position_nk2, heading_nk1, speed_nk1, invalid_value=100.)
+
+    # Minh: not sure if this method is correct
+    def compute_voxel_function_quadlinear(self, position_nk2, heading_nk1, speed_nk1, invalid_value=100.):
         voxel_space_position_nk1_x, voxel_space_position_nk1_y, voxel_space_heading_nk1, voxel_space_speed_nk1 \
             = self.grid_world_to_voxel_world(position_nk2, heading_nk1, speed_nk1)
 
@@ -126,6 +136,54 @@ class VoxelMap4d(object):
 
         return tf.where(valid_voxels_4d, data, tf.ones_like(data) * invalid_value)
 
+    def compute_voxel_function_NN(self, position_nk2, heading_nk2, speed_nk1, invalid_value=100.):
+        voxel_space_position_nk1_x, voxel_space_position_nk1_y, voxel_space_heading_nk1, voxel_space_speed_nk1 \
+            = self.grid_world_to_voxel_world(position_nk2, heading_nk2, speed_nk1)
+
+        # Round them to nearest integers
+        voxel_space_position_nk1_x = tf.cast(tf.round(voxel_space_position_nk1_x), dtype=tf.int32)
+        voxel_space_position_nk1_y = tf.cast(tf.round(voxel_space_position_nk1_y), dtype=tf.int32)
+        voxel_space_heading_nk1 = tf.cast(tf.round(voxel_space_heading_nk1), dtype=tf.int32)
+        voxel_space_speed_nk1 = tf.cast(tf.round(voxel_space_speed_nk1), dtype=tf.int32)
+
+        # All the out-of-bounds indices are mapped to the top and bottom indices
+        voxel_space_position_nk1_x = tf.where(voxel_space_position_nk1_x < 0,
+                                     tf.zeros_like(voxel_space_position_nk1_x), voxel_space_position_nk1_x)
+
+        voxel_space_position_nk1_x = tf.where(voxel_space_position_nk1_x > self.map_size_int32_4[0]-1,
+                                    (self.map_size_int32_4[0]-1) * tf.ones_like(voxel_space_position_nk1_x), voxel_space_position_nk1_x)
+
+
+        voxel_space_position_nk1_y = tf.where(voxel_space_position_nk1_y < 0,
+                                     tf.zeros_like(voxel_space_position_nk1_y), voxel_space_position_nk1_y)
+        voxel_space_position_nk1_y = tf.where(voxel_space_position_nk1_y > self.map_size_int32_4[1]-1,
+                                    (self.map_size_int32_4[1]-1)*tf.ones_like(voxel_space_position_nk1_y), voxel_space_position_nk1_y)
+
+        voxel_space_heading_nk1 = tf.where(voxel_space_heading_nk1 < 0,
+                                              tf.zeros_like(voxel_space_heading_nk1), voxel_space_heading_nk1)
+        voxel_space_heading_nk1 = tf.where(voxel_space_heading_nk1 > self.map_size_int32_4[2]-1,
+                                           (self.map_size_int32_4[2]-1) * tf.ones_like(voxel_space_heading_nk1),
+                                              voxel_space_heading_nk1)
+
+        voxel_space_speed_nk1 = tf.where(voxel_space_speed_nk1 < 0,
+                                           tf.zeros_like(voxel_space_speed_nk1), voxel_space_speed_nk1)
+        voxel_space_speed_nk1 = tf.where(voxel_space_speed_nk1 > self.map_size_int32_4[3]-1,
+                                         (self.map_size_int32_4[3] - 1) * tf.ones_like(voxel_space_speed_nk1),
+                                           voxel_space_speed_nk1)
+
+        voxel_index_8 = tf.concat([voxel_space_position_nk1_x, voxel_space_position_nk1_y,
+                                   voxel_space_heading_nk1, voxel_space_speed_nk1], axis=2)
+
+        voxel_index_int64_8 = tf.cast(voxel_index_8, dtype=tf.int64)
+
+        data = tf.gather_nd(self.voxel_function_4d, voxel_index_int64_8)
+        valid_voxels_4d = self.is_valid_voxel(position_nk2, heading_nk2, speed_nk1)
+        return tf.where(valid_voxels_4d, data, tf.ones_like(data) * invalid_value)
+
+    def compute_voxel_function_interpolation(self, position_nk2, heading_nk2, speed_nk1, invalid_value=100.):
+        # TODO: We can use scipy.interpolate.LinearNDInterpolator for approximating the values
+        return
+
     def grid_world_to_voxel_world(self, position_nk2, heading_nk1, speed_nk1):
         """
         Convert the positions in the global world to the voxel world coordinates.
@@ -150,19 +208,19 @@ class VoxelMap4d(object):
             = self.grid_world_to_voxel_world(position_nk2, heading_nk1, speed_nk1)
 
         valid_x = tf.logical_and(tf.keras.backend.all(voxel_space_position_nk1_x >= 0., axis=2),
-                                 tf.keras.backend.all(voxel_space_position_nk1_x < (self.map_size_float32_4[0] - 1.),
+                                 tf.keras.backend.all(voxel_space_position_nk1_x <= (self.map_size_float32_4[0] - 1.),
                                                       axis=2))
 
         valid_y = tf.logical_and(tf.keras.backend.all(voxel_space_position_nk1_y >= 0., axis=2),
-                                 tf.keras.backend.all(voxel_space_position_nk1_y < (self.map_size_float32_4[1] - 1.),
+                                 tf.keras.backend.all(voxel_space_position_nk1_y <= (self.map_size_float32_4[1] - 1.),
                                                       axis=2))
 
         valid_theta = tf.logical_and(tf.keras.backend.all(voxel_space_heading_nk1 >= 0., axis=2),
-                                     tf.keras.backend.all(voxel_space_heading_nk1 < (self.map_size_float32_4[2] - 1.),
+                                     tf.keras.backend.all(voxel_space_heading_nk1 <= (self.map_size_float32_4[2] - 1.),
                                                           axis=2))
 
         valid_v = tf.logical_and(tf.keras.backend.all(voxel_space_speed_nk1 >= 0., axis=2),
-                                 tf.keras.backend.all(voxel_space_speed_nk1 < (self.map_size_float32_4[3] - 1.),
+                                 tf.keras.backend.all(voxel_space_speed_nk1 <= (self.map_size_float32_4[3] - 1.),
                                                       axis=2))
 
         valid_1 = tf.logical_and(valid_x, valid_y)
