@@ -675,6 +675,7 @@ class Shape():
     if load_materials:
       materials = []
       for m in self.meshes:
+        # print(m.material.properties)
         file_name = os.path.join(dir_name, m.material.properties[('file', 1)])
         assert(os.path.exists(file_name)), \
             'Texture file {:s} foes not exist.'.format(file_name)

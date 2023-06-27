@@ -74,15 +74,15 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-4
-    p.trainer.batch_size = 36#48 original, changed after error 36 , 20
+    p.trainer.batch_size = 24#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
     # p.trainer.num_samples = int(200) # original: 150e3
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
-    # p.trainer.num_samples = int(100) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(9900) #int(1000)
+    # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
+    p.trainer.num_samples = int(100) #int(9900)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 10
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 200
+    p.trainer.num_epochs = 100
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -111,9 +111,11 @@ def create_params():
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2020-09-10_10-14-56/checkpoints/ckpt-5' #Test last neural network for example, check point is nn parameters
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2021-06-20_14-56-40/checkpoints/ckpt-5'
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
-    # p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-01-19_01-49-14/checkpoints/ckpt-7"
-    p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-03-06_23-09-09/checkpoints/ckpt-4"
-    # p.trainer.ckpt_path =  "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-02-09_16-54-22/checkpoints/ckpt-100"
+    ## p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-05-08_15-36-57/checkpoints_g1.0000_c1//ckpt-30"
+    # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-03-06_23-09-09/checkpoints/ckpt-4"
+    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/log/generate/session_2023-02-27_15-44-14/checkpoints/ckpt-10"
+
+
     # Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
     #  should be the building name
@@ -154,13 +156,13 @@ def create_params():
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0217-30wp-theta0bin1']
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
-    # p.data_creation.data_dir = [
-    #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-added-fov']
-    p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/test']
+    p.data_creation.data_dir = [
+        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6']
+    # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
-    p.data_creation.data_points = 1e3
+    p.data_creation.data_points = 1e2
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
-    p.data_creation.data_points_per_file= 1e2
+    p.data_creation.data_points_per_file= 1e1
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
     p.test.number_tests = 200
