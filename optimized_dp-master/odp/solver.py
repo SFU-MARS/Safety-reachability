@@ -79,7 +79,7 @@ def solveValueIteration(MDP_obj):
     return V
 
 def HJSolver(dynamics_obj, grid, multiple_value, tau, compMethod,
-             plot_option, saveAllTimeSteps=False,
+             plot_option, saveAllTimeSteps=False, get_FRS=False,
              accuracy="low", untilConvergent=False, epsilon=2e-3):
 
     print("Welcome to optimized_dp \n")
@@ -154,7 +154,8 @@ def HJSolver(dynamics_obj, grid, multiple_value, tau, compMethod,
         solve_pde = graph_3D(dynamics_obj, grid, compMethod["TargetSetMode"], accuracy)
 
     if grid.dims == 4:
-        solve_pde = graph_4D(dynamics_obj, grid, compMethod["TargetSetMode"], accuracy)
+        solve_pde = graph_4D(dynamics_obj, grid, compMethod["TargetSetMode"], accuracy,
+                             compute_FRS=get_FRS)
 
     if grid.dims == 5:
         solve_pde = graph_5D(dynamics_obj, grid, compMethod["TargetSetMode"], accuracy)
