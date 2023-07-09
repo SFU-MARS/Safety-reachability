@@ -279,7 +279,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 2000  # MIN # OF WPS 4000
+        N = 4000  # MIN # OF WPS 4000
         # N = 200
         # randomRow = np.random.randint(3, size=N)
         # arr[np.random.randint(arr.numpy().shape[0], size=N), :]
@@ -312,33 +312,16 @@ class VisualNavigationDataSource(ImageDataSource):
                 arr4 = []
                 indx = []
                 for arr in data[tag]:
-                    # idx. append(np.random.randint(arr.numpy().shape[0], size=1))
-                    # op = tf.gather(arr, idx, axis=0)
-                    fov = []
-                    for element in arr:
-                        if element[0] > (np.sign(element[1]) * element[1]):
-                            fov.append(np.expand_dims(element, axis=0))
-                    fov_array = np.array(fov)
-                    fov_array = np.squeeze(fov_array)
-                    indx.append(np.where(arr[:, 0] > np.sign(arr[:, 1]) * arr[:, 1])[0])
-                    # fov_array = arr[np.where(arr[:, 0] >= arr[:, 1])]
-                    arr2.append(np.expand_dims(fov_array[:N, :], axis=0))
-
+                    arr2.append(np.expand_dims(arr[:N, :], axis=0))
                 data['all_waypoint_ego'] = np.concatenate(arr2, axis=0)
                 counter1 = 0
                 for arr3 in data['all_waypoint']:
-                    X = [arr3[index] for index in indx[counter1]]
-                    X = np.array(X)
-                    arr1.append(np.expand_dims(X[:N, :], axis=0))
-                    counter1 += 1
+                    arr1.append(np.expand_dims(arr3[:N, :], axis=0))
                 data['all_waypoint'] = np.concatenate(arr1, axis=0)
                 counter1 = 0
                 for arr3 in data['labels']:
-                    for arr5 in arr3:
-                        X = [arr5[index] for index in indx[counter1]]
-                        X = np.array(X)
-                        arr4.append(np.expand_dims(X[:N, :], axis=0))
-                        counter1 += 1
+                    for arr in arr3:
+                        arr4.append(np.expand_dims(arr[:N, :], axis=0))
                 data['labels'] = np.concatenate(arr4, axis=0)
 
                 # arr1.append(np.expand_dims(op , axis=0))

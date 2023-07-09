@@ -62,5 +62,5 @@ def create_params():
     # linear and angular acceleration. If not set to false to save memory
     p.track_trajectory_acceleration = True
 
-    p.verbose = False
+    p.verbose = True
     return p

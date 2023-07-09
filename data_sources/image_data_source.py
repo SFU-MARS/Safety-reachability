@@ -22,9 +22,10 @@ class ImageDataSource(DataSource):
         self.training_dataset = None
         self.validation_dataset = None
 
-        self.num_training_samples = self.p.trainer.batch_size * \
-                                    int((self.p.trainer.training_set_size * self.p.trainer.num_samples) //
-                                     self.p.trainer.batch_size)
+        # self.num_training_samples = self.p.trainer.batch_size * \
+        #                             int((self.p.trainer.training_set_size * self.p.trainer.num_samples) //
+        #                              self.p.trainer.batch_size)
+        self.num_training_samples = int(self.p.trainer.training_set_size * self.p.trainer.num_samples)
         self.num_validation_samples = self.p.trainer.num_samples - self.num_training_samples
 
         # Controls whether get_data_tags returns
@@ -86,7 +87,7 @@ class ImageDataSource(DataSource):
                     filename, _ = self._extract_file_name_and_number(data_file, data_directory)
                     # img_nmkd=[]
                     # Render the images from the simulator
-                    img_nmkd, topview  = simulator.get_observation_from_data_dict_and_model(data, self.model) #!
+                    img_nmkd= simulator.get_observation_from_data_dict_and_model(data, self.model) #!
 
                     # for i in range (120):
                     #     img_nmkd.append(data[i]["image"])
@@ -94,7 +95,7 @@ class ImageDataSource(DataSource):
                     # Save the image augmented data to the new directory
                     img_filename = os.path.join(new_data_dirs[-1], filename)
                     data['img_nmkd'] = np.array(img_nmkd)
-                    data['topview'] = np.array(topview)
+                    # data['topview'] = np.array(topview)
 
                     with open(img_filename, 'wb') as f:
                         pickle.dump(data, f)
@@ -517,7 +518,7 @@ class ImageDataSource(DataSource):
 
         # Make sure there is enough training and validation data
         assert(np.sum(training_dataset['num_samples_n1']) >= ts)
-        assert(np.sum(validation_dataset['num_samples_n1']) +3 >= vs)
+        assert(np.sum(validation_dataset['num_samples_n1'])  >= vs)
 
 
         return training_dataset, validation_dataset

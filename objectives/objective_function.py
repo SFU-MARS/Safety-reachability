@@ -101,48 +101,14 @@ class ObjectiveFunction(object):
             for tag, objective_values in avoid_values_by_tag:
                 if tag == 'avoid_4d':
                     obj = objective_values
-                    label_11 = (np.min(np.sign(obj.numpy()), axis=1)) # -1 and 1
+                    label_11 = (np.min(np.sign(obj.numpy()), axis=1))
+                    label_11[np.where(label_11 == 0)[0]] = -1  # -1 and 1
                     # label_01 = (np.min((obj.numpy()), axis=1))== 100
                     # label_11 = 2 * label_01 - 1
                     # labels = np.reshape(np.array(label_11), (1, -1))
                     # labels = np.expand_dims(np.reshape(np.array(label_11), (-1, 1)), axis=0)
                     labels = np.reshape(np.array(label_11), (-1, 1))
 
-
-
-
-        # ## Freeze the sum of 2 costs, at the minimum of the sum of cost
-        # if reachability_cost:
-        #     for tag, objective_values in objective_values_by_tag:
-        #         if tag == 'reach_avoid_4d' or 'avoid_4d':
-        #             objective_function_values += objective_values
-        #         if tag == 'distance_to_goal':
-        #             objective_distance_to_goal += objective_values
-        #     try:
-        #         ## Freeze_v1, freeze at the minimum cost of sum: reach_avoid + avoid
-        #         # objective_function_values = self._freeze_cost_v1(objective_function_values, objective_distance_to_goal)
-        #
-        #         # Freeze v2, freeze at the minimum cost of only reach_avoid
-        #         objective_function_values = self._freeze_cost_v2(objective_values_by_tag, objective_function_values, objective_distance_to_goal)
-        #         objective_function_values = self._reduce_objective_values(trajectory, objective_function_values)
-        #     except ValueError:
-        #         print("cannot freeze in total cost")
-        #         objective_function_values = self._reduce_objective_values(trajectory, objective_function_values)
-        # else:
-        #     for tag, objective_values in objective_values_by_tag:
-        #         objective_function_values += self._reduce_objective_values(trajectory, objective_values)
-
-        # ## Freeze the sum of 2 costs, at the minimum of the reach_avoid cost
-        # if reachability_cost:
-        #     for tag, objective_values in objective_values_by_tag:
-        #         if tag == 'reach_avoid_4d' or 'avoid_4d':
-        #             objective_function_values = self._freeze_cost_v2(objective_values, objective_distance_to_goal)
-        #             objective_function_values += self._reduce_objective_values(trajectory, objective_values)
-        # else:
-        #     for tag, objective_values in objective_values_by_tag:
-        #         objective_function_values += self._reduce_objective_values(trajectory, objective_values)
-
-        # return objective_function_values
         return objective_function_values, labels
 
     def _reduce_objective_values(self, trajectory, objective_values):

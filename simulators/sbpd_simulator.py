@@ -30,12 +30,11 @@ class SBPDSimulator(Simulator):
         else:
             kwargs = {}
 
-        img_nmkd, topview = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+        img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
                                         **kwargs)
         # top_view = self.get_topview(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
         #                                 **kwargs)
-        return img_nmkd , topview
-
+        return img_nmkd
     def _reset_obstacle_map(self, rng):
         """
         For SBPD the obstacle map does not change
