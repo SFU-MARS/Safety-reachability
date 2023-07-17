@@ -65,6 +65,7 @@ class ControlPipelineV0Helper():
         # needed (i.e. in simulation when the saved lqr_trajectory is the exact result of applying the saved LQR
         # controllers.
         n = data['spline_trajectories']['n']
+        dt = data['spline_trajectories']['dt']
         if discard_lqr_controller_data:
             spline_trajectories = Trajectory(dt=dt, n=n, k=0)
             K_nkfd = tf.zeros((2, 1, 1, 1), dtype=np.float32)
@@ -110,6 +111,7 @@ class ControlPipelineV0Helper():
         """Concatenate across the binning dimension. It is asummed that data is a dictionary where each key maps to a
         list of tensors, Trajectory, or System Config objects. The concatenated results are stored in lists of length 1
         for each key (i.e. only one bin)."""
+
         data['start_speeds'] = [tf.concat(data['start_speeds'], axis=0)]
         data['start_configs'] = [SystemConfig.concat_across_batch_dim(data['start_configs'])]
         data['waypt_configs'] = [SystemConfig.concat_across_batch_dim(data['waypt_configs'])]
@@ -134,4 +136,7 @@ class ControlPipelineV0Helper():
                 'start_speeds': [], 'spline_trajectories': [],
                 'horizons': [], 'lqr_trajectories': [],
                 'K_nkfd': [], 'k_nkf1': []}
+        # data = {'start_configs': [], 'waypt_configs': [],
+        #         'start_speeds': [], 'spline_trajectories': [],
+        #         'horizons': []}
         return data
