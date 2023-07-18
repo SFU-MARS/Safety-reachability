@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 4#4 WO kernel , 11, 13
+    p.model.num_outputs = 35#4 WO kernel , 11, 13
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -74,7 +74,7 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-4
-    p.trainer.batch_size = 24#48 original, changed after error 36
+    p.trainer.batch_size = 6#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(100) #int(9900)
+    p.trainer.num_samples = int(990) #int(9900)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -157,10 +157,10 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6']
+        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-1']
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
-    p.data_creation.data_points = 1e2
+    p.data_creation.data_points = 1e3
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     p.data_creation.data_points_per_file= 1e1
     # Seed for selecting the test scenarios and the number of such scenarios

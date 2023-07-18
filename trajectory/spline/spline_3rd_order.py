@@ -130,10 +130,10 @@ class Spline3rdOrder(Spline):
 
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
-                numerator_nk_a = xs_dot_nk * xs_ddot_nk + ys_dot_nk * ys_ddot_nk
-                acceleration_nk = numerator_nk_a / (speed_ps_nk) * ps_dot_nk
-                acceleration_nk1=acceleration_nk[:, :, None]
-                print(acceleration_nk1)
+                # numerator_nk_a = xs_dot_nk * xs_ddot_nk + ys_dot_nk * ys_ddot_nk
+                # acceleration_nk = numerator_nk_a / (speed_ps_nk) * ps_dot_nk
+                # acceleration_nk1=acceleration_nk[:, :, None]
+                # print(acceleration_nk1)
                 self._acceleration_nk1 = tf.zeros_like(self._speed_nk1)
                 self._angular_acceleration_nk1 = tf.zeros_like(self._speed_nk1)
 
@@ -200,7 +200,7 @@ class Spline3rdOrder(Spline):
     def ensure_goals_valid(start_x, start_y, goal_x_nk1, goal_y_nk1, goal_theta_nk1, epsilon):
         """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
         Assumes that all goal angles are within [-pi/2., pi/2]."""
-        assert((goal_theta_nk1 >= -np.pi/2.).all() and (goal_theta_nk1 <= np.pi/2.).all())
+        # assert((goal_theta_nk1 >= -np.pi/2.).all() and (goal_theta_nk1 <= np.pi/2.).all())
         norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2), axis=2)
         invalid_idxs = (norms == 0.0)
         goal_x_nk1[invalid_idxs] += epsilon

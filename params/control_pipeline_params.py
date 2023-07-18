@@ -23,7 +23,7 @@ def create_params():
     # The directory for saving the control pipeline files
     # p.dir = '/home/anjianl/Desktop/project/WayPtNav/data/control_data/control_pipelines'
     # New control pipeline v1 doesn't rescale the trajectory to maximize the speed
-    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines'
+    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines1'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
@@ -52,7 +52,7 @@ def create_params():
 
     # When not needed, LQR controllers can be discarded
     # to save memory
-    p.discard_LQR_controller_data = True
+    p.discard_LQR_controller_data = False
 
     # Set this to True to ignore precomputed
     # LQR trajectories
@@ -62,5 +62,5 @@ def create_params():
     # linear and angular acceleration. If not set to false to save memory
     p.track_trajectory_acceleration = True
 
-    p.verbose = True
+    p.verbose = False
     return p

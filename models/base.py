@@ -23,8 +23,10 @@ from dotmap import DotMap
 from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
 from sklearn.metrics import balanced_accuracy_score
 import matplotlib
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_tkagg as tkagg
+from sklearn.preprocessing import PolynomialFeatures
 
 class BaseModel(object):
     """
@@ -137,18 +139,20 @@ class BaseModel(object):
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
 
         elif self.p.loss.loss_type == 'hinge':
+            poly =  PolynomialFeatures(degree=3)
+            feat_train_kr = []
+            for X in feat_train_sc:
+                fX = [np.squeeze(poly.fit_transform(x2.reshape(1, -1))) for x2 in X]
+                feat_train_kr.append(np.array(fX))
+            feat_train_sc = np.array(feat_train_kr)
+            X = feat_train_sc
 
-            # feat_train_kr = []
-            # for X in feat_train_sc:
-            #     fX = [(x2[0] ,x2[1] ,x2[2],np.sin(x2[0]) ,np.sin(x2[1]) ,np.sin(x2[2]), np.cos(x2[0]) ,np.cos(x2[1]) ,np.cos(x2[2])) for x2 in X]
-            #     feat_train_kr.append(np.array(fX))
-            # feat_train_sc = np.array(feat_train_kr)
 
-            feat_train_sc_1 = tf.concat(
-                (feat_train_sc,
-                 tf.ones((feat_train_sc.shape[0], feat_train_sc.shape[1], 1))),
-                axis=2)
-            X = feat_train_sc_1
+            # feat_train_sc_1 = tf.concat(
+            #     (feat_train_sc,
+            #      tf.ones((feat_train_sc.shape[0], feat_train_sc.shape[1], 1))),
+            #     axis=2)
+            # X = feat_train_sc_1
 
             predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
                          x1, output in
@@ -175,6 +179,7 @@ class BaseModel(object):
                 prediction[np.where(prediction < 0)] = -1
                 prediction_total.append(prediction)
                 class_weights = np.ones(np.shape(label))
+                sample_weights = np.ones(np.shape(label))
                 if np.min(label)==-1:
 
                     n_sample0 =np.size(np.where(label == -1)[0])
@@ -200,8 +205,8 @@ class BaseModel(object):
                 # accuracy = np.count_nonzero(prediction == label) / np.size(label)
                 print(label)
                 print(prediction)
-                # accuracy = accuracy_score(label, prediction)
-                accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
+                accuracy = accuracy_score(label, prediction)
+                # accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
 
                 precision = precision_score (label, prediction, sample_weights)
                 recall = recall_score(label, prediction, precision_score)
@@ -221,16 +226,16 @@ class BaseModel(object):
                 # if num_1 !=0:
                 #     percentage.append(metric/num_1)
 
-            hinge_losses = [tf.reduce_mean(np.expand_dims(weights1, axis=1) * tf.maximum(0, 1 - wx * y), axis=0)
-                            for wx, y, weights1 in zip(output_total, processed_data['labels'], weights)]
+            # hinge_losses = [tf.reduce_mean(np.expand_dims(weights1, axis=1) * tf.maximum(0, 1 - wx * y), axis=0)
+            #                 for wx, y, weights1 in zip(output_total, processed_data['labels'], weights)]
 
             # hinge_losses = [tf.reduce_mean(tf.multiply((-11/9+y)*-9/2 ,  tf.maximum(0, 1 - wx * y)), axis=0) for wx, y,weights1  in
             #                      zip(output_total, processed_data['labels'],weights )] #reduce.mean?
-            # hinge_losses = [tf.reduce_mean(tf.multiply((weights1[0]+y)*weights1[1] ,  tf.maximum(0, 1 - wx * y)), axis=0) for wx, y,weights1  in
-            #                      zip(output_total, processed_data['labels'],weights )] #reduce.mean?
+            hinge_losses = [tf.reduce_mean(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
+                                 zip(output_total, processed_data['labels'])] #reduce.mean?
 
 
-            sample = 5  #600 , 50
+            sample = 50  #600 , 50
 
             prediction_losses = hinge_losses
             # prediction_losses = np.float32(prediction_losses)
@@ -242,8 +247,9 @@ class BaseModel(object):
             regularization_loss = regularization_loss + regularization_loss_svm
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
+
             # 2d plots
-            pdf = matplotlib.backends.backend_pdf.PdfPages("output_fov_sample50_wofov.pdf")
+            pdf = PdfPages("output_fov_sample40_FRS.pdf")
             for WP, prediction, label, C1, image, start_nk3, goal, wp, control in zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
@@ -253,6 +259,7 @@ class BaseModel(object):
                     all_waypoint_sampled,
                     raw_data['vehicle_controls_nk2'][:, 0]
                     ):
+
                 # camera_pos_13 = config.heading_nk1()[0]
                 # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
                 #
@@ -260,7 +267,7 @@ class BaseModel(object):
                 # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
                 #
                 # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-
+                #
                 # plt.imshow(np.squeeze(top))
                 # plt.show()
 
@@ -275,23 +282,28 @@ class BaseModel(object):
                 y1 = np.expand_dims(y, axis=2)
                 t = WP[:, 2:3]
                 t1 = np.expand_dims(t, axis=2)
-
+                #
                 # x1= np.expand_dims(np.expand_dims(np.expand_dims(x, axis=0),axis=1), axis=2)
                 # y1 = np.expand_dims( np.expand_dims(np.expand_dims(y, axis=0), axis=1), axis=2)
                 # t1 = np.expand_dims( np.expand_dims(np.expand_dims(t, axis=0), axis=1), axis=2)
+                p = self.create_params()
+
+
+
+                # Initialize and Create a grid
+                grid = p.grid(p)
                 wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
-                # wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
-                # wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
+                wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
+                wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
                 color = ['red' if l == -1 else 'green' for l in label]
                 ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
                 theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
                 u, v = 1 * (np.cos(theta), np.sin(theta))
                 q = ax1.quiver(wp_image_x, wp_image_y, u, v)
                 ax1.set_title('v , w: ' + str(control))
-                plt.show()
-
                 # plt.show()
+
 
                 # matplotlib.use('Qt4Agg')
                 # fig = plt.figure()
@@ -328,7 +340,7 @@ class BaseModel(object):
                 # plt.xticks(range(len(x[0])))
                 # plt.yticks(range(len(x)))
 
-                plt.show()
+                # plt.show()
 
                 from obstacles.sbpd_map import SBPDMap
                 # fig = plt.figure()
@@ -349,7 +361,7 @@ class BaseModel(object):
                 # u, v = 1 * (np.cos(theta), np.sin(theta))
 
                 # q = ax3.quiver(x, y, u, v)
-                plt.show()
+                # plt.show()
 
                 # u, v =  1 * (np.cos(theta_world), np.sin(theta_world))
                 # q = ax3.quiver(pos_nk2[:, 0], pos_nk2[:, 1], u, v)
@@ -377,7 +389,7 @@ class BaseModel(object):
                 # ax4.scatter(safe[:, 0], safe[:, 1], s=80, edgecolors="g")
                 # ax4.scatter(unsafe[:, 0], unsafe[:, 1], s=80, edgecolors="r")
 
-                plt.show()
+                # plt.show()
 
                 # x = WP[:, 0]
                 # x_min, x_max = x.min() - 1, x.max() + 1
@@ -428,6 +440,7 @@ class BaseModel(object):
         print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
 
         accuracy_mean = np.mean(np.array(accuracy_total))
+        print("correctly predicted total: " + str(accuracy_total))
         print("correctly predicted in this batch: " + str(accuracy_mean))
 
         precision_mean = np.mean(np.array(precision_total))

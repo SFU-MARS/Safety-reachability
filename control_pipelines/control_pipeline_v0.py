@@ -8,6 +8,7 @@ from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
+import math
 
 
 class ControlPipelineV0(ControlPipelineBase):
@@ -43,6 +44,12 @@ class ControlPipelineV0(ControlPipelineBase):
         # Compute the closest velocity bin for this starting configuration
         idx = tf.squeeze(self._compute_bin_idx_for_start_velocities(start_config.speed_nk1()[:, :, 0])).numpy()
 
+        self.waypt_configs_world = [SystemConfig(
+            dt=self.params.system_dynamics_params.dt, n=config.n, k=1, variable=True,
+            track_trajectory_acceleration=self.params.track_trajectory_acceleration) for config in
+            self.start_configs
+        ]
+
         # Convert waypoints for this velocity bin into world coordinates
         self.waypt_configs_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.waypt_configs[idx],
                                                                                   self.waypt_configs_world[idx],
@@ -51,8 +58,9 @@ class ControlPipelineV0(ControlPipelineBase):
         self._ensure_world_coordinate_tensors_exist(goal_config)
 
         if goal_config is None:
-            waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers = \
+            waypt_configs, horizons, trajectories_lqr, trajectories_spline  , controllers =\
                 self._plan_to_all_waypoints(idx, start_config)
+
         else:
             waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers = \
                 self._plan_to_a_waypoint(idx, start_config, goal_config)
@@ -65,8 +73,12 @@ class ControlPipelineV0(ControlPipelineBase):
         Return all the waypoints, corresponding spline horizons, LQR trajectories and controllers corresponding to the
         velocity_bin idx. This function is typically used during the expert planning.
         """
+        # self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config,
+        #                                                                          self.lqr_trajectories[idx],
+        #                                                                          self.trajectories_world[idx],
+        #                                                                          mode='assign')
         self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config,
-                                                                                 self.lqr_trajectories[idx],
+                                                                                 self.spline_trajectories[idx],
                                                                                  self.trajectories_world[idx],
                                                                                  mode='assign')
         controllers = {'K_nkfd': self.K_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
@@ -113,17 +125,20 @@ class ControlPipelineV0(ControlPipelineBase):
     def generate_control_pipeline(self, params=None):
         p = self.params
         # Initialize spline, cost function, lqr solver
-        waypoints_egocentric = self._sample_egocentric_waypoints(vf=0.)
+
         self._init_pipeline()
         pipeline_data = self.helper.empty_data_dictionary()
 
         with tf.name_scope('generate_control_pipeline'):
             if not self._incorrectly_binned_data_exists():
-                for v0 in self.start_velocities:
+                for i, v0 in enumerate(self.start_velocities):
                     if p.verbose:
                         print('Initial Bin: v0={:.3f}'.format(v0))
+                    # start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
+                    #                                                                  n=self.waypoint_grid.n, v=v0)
+                    waypoints_egocentric , self.n = self._sample_egocentric_waypoints_v0(v0)
                     start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
-                                                                                     n=self.waypoint_grid.n, v=v0)
+                                                                                     n=self.n, v=v0)
                     goal_config = SystemConfig.copy(waypoints_egocentric)
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(start_config, goal_config)
                     lqr_trajectory, K_nkfd, k_nkf1 = self._lqr(start_config)
@@ -136,26 +151,48 @@ class ControlPipelineV0(ControlPipelineBase):
                                 'lqr_trajectories': lqr_trajectory,
                                 'K_nkfd': K_nkfd,
                                 'k_nkf1': k_nkf1}
+                    # data_bin = {'start_configs': start_config,
+                    #             'waypt_configs': goal_config,
+                    #             'start_speeds': self.spline_trajectory.speed_nk1()[:, 0],
+                    #             'spline_trajectories': Trajectory.copy(self.spline_trajectory),
+                    #             'horizons': horizons_n1}
+
                     self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
+
+                    # save each velocity waypoints separately
+                    pipeline_data = self.helper.concat_data_across_binning_dim(pipeline_data)
+                    self._save_incorrectly_binned_data(pipeline_data)
+                    pipeline_data = self._rebin_data_by_initial_velocity(pipeline_data, self.start_velocities[i:i+1])
+                    self._set_instance_variables(pipeline_data)
+
+                    filename = self._data_file_name(v0=v0)
+                    data_bin = self.helper.prepare_data_for_saving(pipeline_data, 0)
+                    self.save_control_pipeline(data_bin, filename)
+
+                    pipeline_data = self.helper.empty_data_dictionary()
+
                 # This data is incorrectly binned by velocity so collapse it all into one bin before saving it.
-                pipeline_data = self.helper.concat_data_across_binning_dim(pipeline_data)
-                self._save_incorrectly_binned_data(pipeline_data)
+                # pipeline_data = self.helper.concat_data_across_binning_dim(pipeline_data)
+                # self._save_incorrectly_binned_data(pipeline_data)
             else:
                 pipeline_data = self._load_incorrectly_binned_data()
-            pipeline_data = self._rebin_data_by_initial_velocity(pipeline_data)
-            self._set_instance_variables(pipeline_data)
+            # pipeline_data = self._rebin_data_by_initial_velocity(pipeline_data)
+            # self._set_instance_variables(pipeline_data)
 
-        for i, v0 in enumerate(self.start_velocities):
-            filename = self._data_file_name(v0=v0)
-            data_bin = self.helper.prepare_data_for_saving(pipeline_data, i)
-            self.save_control_pipeline(data_bin, filename)
+        # load waypoints configs for all start velocities
+        self._load_control_pipeline()
+
+        # for i, v0 in enumerate(self.start_velocities):
+        #     filename = self._data_file_name(v0=v0)
+        #     data_bin = self.helper.prepare_data_for_saving(pipeline_data, i)
+        #     self.save_control_pipeline(data_bin, filename)
 
     def _dynamically_fit_spline(self, start_config, goal_config):
         """Fit a spline between start_config and goal_config only keeping points that are dynamically feasible within
         the planning horizon."""
         p = self.params
-        times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None], [self.waypoint_grid.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
-        final_times_n1 = tf.ones((self.waypoint_grid.n, 1), dtype=tf.float32) * p.planning_horizon_s
+        times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None], [self.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
+        final_times_n1 = tf.ones((self.n, 1), dtype=tf.float32) * p.planning_horizon_s
         self.spline_trajectory.fit(start_config, goal_config, final_times_n1=final_times_n1)
         self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
         self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(
@@ -224,7 +261,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.instance_variables_loaded = True
 
         if self.params.verbose:
-            N = self.params.waypoint_params.n
+            # N = self.params.waypoint_params.n
+            N = self.n
             for v0, start_config in zip(self.start_velocities, self.start_configs):
                 print('Velocity: {:.3f}, {:.3f}% of goals kept({:d}).'.format(v0, 100.*start_config.n/N,
                                                                               start_config.n))
@@ -269,16 +307,21 @@ class ControlPipelineV0(ControlPipelineBase):
                 if self.params.convert_K_to_world_coordinates:
                     self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(self.K_nkfd[0][0:1]))]
 
-    def _rebin_data_by_initial_velocity(self, data):
+    def _rebin_data_by_initial_velocity(self, data, start_velocities=None):
         """Take incorrecly binned data and rebins it according to the dynamically feasible initial velocity of
         the robot."""
+        if start_velocities is None:
+            self.start_velocities = start_velocities
         pipeline_data = self.helper.empty_data_dictionary()
         # This data has been incorrectly binned and thus collapsed into one
         # bin. Extract this singular bin for rebinning.
+        num_velocities = len(data['start_speeds'])
+        assert(num_velocities == len(start_velocities))
         data = self.helper.extract_data_bin(data, idx=0)
-        bin_idxs = self._compute_bin_idx_for_start_velocities(data['start_speeds'])
+        bin_idxs = self._compute_bin_idx_for_start_velocities(data['start_speeds'], start_velocities)
 
-        for i in range(len(self.start_velocities)):
+        # for i in range(len(self.start_velocities)):
+        for i in range(len(start_velocities)):
             idxs = tf.where(tf.equal(bin_idxs, i))[:, 0]
             data_bin = self.helper.gather_across_batch_dim(data, idxs)
 
@@ -306,9 +349,11 @@ class ControlPipelineV0(ControlPipelineBase):
         idxs.sort()
         return tf.constant(idxs)
 
-    def _compute_bin_idx_for_start_velocities(self, start_speeds_n1):
+    def _compute_bin_idx_for_start_velocities(self, start_speeds_n1, start_velocities=None):
         """Computes the closest starting velocity bin to each speed in start_speeds."""
-        diff = tf.abs(self.start_velocities - start_speeds_n1)
+        if start_velocities is None:
+            start_velocities = self.start_velocities
+        diff = tf.abs(start_velocities - start_speeds_n1)
         bin_idxs = tf.argmin(diff, axis=1)
         return bin_idxs
 
@@ -365,6 +410,7 @@ class ControlPipelineV0(ControlPipelineBase):
         filename = os.path.join(base_dir, filename)
         return filename
 
+
     def _sample_egocentric_waypoints(self, vf=0.):
         """ Uniformly samples an egocentric waypoint grid over which to plan trajectories."""
         p = self.params.waypoint_params
@@ -378,6 +424,41 @@ class ControlPipelineV0(ControlPipelineBase):
                                                   heading_nk1=wtheta_n11, angular_speed_nk1=ww_n11,
                                                   variable=True)
         return waypoint_egocentric_config
+
+    def _sample_egocentric_waypoints_v0(self, v0):
+        """ Uniformly samples an egocentric waypoint grid over which to plan trajectories."""
+        p = self.params.waypoint_params
+
+        FRS = np.load(
+            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result/FRS_v{}_H6.npy'.format(
+                v0))
+        result = np.where(FRS <= 0)
+        n = len(result[0])
+        wx_n_all = -2.5 + result[0] * 5 / 100
+        wy_n_all = -2.5 + result[1] * 5 / 100
+        wv_n_all = 0 + result[3] * 0.7 / 61
+        wtheta_n_all = -math.pi + result[2] * 2 * math.pi / 36
+        n_sample = 20000
+        indx = np.random.choice(n, n_sample, replace=False)
+        wx_n = wx_n_all [indx]
+        wy_n = wy_n_all[indx]
+        wtheta_n = wtheta_n_all[indx]
+        wv_n= wv_n_all[indx]
+
+        wx_n11 = wx_n.ravel()[:, None, None]
+        wy_n11 = wy_n.ravel()[:, None, None]
+        wv_n11 = wv_n.ravel()[:, None, None]
+        wtheta_n11 = wtheta_n.ravel()[:, None, None]
+        ww_n11 = np.zeros_like(wx_n11)
+        waypoints_egocentric = wx_n11, wy_n11, wtheta_n11, wv_n11, ww_n11
+        waypoints_egocentric = self._ensure_waypoints_valid(waypoints_egocentric)
+        wx_n11, wy_n11, wtheta_n11, wv_n11, ww_n11 = waypoints_egocentric
+        waypt_pos_n12 = np.concatenate([wx_n11, wy_n11], axis=2)
+        waypoint_egocentric_config = SystemConfig(dt=self.params.dt, n=n_sample, k=1,
+                                                  position_nk2=np.float32(waypt_pos_n12), speed_nk1=wv_n11,
+                                                  heading_nk1=wtheta_n11, angular_speed_nk1=ww_n11,
+                                                  variable=True)
+        return waypoint_egocentric_config , n_sample
 
     def _ensure_waypoints_valid(self, waypoints_egocentric):
         """Ensure that a unique spline exists between start_x=0.0, start_y=0.0 goal_x, goal_y, goal_theta. If a unique

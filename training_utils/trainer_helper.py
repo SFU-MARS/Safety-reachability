@@ -87,7 +87,7 @@ class TrainerHelper(object):
                 # plt.grid(False)
                 # plt.show()
 
-                sample = 5 #600
+                sample = 50 #600
 
                 X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
                 labels_40 = [x[::sample, :] for x in training_batch['labels']]
