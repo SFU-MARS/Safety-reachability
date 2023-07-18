@@ -30,3 +30,5 @@ obstacle_grid_2d.npy
 myGeneratedData.mat
 obstacle_grid_4d_ver2.npy
 output_fov_sample40_FRS.pdf
+
+*.npy
