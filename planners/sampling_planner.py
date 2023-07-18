@@ -38,6 +38,7 @@ class SamplingPlanner(Planner):
         min_cost = obj_vals[min_idx]
 
         waypts, horizons_s, trajectories_lqr, trajectories_spline, controllers  = data
+        # waypts, horizons_s, trajectories_lqr, trajectories_spline= data
 
         # self.allwaypts = waypts
         self.allwaypts = waypts
@@ -49,12 +50,16 @@ class SamplingPlanner(Planner):
 
         # If the real LQR data has been discarded just take the first element
         # since it will be all zeros
+
+        ## without lqr
+
         if self.params.control_pipeline_params.discard_LQR_controller_data:
             K_nkfd = controllers['K_nkfd'][0: 1]
             k_nkf1 = controllers['k_nkf1'][0: 1]
         else:
             K_nkfd = controllers['K_nkfd'][min_idx:min_idx + 1]
             k_nkf1 = controllers['k_nkf1'][min_idx:min_idx + 1]
+        #
 
         img_nmkd = self.simulator.get_observation(config=start_config) # Retrieve the image observed
 
@@ -77,5 +82,12 @@ class SamplingPlanner(Planner):
                 'k_nkf1': k_nkf1,
                 'img_nmkd': img_nmkd,
                 'labels': labels}
-
+        # data = {'system_config': SystemConfig.copy(start_config),
+        #         'waypoint_config': SystemConfig.copy(self.opt_waypt),
+        #         'all_waypoint': SystemConfig.copy(self.allwaypts),
+        #         'trajectory': Trajectory.copy(self.opt_traj),
+        #         'spline_trajectory': Trajectory.copy(trajectories_spline),
+        #         'planning_horizon': min_horizon,
+        #         'img_nmkd': img_nmkd,
+        #         'labels': labels}
         return data

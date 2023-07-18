@@ -55,6 +55,17 @@ class ProjectedImageSpaceGrid(UniformSamplingGrid):
         wf_n11 = np.zeros_like(wx_n11)
         # Project the (x, y, theta) points back in the world coordinates.
         return self.generate_worldframe_waypoints_from_imageframe_waypoints(wx_n11, wy_n11, wtheta_n11, vf_n11, wf_n11)
+
+    def sample_egocentric_waypoints1(self, vf=0.):
+        """ Uniformly samples an egocentric waypoint grid in the image space and then project it back to the world
+        coordinates."""
+        # Uniform sampling in the image space
+
+        wx_n11, wy_n11, wtheta_n11 = self._compute_waypoint_meshgrid_n11()
+        vf_n11 = np.ones_like(wx_n11) * vf
+        wf_n11 = np.zeros_like(wx_n11)
+        # Project the (x, y, theta) points back in the world coordinates.
+        return self.generate_worldframe_waypoints_from_imageframe_waypoints(wx_n11, wy_n11, wtheta_n11, vf_n11, wf_n11)
     
     def generate_worldframe_waypoints_from_imageframe_waypoints(self, wx_n11, wy_n11, wtheta_n11,
                                                                 vf_n11=None, wf_n11=None):

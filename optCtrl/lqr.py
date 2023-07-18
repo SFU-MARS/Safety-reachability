@@ -240,6 +240,7 @@ class LQRSolver:
         to ensure its positive-definite properties
         """
         if self.inv:
-            return tf.matrix_inverse(mat)
+            with tf.device("/cpu:0"):
+                return tf.matrix_inverse(mat)
         else:
             raise NotImplementedError

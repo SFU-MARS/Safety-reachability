@@ -19,6 +19,8 @@ def rotate_pos_nk2(pos_nk2, theta_n11):
     else:
         n, k, _ = [x.value for x in theta_nk1.shape]
     rot_matrix_nk22 = padded_rotation_matrix(theta_n11, shape=(n, k, 2))
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
     pos_rot_nk2 = tf.matmul(rot_matrix_nk22, pos_nk2[:, :, :, None])[:, :, :, 0]
     return pos_rot_nk2
 

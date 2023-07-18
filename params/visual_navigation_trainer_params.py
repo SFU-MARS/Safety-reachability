@@ -49,23 +49,23 @@ def create_params(simulator_params):
                         num_samples=int(1e3),
         
                         # The percentage of the dataset that corresponds to the training set
-                        training_set_size=0.80,
+                        training_set_size=0.8,
         
                         # Batch size
                         batch_size=64,
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
-                        # optimizer=tf.keras.optimizers.SGD,
+                        # optimizer=tf.train.GradientDescentOptimizer,
         
                         # Learning rate
-                        lr=1e-4,
+                        lr=1e-3,
                         # lr=1e-3,
                         # Learning schedule
-                        learning_schedule=1,
+                        learning_schedule=2,
         
                         # Learning schedule adjustment parameters
-                        lr_decay_frequency=10,
+                        lr_decay_frequency=5,
                         lr_decay_factor=0.95,
         
                         # Checkpoint settings
@@ -98,10 +98,10 @@ def create_params(simulator_params):
     reset_params = simulator_params.reset_params
     reset_params.obstacle_map.params = DotMap(min_n=5, max_n=5,
                                               min_r=.3, max_r=.8)
-    # reset_params.start_config.heading.reset_type = 'random'
-    # reset_params.start_config.speed.reset_type = 'zero'
+    reset_params.start_config.heading.reset_type = 'random'
+    reset_params.start_config.speed.reset_type = 'zero'
     # reset_params.start_config.ang_speed.reset_type = 'zero'
-    # reset_params.start_config.speed.reset_type = 'random'
+    reset_params.start_config.speed.reset_type = 'random'
     # reset_params.start_config.ang_speed.reset_type = 'random'
 
     p.data_creation = DotMap(

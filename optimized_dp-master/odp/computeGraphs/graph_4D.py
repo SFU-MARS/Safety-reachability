@@ -5,7 +5,7 @@ from odp.spatialDerivatives.first_orderENO4D import *
 from odp.spatialDerivatives.second_orderENO4D import *
 
 ########################## 4D Graph definition #################################
-def graph_4D(my_object, g, compMethod, accuracy, generate_SpatDeriv=False, deriv_dim=1):
+def graph_4D(my_object, g, compMethod, accuracy, compute_FRS=False, generate_SpatDeriv=False, deriv_dim=1):
     V_f = hcl.placeholder(tuple(g.pts_each_dim), name="V_f", dtype=hcl.Float())
     V_init = hcl.placeholder(tuple(g.pts_each_dim), name="V_init", dtype=hcl.Float())
     l0 = hcl.placeholder(tuple(g.pts_each_dim), name="l0", dtype=hcl.Float())
@@ -133,8 +133,12 @@ def graph_4D(my_object, g, compMethod, accuracy, generate_SpatDeriv=False, deriv
                             dx1_dt, dx2_dt, dx3_dt, dx4_dt = my_object.dynamics(t, (x1[i], x2[j], x3[k], x4[l]), uOpt, dOpt)
 
                             # Calculate Hamiltonian terms:
-                            V_new[i, j, k, l] = -(
-                                        dx1_dt * dV_dx1[0] + dx2_dt * dV_dx2[0] + dx3_dt * dV_dx3[0] + dx4_dt * dV_dx4[0])
+                            if compute_FRS == False: # Compute BRS/BRT
+                                V_new[i, j, k, l] = -(
+                                                dx1_dt * dV_dx1[0] + dx2_dt * dV_dx2[0] + dx3_dt * dV_dx3[0] + dx4_dt * dV_dx4[0])
+                            else:
+                                V_new[i, j, k, l] = (dx1_dt * dV_dx1[0] + dx2_dt * dV_dx2[0] + dx3_dt * dV_dx3[0] + dx4_dt * dV_dx4[0])
+
                             # Debugging
                             # V_new[i, j, k, l] = dV_dx2[0]
                             probe[i, j, k, l] = V_init[i, j, k, l]

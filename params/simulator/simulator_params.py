@@ -14,7 +14,7 @@ def create_params():
     # p.seed = 12
 
     # Horizons in seconds
-    p.episode_horizon_s = 20.0
+    p.episode_horizon_s = 20#80
     # TODO: when generating training data, we use control_horizon_s=1.5s, when testing, we find 0.25s will have the
     #  best performance for WayPtNav-reachability
     p.control_horizon_s = 1.5  # For data generation
@@ -73,14 +73,14 @@ def create_params():
                                                     # 'zero': the heading is initialized to zero.
                                                     # 'random': the heading is initialized randomly within the given
                                                     # bounds.
-                                                    reset_type='zero',
-                                                    # reset_type='random',
+                                                    # reset_type='zero',
+                                                    reset_type='random',
                                                     bounds=[-np.pi, np.pi-1e-10]
                                                 ),
                                                 speed=DotMap(
                                                     # For description of reset types see heading parameters above.
-                                                    # reset_type='zero',
-                                                    reset_type='random',
+                                                    reset_type='zero',
+                                                    # reset_type='random',
                                                     bounds=[0.1, 0.6]
                                                 ),
                                                 ang_speed=DotMap(
