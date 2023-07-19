@@ -27,6 +27,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_tkagg as tkagg
 from sklearn.preprocessing import PolynomialFeatures
+from Kernel.Polynomial_Kernel_Layer import PolynomialKernelLayer
 
 class BaseModel(object):
     """
@@ -141,11 +142,23 @@ class BaseModel(object):
         elif self.p.loss.loss_type == 'hinge':
             poly =  PolynomialFeatures(degree=3)
             feat_train_kr = []
+
+            # for X in feat_train_sc:
+            #     fX = [np.squeeze(poly.fit_transform(x2.reshape(1, -1))) for x2 in X]
+            #     feat_train_kr.append(np.array(fX))
+            # feat_train_sc = np.array(feat_train_kr)
+            # X = feat_train_sc
+            model = tf.keras.Sequential([
+                PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
+                tf.keras.layers.Dense(35)  # Output layer
+            ])
+
+            model.compile(optimizer=tf.train.AdamOptimizer(), loss='mean_squared_error')
             for X in feat_train_sc:
-                fX = [np.squeeze(poly.fit_transform(x2.reshape(1, -1))) for x2 in X]
+                fX = [np.squeeze(model(x2.reshape(1, -1))) for x2 in X]
                 feat_train_kr.append(np.array(fX))
-            feat_train_sc = np.array(feat_train_kr)
-            X = feat_train_sc
+            feat_train_sc1 = np.array(feat_train_kr)
+            X = feat_train_sc1
 
 
             # feat_train_sc_1 = tf.concat(
