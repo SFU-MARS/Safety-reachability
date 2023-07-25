@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(990) #int(9900)
+    p.trainer.num_samples = int(200) #int(990)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -157,7 +157,9 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-1']
+        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-1']
+    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
     p.data_creation.data_points = 1e3
@@ -171,6 +173,7 @@ def create_params():
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=False,
                                          dirname='/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/expert_success_goals/sbpd_projected_grid')
+
 
     # Let's not look at the expert
     p.test.simulate_expert = False

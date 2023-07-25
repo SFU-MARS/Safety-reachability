@@ -89,6 +89,7 @@ class BaseModel(object):
         feat_train_sc = processed_data['Action_waypoint']
         expected_output =[]
         regularization_loss = 0.
+        regularization_loss_kernel = 0.
         model_variables = self.get_trainable_vars()
         for model_variable in model_variables:
             regularization_loss += tf.nn.l2_loss(model_variable)
@@ -149,11 +150,17 @@ class BaseModel(object):
             # feat_train_sc = np.array(feat_train_kr)
             # X = feat_train_sc
             model = tf.keras.Sequential([
+
+
                 PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
                 tf.keras.layers.Dense(35)  # Output layer
             ])
 
-            model.compile(optimizer=tf.train.AdamOptimizer(), loss='mean_squared_error')
+            model.compile(optimizer=tf.train.AdamOptimizer(learning_rate=1e-3), loss='mean_squared_error')
+            for model_variable in model.weights:
+                regularization_loss_kernel += tf.nn.l2_loss(model_variable)
+            regularization_loss_kernel = self.p.loss.regn * regularization_loss_kernel
+
             for X in feat_train_sc:
                 fX = [np.squeeze(model(x2.reshape(1, -1))) for x2 in X]
                 feat_train_kr.append(np.array(fX))
@@ -257,7 +264,7 @@ class BaseModel(object):
             #
             regularization_loss_svm = 0
             regularization_loss_svm =  0.5* tf.nn.l2_loss(nn_output.numpy()[:,:-1])
-            regularization_loss = regularization_loss + regularization_loss_svm
+            regularization_loss = regularization_loss + regularization_loss_svm +regularization_loss_kernel
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 

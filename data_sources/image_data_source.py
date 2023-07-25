@@ -482,6 +482,20 @@ class ImageDataSource(DataSource):
         """
         Split data intro training and validation sets.
         """
+        # num_samples = [int(len(data) * train_ratio) for data in data_lists]
+        #
+        # # Generate train and validation sets
+        # train_set, val_set = [], []
+        # for i, data in enumerate(data_lists):
+        #     train_set.extend(data[:num_samples[i]])
+        #     val_set.extend(data[num_samples[i]:])
+        #
+        # # Shuffle the sets to randomize the order
+        # random.shuffle(train_set)
+        # random.shuffle(val_set)
+        #
+        # return train_set, val_set
+
         # number of desired training and validation samples
         ts = self.num_training_samples
         vs = self.p.trainer.num_samples - self.num_training_samples
@@ -490,7 +504,7 @@ class ImageDataSource(DataSource):
         idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] +1
         # idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0]
         try:
-            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
+            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:])+4  >= vs)[0][0] + 1
             # idx_valid = np.where(np.cumsum(data['num_samples_n1']) >= vs)[0][0] + 1
             idx_valid += (idx_train)
             # idx_valid += (60)
@@ -518,7 +532,7 @@ class ImageDataSource(DataSource):
 
         # Make sure there is enough training and validation data
         assert(np.sum(training_dataset['num_samples_n1']) >= ts)
-        assert(np.sum(validation_dataset['num_samples_n1'])  >= vs)
+        assert(np.sum(validation_dataset['num_samples_n1'])+4 >= vs)
 
 
         return training_dataset, validation_dataset

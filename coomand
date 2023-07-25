@@ -1,0 +1,1 @@
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python /local-scratch/tara/project/WayPtNav-reachability/executables/rgb/resnet50/rgb_waypoint_trainer.py --job-dir=/local-scratch/tara/project/WayPtNav-reachability/log/train --params=/local-scratch/tara/project/WayPtNav-reachability/params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py --device=0
