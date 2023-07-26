@@ -29,7 +29,7 @@ def create_params(simulator_params):
 
 
                     # Weight regularization co-efficient
-                    regn=1e-6,
+                    regn=1e-7,
 
                     lam=1,
 

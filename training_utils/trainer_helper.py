@@ -12,6 +12,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from mlxtend.plotting import plot_decision_regions
+import numpy as np
 
 
 class TrainerHelper(object):
@@ -207,7 +208,8 @@ class TrainerHelper(object):
             print("pre_validation: " + str(epoch_performance_validation_pre))
 
             epoch_performance_training_new.append(training_new_metric.result().numpy())
-            print("unsafe_acc_training: " + str(epoch_performance_training_new))
+            print(""
+                  "unsafe_acc_training: " + str(epoch_performance_training_new))
             epoch_performance_validation_new.append(validation_new_metric.result().numpy())
             print("unsafe_acc_validation: " + str(epoch_performance_validation_new))
 
@@ -300,8 +302,13 @@ class TrainerHelper(object):
         training_pre_metric(precision_training)
         validation_pre_metric(precision_validation)
 
-        training_new_metric(percentage_training)
-        validation_new_metric(percentage_validation)
+        # training_new_metric[percentage_training if not np.isnan(percentage_training)]
+        if not  tf.is_nan(percentage_training):
+            training_new_metric(percentage_training)
+
+
+        if not tf.is_nan(percentage_validation):
+            validation_new_metric(percentage_validation)
 
 
 

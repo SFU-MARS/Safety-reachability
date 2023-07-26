@@ -155,8 +155,7 @@ class BaseModel(object):
                 PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
                 tf.keras.layers.Dense(35)  # Output layer
             ])
-
-            model.compile(optimizer=tf.train.AdamOptimizer(learning_rate=1e-3), loss='mean_squared_error')
+            model.compile(optimizer=tf.train.AdamOptimizer(learning_rate=self.p.trainer.lr*5))#, loss='mean_squared_error')
             for model_variable in model.weights:
                 regularization_loss_kernel += tf.nn.l2_loss(model_variable)
             regularization_loss_kernel = self.p.loss.regn * regularization_loss_kernel
@@ -228,6 +227,7 @@ class BaseModel(object):
                 accuracy = accuracy_score(label, prediction)
                 # accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
 
+
                 precision = precision_score (label, prediction, sample_weights)
                 recall = recall_score(label, prediction, precision_score)
                 accuracy_total.append(accuracy)
@@ -263,8 +263,8 @@ class BaseModel(object):
             print("prediction_loss: " + str(prediction_loss.numpy()))
             #
             regularization_loss_svm = 0
-            regularization_loss_svm =  0.5* tf.nn.l2_loss(nn_output.numpy()[:,:-1])
-            regularization_loss = regularization_loss + regularization_loss_svm +regularization_loss_kernel
+            regularization_loss_svm =  0.5* self.p.loss.lam * tf.nn.l2_loss(nn_output.numpy()[:,:-1])
+            regularization_loss = regularization_loss + regularization_loss_svm + regularization_loss_kernel
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
