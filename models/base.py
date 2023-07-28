@@ -27,7 +27,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_tkagg as tkagg
 from sklearn.preprocessing import PolynomialFeatures
-from Kernel.Polynomial_Kernel_Layer import PolynomialKernelLayer
+
 
 class BaseModel(object):
     """
@@ -143,25 +143,19 @@ class BaseModel(object):
         elif self.p.loss.loss_type == 'hinge':
             poly =  PolynomialFeatures(degree=3)
             feat_train_kr = []
-
+            regularization_loss_svm = 0
             # for X in feat_train_sc:
             #     fX = [np.squeeze(poly.fit_transform(x2.reshape(1, -1))) for x2 in X]
             #     feat_train_kr.append(np.array(fX))
             # feat_train_sc = np.array(feat_train_kr)
             # X = feat_train_sc
-            model = tf.keras.Sequential([
 
-
-                PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
-                tf.keras.layers.Dense(35)  # Output layer
-            ])
-            model.compile(optimizer=tf.train.AdamOptimizer(learning_rate=self.p.trainer.lr*5))#, loss='mean_squared_error')
-            for model_variable in model.weights:
-                regularization_loss_kernel += tf.nn.l2_loss(model_variable)
-            regularization_loss_kernel = self.p.loss.regn * regularization_loss_kernel
+            # for model_variable in model.weights:
+            #     regularization_loss_kernel += tf.nn.l2_loss(model_variable)
+            # regularization_loss_kernel = self.p.loss.regn * regularization_loss_kernel
 
             for X in feat_train_sc:
-                fX = [np.squeeze(model(x2.reshape(1, -1))) for x2 in X]
+                fX = [np.squeeze(self.kernel_model(x2.reshape(1, -1))) for x2 in X]
                 feat_train_kr.append(np.array(fX))
             feat_train_sc1 = np.array(feat_train_kr)
             X = feat_train_sc1
@@ -258,8 +252,10 @@ class BaseModel(object):
             sample = 50  #600 , 50
 
             prediction_losses = hinge_losses
+            weights_v = 1 - processed_data['inputs'][1][:,0]
             # prediction_losses = np.float32(prediction_losses)
-            prediction_loss =  tf.reduce_mean( prediction_losses)
+            prediction_loss = tf.reduce_sum(weights_v * prediction_losses) / tf.reduce_sum(weights_v)
+            # prediction_loss =  tf.reduce_mean( prediction_losses)
             print("prediction_loss: " + str(prediction_loss.numpy()))
             #
             regularization_loss_svm = 0
@@ -453,6 +449,7 @@ class BaseModel(object):
 
                 pdf.savefig(fig)
             pdf.close()
+            plt.close('all')
             # end of 2d plot
             # print("regularization_loss: " + str(regularization_loss.numpy()))
 

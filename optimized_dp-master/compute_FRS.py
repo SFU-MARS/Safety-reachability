@@ -39,7 +39,7 @@ horizon = 6
 t_step = 0.05
 
 v_init = np.linspace(0, 0.6, 61)
-tau = np.arange(start = 0, stop = horizon + t_step, step = t_step)
+tau = np.arange(start= 0, stop= horizon + t_step, step = t_step)
 
 compMethods = { "TargetSetMode": "minVWithVInit"}
 

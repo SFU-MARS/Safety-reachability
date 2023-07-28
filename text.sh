@@ -1,15 +1,14 @@
 #!/bin/bash
 #SBATCH -J tt     # Name that will show up in squeue
 #SBATCH --gres=gpu:1         # Request 4 GPU "generic resource"
-#SBATCH --time=1-00:00       # Max job time is 3 hours
+#SBATCH --time=7-00:00       # Max job time is 3 hours
 #SBATCH --output=%N-%j.out   # Terminal output to file named (hostname)-(jobid).out
 #SBATCH --partition=long     # long partition (allows up to 7 days runtime)
-#SBATCH --nodelist=cs-venus-06   # if needed, set the node you want (similar to -w xyz)
-#SBATCH --mem=128GB
+#SBATCH --nodelist=cs-venus-01   # if needed, set the node you want (similar to -w xyz)
+#SBATCH --mem=32GB
+#SBATCH --cpus-per-task=6
 #SBATCH --qos=overcap
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
+
 
 # Your experiment setup logic here
 source ~/miniconda3/etc/profile.d/conda.sh

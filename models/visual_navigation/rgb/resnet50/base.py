@@ -3,6 +3,7 @@ from training_utils.architecture.resnet50_cnn import resnet50_cnn
 from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
 import numpy as np
+from Kernel.Polynomial_Kernel_Layer import PolynomialKernelLayer
 
 class Resnet50ModelBase(VisualNavigationModelBase):
     """
@@ -21,6 +22,14 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                                                              num_inputs=self.p.model.num_inputs.num_state_features,
                                                              num_outputs=self.p.model.num_outputs,
                                                              params=self.p.model.arch)
+        self.kernel_model = tf.keras.Sequential([
+            PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
+            tf.keras.layers.Dense(35)  # Output layer
+        ])
+
+        # model.compile(
+        #     optimizer=tf.train.AdamOptimizer(learning_rate=self.p.trainer.lr * 10))  # ,loss='mean_squared_error'))
+        #
 
         # Store a reference to the batch norm mean/variances in the
         # network. See predict_nn_output for more information
@@ -38,7 +47,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         if not self.p.model.arch.finetune_resnet_weights:
             variables = list(filter(lambda x: 'resnet50' not in x.name, variables))
 
-        return variables
+        return variables + self.kernel_model.variables
 
     def predict_nn_output(self, data, is_training=None):
         """

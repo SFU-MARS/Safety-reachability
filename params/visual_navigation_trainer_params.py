@@ -29,9 +29,9 @@ def create_params(simulator_params):
 
 
                     # Weight regularization co-efficient
-                    regn=1e-7,
+                    regn=1e-6,
 
-                    lam=1,
+                    lam=.1,
 
                     # Velocity Smoothing co-efficient for end-to-end networks
                     smoothing_coeff=0.0

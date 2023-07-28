@@ -23,7 +23,7 @@ def create_params():
     # The directory for saving the control pipeline files
     # p.dir = '/home/anjianl/Desktop/project/WayPtNav/data/control_data/control_pipelines'
     # New control pipeline v1 doesn't rescale the trajectory to maximize the speed
-    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines1'
+    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,

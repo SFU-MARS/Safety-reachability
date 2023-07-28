@@ -149,6 +149,7 @@ class TrainerFrontendHelper(object):
 
                 for param in params:
 
+
                     self.maybe_restore_checkpoint()
             # for param in params:
             # Start the training

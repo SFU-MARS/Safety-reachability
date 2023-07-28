@@ -231,10 +231,10 @@ class TrainerHelper(object):
         Load a given checkpoint.
         """
         # Create a checkpoint
-        self.checkpoint = tfe.Checkpoint(optimizer=self.create_optimizer(), model=model.arch)
+        self.checkpoint = tfe.Checkpoint(optimizer=self.create_optimizer(), model=model.arch, kernel_model=model.kernel_model)
         
         # Restore the checkpoint
-        # self.checkpoint.restore(self.p.ckpt_path)
+        self.checkpoint.restore(self.p.ckpt_path) # anjian's checkpoint
     
     def save_checkpoint(self, epoch, model, param, c):
         """
@@ -244,7 +244,7 @@ class TrainerHelper(object):
         self.ckpt_dir = os.path.join(self.session_dir, 'checkpoints_g%0.4f_c%i'% (param,c))
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
-            self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
+            self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch, kernel_model=model.kernel_model)
            
             # Note: This allows the user to specify how many checkpoints should be saved.
             # Tensorflow does not expose the parameter in tfe.Checkpoint for max_to_keep,
