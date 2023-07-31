@@ -281,7 +281,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 2000  # MIN # OF WPS 4000
+        N = 1000  # MIN # OF WPS 4000
         # N = 200
         # randomRow = np.random.randint(3, size=N)
         # arr[np.random.randint(arr.numpy().shape[0], size=N), :]

@@ -430,7 +430,7 @@ class ControlPipelineV0(ControlPipelineBase):
         p = self.params.waypoint_params
 
         FRS = np.load(
-            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result/FRS_v{}_H6.npy'.format(
+            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result2/FRS_v{}_H6.npy'.format(
                 v0))
         result = np.where(FRS <= 0)
         n = len(result[0])

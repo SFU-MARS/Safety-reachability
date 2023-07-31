@@ -22,10 +22,11 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                                                              num_inputs=self.p.model.num_inputs.num_state_features,
                                                              num_outputs=self.p.model.num_outputs,
                                                              params=self.p.model.arch)
-        self.kernel_model = tf.keras.Sequential([
-            PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
-            tf.keras.layers.Dense(35)  # Output layer
-        ])
+        # self.kernel_model = tf.keras.Sequential([
+        #     PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
+        #     tf.keras.layers.Dense(35, activation = 'tanh')
+        #     # Output layer
+        # ])
 
         # model.compile(
         #     optimizer=tf.train.AdamOptimizer(learning_rate=self.p.trainer.lr * 10))  # ,loss='mean_squared_error'))
@@ -47,7 +48,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         if not self.p.model.arch.finetune_resnet_weights:
             variables = list(filter(lambda x: 'resnet50' not in x.name, variables))
 
-        return variables + self.kernel_model.variables
+        return variables # + self.kernel_model.variables
 
     def predict_nn_output(self, data, is_training=None):
         """
