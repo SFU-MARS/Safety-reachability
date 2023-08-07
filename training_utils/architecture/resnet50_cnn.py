@@ -72,6 +72,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Generate a Keras model
 
     model = tf.keras.Model(inputs=[input_image, input_flat], outputs=x)
+    # model = tf.keras.Model(inputs=[input_image], outputs=x)
     model.load_weights(params.resnet50_weights_path, by_name=True)
     # model.load_weights(params.resnet50_weights_path)
     # model.summary()

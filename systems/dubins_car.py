@@ -8,8 +8,14 @@ class DubinsCar(Dynamics):
     """ An abstract class with utility functions for all Dubins Cars"""
     v_bounds = None
     w_bounds = None
+    a_bounds = None
 
     def _saturate_linear_velocity(self, vtilde_nk):
+        
+        """ Saturation function for linear velocity"""
+        raise NotImplementedError
+
+    def _saturate_linear_acceleration(self, atilde_nk):
         """ Saturation function for linear velocity"""
         raise NotImplementedError
 

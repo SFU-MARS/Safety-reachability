@@ -192,26 +192,26 @@ class TrainerHelper(object):
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
             print("loss_validation: "+ str(epoch_performance_validation))
 
-            # epoch_performance_training_acc.append(training_acc_metric.result().numpy())
-            # print("acc_training: " + str(epoch_performance_training_acc))
-            # epoch_performance_validation_acc.append(validation_acc_metric.result().numpy())
-            # print("acc_validation: " + str(epoch_performance_validation_acc))
-            #
-            # epoch_performance_training_rec.append(training_rec_metric.result().numpy())
-            # print("rec_training: " + str(epoch_performance_training_rec))
-            # epoch_performance_validation_rec.append(validation_rec_metric.result().numpy())
-            # print("rec_validation: " + str(epoch_performance_validation_rec))
-            #
-            # epoch_performance_training_pre.append(training_pre_metric.result().numpy())
-            # print("pre_training: " + str(epoch_performance_training_pre))
-            # epoch_performance_validation_pre.append(validation_pre_metric.result().numpy())
-            # print("pre_validation: " + str(epoch_performance_validation_pre))
-            #
-            # epoch_performance_training_new.append(training_new_metric.result().numpy())
-            # print(""
-            #       "unsafe_acc_training: " + str(epoch_performance_training_new))
-            # epoch_performance_validation_new.append(validation_new_metric.result().numpy())
-            # print("unsafe_acc_validation: " + str(epoch_performance_validation_new))
+            epoch_performance_training_acc.append(training_acc_metric.result().numpy())
+            print("acc_training: " + str(epoch_performance_training_acc))
+            epoch_performance_validation_acc.append(validation_acc_metric.result().numpy())
+            print("acc_validation: " + str(epoch_performance_validation_acc))
+
+            epoch_performance_training_rec.append(training_rec_metric.result().numpy())
+            print("rec_training: " + str(epoch_performance_training_rec))
+            epoch_performance_validation_rec.append(validation_rec_metric.result().numpy())
+            print("rec_validation: " + str(epoch_performance_validation_rec))
+
+            epoch_performance_training_pre.append(training_pre_metric.result().numpy())
+            print("pre_training: " + str(epoch_performance_training_pre))
+            epoch_performance_validation_pre.append(validation_pre_metric.result().numpy())
+            print("pre_validation: " + str(epoch_performance_validation_pre))
+
+            epoch_performance_training_new.append(training_new_metric.result().numpy())
+            print(""
+                  "unsafe_acc_training: " + str(epoch_performance_training_new))
+            epoch_performance_validation_new.append(validation_new_metric.result().numpy())
+            print("unsafe_acc_validation: " + str(epoch_performance_validation_new))
 
 
 
@@ -219,15 +219,15 @@ class TrainerHelper(object):
 
 
             #
-            # self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,
-            #                              epoch_performance_training_acc, epoch_performance_validation_acc,
-            #                              epoch_performance_training_rec, epoch_performance_validation_rec,
-            #                              epoch_performance_training_pre, epoch_performance_validation_pre,
-            #                              epoch_performance_training_new, epoch_performance_validation_new,
-            #                              model, param,c,  callback_fn)
-
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,
+                                         epoch_performance_training_acc, epoch_performance_validation_acc,
+                                         epoch_performance_training_rec, epoch_performance_validation_rec,
+                                         epoch_performance_training_pre, epoch_performance_validation_pre,
+                                         epoch_performance_training_new, epoch_performance_validation_new,
                                          model, param,c,  callback_fn)
+
+            # self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,
+            #                              model, param,c,  callback_fn)
             
     def restore_checkpoint(self, model):
         """
@@ -289,35 +289,36 @@ class TrainerHelper(object):
         Record the average loss for the batch and update the metric.
         """
 
-        # regn_loss_training, prediction_loss_training, _,  accuracy_training, precision_training, recall_training,percentage_training  = model.compute_loss_function(training_batch,param,c,  is_training=False,return_loss_components=True)
-        regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(
-            training_batch, param, c, is_training=False, return_loss_components=True)
+        regn_loss_training, prediction_loss_training, _,  accuracy_training, precision_training, recall_training,percentage_training  = model.compute_loss_function(training_batch,param,c,  is_training=False,return_loss_components=True)
+        # regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(
+        #     training_batch, param, c, is_training=False, return_loss_components=True)
 
-        # regn_loss_validation, prediction_loss_validation, _, accuracy_validation , precision_validation, recall_validation, percentage_validation = model.compute_loss_function(validation_batch,param, c, is_training=False,return_loss_components=True)
-        regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
-            validation_batch, param, c, is_training=False, return_loss_components=True)
+        regn_loss_validation, prediction_loss_validation, _, accuracy_validation , precision_validation, recall_validation, percentage_validation = model.compute_loss_function(validation_batch,param, c, is_training=False,return_loss_components=True)
+        # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
+        #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric(prediction_loss_training)
         # print(training_loss_metric)
         validation_loss_metric(prediction_loss_validation)
-        #
-        # training_acc_metric(accuracy_training)
-        # # print(training_loss_metric)
-        # validation_acc_metric(accuracy_validation)
-        #
-        # training_rec_metric(recall_training)
-        # validation_rec_metric(recall_validation)
-        #
-        # training_pre_metric(precision_training)
-        # validation_pre_metric(precision_validation)
-        #
-        # # training_new_metric[percentage_training if not np.isnan(percentage_training)]
-        # if not  tf.is_nan(percentage_training):
-        #     training_new_metric(percentage_training)
-        #
-        #
-        # if not tf.is_nan(percentage_validation):
-        #     validation_new_metric(percentage_validation)
+
+        if not tf.is_nan(accuracy_training):
+            training_acc_metric(accuracy_training)
+        # print(training_loss_metric)
+        if not tf.is_nan(accuracy_validation):
+            validation_acc_metric(accuracy_validation)
+        if not tf.is_nan(recall_training):
+            training_rec_metric(recall_training)
+        if not tf.is_nan(recall_validation):
+            validation_rec_metric(recall_validation)
+        if not tf.is_nan(precision_training):
+            training_pre_metric(precision_training)
+        if not tf.is_nan(precision_validation):
+            validation_pre_metric(precision_validation)
+        # training_new_metric[percentage_training if not np.isnan(percentage_training)]
+        if not  tf.is_nan(percentage_training):
+            training_new_metric(percentage_training)
+        if not tf.is_nan(percentage_validation):
+            validation_new_metric(percentage_validation)
 
 
 
@@ -334,15 +335,15 @@ class TrainerHelper(object):
         # print(training_loss_metric)
         validation_loss_metric1(accuracy_validation)
 
-    # def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,
-    #                             epoch_performance_training_acc, epoch_performance_validation_acc,
-    #                             epoch_performance_training_rec, epoch_performance_validation_rec,
-    #                             epoch_performance_training_pre, epoch_performance_validation_pre,
-    #                             epoch_performance_training_new, epoch_performance_validation_new,
-    #                             model,param,c,  callback_fn=None):
-
     def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,
-                                model, param, c, callback_fn=None):
+                                epoch_performance_training_acc, epoch_performance_validation_acc,
+                                epoch_performance_training_rec, epoch_performance_validation_rec,
+                                epoch_performance_training_pre, epoch_performance_validation_pre,
+                                epoch_performance_training_new, epoch_performance_validation_new,
+                                model,param,c,  callback_fn=None):
+
+    # def finish_epoch_processing(self, epoch, epoch_performance_training, epoch_performance_validation,
+    #                             model, param, c, callback_fn=None):
         """
         Finish the epoch processing for example recording the average epoch loss for the training and the validation
         sets, save the checkpoint, adjust learning rates, hand over the control to the callback function etc.
@@ -350,25 +351,25 @@ class TrainerHelper(object):
         # Print the average loss for the last epoch
         print('Epoch %i: training loss %0.3f, validation loss %0.3f' % (epoch, epoch_performance_training[-1],
                                                                         epoch_performance_validation[-1]))
-        # print('Epoch %i: training acc %0.3f, validation acc %0.3f' % (epoch, epoch_performance_training_acc[-1],
-        #                                                                 epoch_performance_validation_acc[-1]))
-        # print('Epoch %i: training rec %0.3f, validation rec %0.3f' % (epoch, epoch_performance_training_rec[-1],
-        #                                                               epoch_performance_validation_rec[-1]))
-        # print('Epoch %i: training pre %0.3f, validation pre %0.3f' % (epoch, epoch_performance_training_pre[-1],
-        #                                                               epoch_performance_validation_pre[-1]))
-        # print('Epoch %i: training unsafeper %0.3f, validation unsafeper %0.3f' % (epoch, epoch_performance_training_new[-1],
-        #                                                               epoch_performance_validation_new[-1]))
+        print('Epoch %i: training acc %0.3f, validation acc %0.3f' % (epoch, epoch_performance_training_acc[-1],
+                                                                        epoch_performance_validation_acc[-1]))
+        print('Epoch %i: training rec %0.3f, validation rec %0.3f' % (epoch, epoch_performance_training_rec[-1],
+                                                                      epoch_performance_validation_rec[-1]))
+        print('Epoch %i: training pre %0.3f, validation pre %0.3f' % (epoch, epoch_performance_training_pre[-1],
+                                                                      epoch_performance_validation_pre[-1]))
+        print('Epoch %i: training unsafeper %0.3f, validation unsafeper %0.3f' % (epoch, epoch_performance_training_new[-1],
+                                                                      epoch_performance_validation_new[-1]))
 
         
         # Plot the loss curves
         self.plot_training_and_validation_losses(epoch_performance_training, epoch_performance_validation, param, c)
-        # self.plot_training_and_validation_acc(epoch_performance_training_acc, epoch_performance_validation_acc, param, c)
-        # self.plot_training_and_validation_rec(epoch_performance_training_rec, epoch_performance_validation_rec, param,
-        #                                       c)
-        # self.plot_training_and_validation_pre(epoch_performance_training_pre, epoch_performance_validation_pre, param,
-        #                                       c)
-        # self.plot_training_and_validation_unsafeper(epoch_performance_training_new, epoch_performance_validation_new, param,
-        #                                       c)
+        self.plot_training_and_validation_acc(epoch_performance_training_acc, epoch_performance_validation_acc, param, c)
+        self.plot_training_and_validation_rec(epoch_performance_training_rec, epoch_performance_validation_rec, param,
+                                              c)
+        self.plot_training_and_validation_pre(epoch_performance_training_pre, epoch_performance_validation_pre, param,
+                                              c)
+        self.plot_training_and_validation_unsafeper(epoch_performance_training_new, epoch_performance_validation_new, param,
+                                              c)
 
         
         # Update the learning rate

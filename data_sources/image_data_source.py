@@ -532,7 +532,7 @@ class ImageDataSource(DataSource):
 
         # Make sure there is enough training and validation data
         assert(np.sum(training_dataset['num_samples_n1']) >= ts)
-        assert(np.sum(validation_dataset['num_samples_n1'])+4 >= vs)
+        assert(np.sum(validation_dataset['num_samples_n1'])>= vs)
 
 
         return training_dataset, validation_dataset

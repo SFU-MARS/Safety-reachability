@@ -44,6 +44,7 @@ class ControlPipelineV0(ControlPipelineBase):
         # Compute the closest velocity bin for this starting configuration
         idx = tf.squeeze(self._compute_bin_idx_for_start_velocities(start_config.speed_nk1()[:, :, 0])).numpy()
 
+
         self.waypt_configs_world = [SystemConfig(
             dt=self.params.system_dynamics_params.dt, n=config.n, k=1, variable=True,
             track_trajectory_acceleration=self.params.track_trajectory_acceleration) for config in
@@ -434,11 +435,11 @@ class ControlPipelineV0(ControlPipelineBase):
                 v0))
         result = np.where(FRS <= 0)
         n = len(result[0])
-        wx_n_all = -2.5 + result[0] * 5 / 100
-        wy_n_all = -2.5 + result[1] * 5 / 100
-        wv_n_all = 0 + result[3] * 0.7 / 61
+        wx_n_all = 0 + result[0] * 5 / 100
+        wy_n_all = -5 + result[1] * 10 / 100
+        wv_n_all = 0 + result[3] * 0.6 / 61
         wtheta_n_all = -math.pi + result[2] * 2 * math.pi / 36
-        n_sample = 20000
+        n_sample = 2000
         indx = np.random.choice(n, n_sample, replace=False)
         wx_n = wx_n_all [indx]
         wy_n = wy_n_all[indx]

@@ -281,7 +281,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 1000  # MIN # OF WPS 4000
+        N = 200 # MIN # OF WPS 4000
         # N = 200
         # randomRow = np.random.randint(3, size=N)
         # arr[np.random.randint(arr.numpy().shape[0], size=N), :]
@@ -332,6 +332,9 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Save the data
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
+        if counter == 6:
+            pass
+
         with open(filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

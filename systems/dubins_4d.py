@@ -11,7 +11,6 @@ class Dubins4D(DubinsCar):
     y(t+1) = y(t) + saturate_linear_velocity(v(t)) sin(theta_t)*delta_t
     theta(t+1) = theta_t + saturate_angular_velocity(w(t))*delta_t
     v(t+1) = v_t + saturate_acceleration(a(t))*delta_t
-    v_dot     = a
 
     """
 
@@ -23,27 +22,33 @@ class Dubins4D(DubinsCar):
         # if self.simulation_params.noise_params.is_noisy:
         #     print('This Dubins car model has some noise. Please turn off the noise if this was not intended.')
 
-    def _simulate_ideal(self, x_nk3, u_nk2, t=None):
+    def _simulate_ideal(self, x_nk4, u_nk2, t=None):
         with tf.name_scope('simulate'):
-            delta_x_nk3 = tf.stack([self._saturate_linear_velocity(x_nk3[:, :, 3])*tf.cos(x_nk3[:, :, 2]),
-                                    self._saturate_linear_velocity(x_nk3[:, :, 3])*tf.sin(x_nk3[:, :, 2]),
-                                    self._saturate_angular_velocity(u_nk2[:, :, 0]),
-                                   self._saturate_acceleration(u_nk2[:, :, 1],x_nk3[:, :, 3],self._dt)],
+            theta_nk1 = x_nk4[:, :, 2:3]
+            v_nk1 = x_nk4[:, :, 3:4]
+            delta_x_nk4 = tf.stack([self._saturate_linear_velocity(x_nk4[:, :, 3])*tf.cos(x_nk4[:, :, 2]),
+                                    self._saturate_linear_velocity(x_nk4[:, :, 3])*tf.sin(x_nk4[:, :, 2]),
+                                    self._saturate_angular_velocity(u_nk2[:, :, 0:1]),
+                                    self._saturate_linear_velocity(v_nk1 + self._dt*self._saturate_linear_acceleration(u_nk2[:, :, 1:2]))],
                                    axis=2)
-            #
-            # delta_x_nk3 = tf.stack([(x_nk3[:, :, 3])*tf.cos(x_nk3[:, :, 2]),
-            #                         (x_nk3[:, :, 3])*tf.sin(x_nk3[:, :, 2]),
-            #                         (u_nk2[:, :, 0]),
-            #                        (u_nk2[:, :, 1])],
-            #                        axis=2)
-            #
 
+            # theta_nk1 = x_nkd[:, :, 2:3]
+            # v_nk1 = x_nkd[:, :, 3:4]
+            # x_new_nkd = tf.concat([x_nkd[:, :, :3],
+            #                        self._saturate_linear_velocity(v_nk1 + self._dt*u_nkf[:, :, 0:1]),
+            #                        self._saturate_angular_velocity(w_nk1 + self._dt*u_nkf[:, :, 1:2])],
+            #                       axis=2)
+            # delta_x_nkd = tf.concat([v_nk1*tf.cos(theta_nk1),
+            #                          v_nk1*tf.sin(theta_nk1),
+            #                          w_nk1,
+            #                          tf.zeros_like(u_nkf)], axis=2)
+            # return x_new_nkd + self._dt*delta_x_nk4
             # Add noise (or disturbance) if required
             # if self.simulation_params.noise_params.is_noisy:
             #     noise_component = self.compute_noise_component(required_shape=tf.shape(x_nk3), data_type=x_nk3.dtype)
             #     return x_nk3 + self._dt * delta_x_nk3 + noise_component
             # else:
-            return x_nk3 + self._dt * delta_x_nk3
+            return x_nk4 + self._dt * delta_x_nk4
 
     def jac_x(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)

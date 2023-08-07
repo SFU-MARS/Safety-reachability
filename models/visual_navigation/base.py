@@ -70,10 +70,12 @@ class VisualNavigationModelBase(BaseModel):
 
         # Prepare and return the data dictionary
         data = {}
-        state_featres_n2 = np.squeeze(vehicle_controls)
-        state_features_n21 = np.reshape(state_featres_n2, (-1, 2))
+
+        state_featres_n2 = vehicle_controls[:,0]
+        state_features_n21 = np.reshape(state_featres_n2, (-1, 1))
         # Action_waypoint = raw_data['all_waypoint_ego']
         data['inputs'] = [img_nmkd, state_features_n21]
+        # data['inputs'] = [img_nmkd]
         # data['inputs'] = [img_nmkd, Action_waypoint]
         data['labels'] = raw_data['labels']
         # speeds = self._wp_speed(raw_data)[:,0:1]
