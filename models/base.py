@@ -254,7 +254,7 @@ class BaseModel(object):
             # #                      zip(output_total, processed_data['labels'])] #reduce.mean?
 
 
-            sample = 50  #600 , 50
+            sample = 5  #600 , 50
 
             from sklearn.preprocessing import PolynomialFeatures
             from sklearn.svm import SVC
@@ -357,7 +357,7 @@ class BaseModel(object):
             # regularization_loss_svm = 0
             # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
             regularization_loss_svm =  self.p.loss.lam * tf.nn.l2_loss(nn_output.numpy()[:,1:])
-            regularization_loss = regularization_loss + self.p.loss.regn*regularization_loss_svm + regularization_loss_kernel
+            regularization_loss = regularization_loss + 1e5*self.p.loss.regn*regularization_loss_svm + regularization_loss_kernel
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 

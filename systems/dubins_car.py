@@ -11,7 +11,7 @@ class DubinsCar(Dynamics):
     a_bounds = None
 
     def _saturate_linear_velocity(self, vtilde_nk):
-        
+
         """ Saturation function for linear velocity"""
         raise NotImplementedError
 

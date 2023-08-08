@@ -88,19 +88,19 @@ class TrainerHelper(object):
                 # plt.grid(False)
                 # plt.show()
 
-                sample = 50 #600
+                sample = 5 #600
 
                 X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
                 labels_40 = [x[::sample, :] for x in training_batch['labels']]
                 training_batch['labels'] = np.array(labels_40)
                 training_batch['all_waypoint_ego'] = np.array(X_40)
 
-                scaler = StandardScaler()
-                # feat_train_sc = [scaler.fit_transform(X_train) for X_train in X_40]
-                scalers =[]
-                feat_train_sc_batch = []
-                feat_val_sc_batch = []
-                #
+                # scaler = StandardScaler()
+                # # feat_train_sc = [scaler.fit_transform(X_train) for X_train in X_40]
+                # scalers =[]
+                # feat_train_sc_batch = []
+                # feat_val_sc_batch = []
+                # #
                 # for X_train in X_40:
                 #     scaler = StandardScaler().fit(X_train)
                 #     feat_train_sc = scaler.transform(X_train)
@@ -122,7 +122,7 @@ class TrainerHelper(object):
                 #     feat_val_sc_batch.append(feat_val_sc)
                 # feat_val_sc_batch = np.array(feat_val_sc_batch)
                 # validation_batch['all_waypoint_ego'] = feat_val_sc_batch
-
+                #
 
 
                 with tf.GradientTape() as tape:
