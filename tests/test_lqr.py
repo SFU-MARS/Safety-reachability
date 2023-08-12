@@ -19,7 +19,7 @@ def create_params():
     p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
     p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
 
-    p.system_dynamics_params = DotMap(system=DubinsV1,
+    p.p.system_dynamics_params = DotMap(system=DubinsV1,
                                       dt=.1,
                                       v_bounds=[0.0, .6],
                                       w_bounds=[-1.1, 1.1])
@@ -212,5 +212,5 @@ def test_lqr2(visualize=False):
 if __name__ == '__main__':
     with tf.device("/gpu:0"):
         test_lqr0(visualize=True)  # robot should move to goal in 1 step and stay there
-        test_lqr1(visualize=False)  # robot should track a trajectory
-        test_lqr2(visualize=False)  # LQR should track 2 trajectories in a batch
+        test_lqr1(visualize=True)  # robot should track a trajectory
+        test_lqr2(visualize=True)  # LQR should track 2 trajectories in a batch

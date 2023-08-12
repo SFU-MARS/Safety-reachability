@@ -142,6 +142,7 @@ class TrainerHelper(object):
 
                 # [var.name for var in tape.watched_variables()]
                 grads = tape.gradient(loss, model.get_trainable_vars())
+
                 # print ("grads: "+ str(grads))
                 # for grad in grads:
                 #     if grad == None:
@@ -187,30 +188,56 @@ class TrainerHelper(object):
             # plt.imshow(heatmap, cmap='RdBu', vmin=-heatmap.max(), vmax=heatmap.max())
             # plt.colorbar()
             # plt.show()
+
+
             epoch_performance_training.append(training_loss_metric.result().numpy())
             print("loss_training: "+ str(epoch_performance_training))
             epoch_performance_validation.append(validation_loss_metric.result().numpy())
             print("loss_validation: "+ str(epoch_performance_validation))
 
-            epoch_performance_training_acc.append(training_acc_metric.result().numpy())
+            try:
+                epoch_performance_training_acc.append(training_acc_metric.result().numpy())
+            except:
+                pass
             print("acc_training: " + str(epoch_performance_training_acc))
-            epoch_performance_validation_acc.append(validation_acc_metric.result().numpy())
+
+            try:
+                epoch_performance_validation_acc.append(validation_acc_metric.result().numpy())
+            except:
+                pass
             print("acc_validation: " + str(epoch_performance_validation_acc))
 
-            epoch_performance_training_rec.append(training_rec_metric.result().numpy())
+            try:
+                epoch_performance_training_rec.append(training_rec_metric.result().numpy())
+            except:
+                pass
             print("rec_training: " + str(epoch_performance_training_rec))
-            epoch_performance_validation_rec.append(validation_rec_metric.result().numpy())
+            try:
+                epoch_performance_validation_rec.append(validation_rec_metric.result().numpy())
+            except:
+                pass
             print("rec_validation: " + str(epoch_performance_validation_rec))
 
-            epoch_performance_training_pre.append(training_pre_metric.result().numpy())
+            try:
+                epoch_performance_training_pre.append(training_pre_metric.result().numpy())
+            except:
+                pass
             print("pre_training: " + str(epoch_performance_training_pre))
-            epoch_performance_validation_pre.append(validation_pre_metric.result().numpy())
+            try:
+                epoch_performance_validation_pre.append(validation_pre_metric.result().numpy())
+            except:
+                pass
             print("pre_validation: " + str(epoch_performance_validation_pre))
 
-            epoch_performance_training_new.append(training_new_metric.result().numpy())
-            print(""
-                  "unsafe_acc_training: " + str(epoch_performance_training_new))
-            epoch_performance_validation_new.append(validation_new_metric.result().numpy())
+            try:
+                epoch_performance_training_new.append(training_new_metric.result().numpy())
+            except:
+                pass
+            print("unsafe_acc_training: " + str(epoch_performance_training_new))
+            try:
+                epoch_performance_validation_new.append(validation_new_metric.result().numpy())
+            except:
+                pass
             print("unsafe_acc_validation: " + str(epoch_performance_validation_new))
 
 
@@ -395,6 +422,7 @@ class TrainerHelper(object):
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
                 self.lr.assign(self.lr * self.p.lr_decay_factor)
+                # self.lr.assign(self.lr * 1/epoch)
             # else:
             #     return
         else:

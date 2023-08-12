@@ -56,7 +56,7 @@ class Dubins4D(DubinsCar):
             # Rightmost Column
             update_nk3 = tf.stack([-self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.sin(x_nk3[:, :, 2]),
                                    self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.cos(x_nk3[:, :, 2]),
-                                   tf.zeros(shape=x_nk3.shape[:2])], axis=2)
+                                   tf.zeros(shape=x_nk3.shape[:2]), tf.zeros(shape=x_nk3.shape[:2])], axis=2)
             update_nk33 = tf.stack([tf.zeros_like(x_nk3),
                                    tf.zeros_like(x_nk3),
                                    update_nk3], axis=3)
@@ -84,7 +84,7 @@ class Dubins4D(DubinsCar):
         """ A utility function for parsing a trajectory object.
         Returns x_nkd, u_nkf which are states and actions for the
         system """
-        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed_nk2()
+        return tf.concat((trajectory.position_and_heading_nk3(), trajectory.speed_nk1()), axis=2), tf.concat((trajectory.acceleration_nk1(),trajectory.angular_speed_nk1()), axis=2)
 
     def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
         """ A utility function for assembling a trajectory object
