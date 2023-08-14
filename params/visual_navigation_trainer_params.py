@@ -65,7 +65,7 @@ def create_params(simulator_params):
                         learning_schedule=2,
         
                         # Learning schedule adjustment parameters
-                        lr_decay_frequency=5,
+                        lr_decay_frequency=10,
                         lr_decay_factor=0.95,
         
                         # Checkpoint settings

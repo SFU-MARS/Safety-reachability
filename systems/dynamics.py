@@ -63,9 +63,9 @@ class Dynamics(object):
         for t in range(T):
             x_n1d = self.simulate(x_n1d, u_nkf[:, t:t+1], mode=mode)
             states.append(x_n1d)
-        # trajectory = self.assemble_trajectory(tf.concat(states, axis=1), u_nkf,
-        #                                       pad_mode=pad_mode)
-        trajectory=states
+        trajectory = self.assemble_trajectory(tf.concat(states, axis=1), u_nkf,
+                                              pad_mode=pad_mode)
+        # trajectory=states
         return trajectory
 
     def affine_factors(self, trajectory_hat):

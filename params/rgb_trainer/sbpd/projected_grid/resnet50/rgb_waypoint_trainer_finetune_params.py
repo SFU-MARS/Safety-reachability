@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(900) #int(200)
+    p.trainer.num_samples = int(133) #int(200)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -92,7 +92,7 @@ def create_params():
     p.trainer.ckpt_save_frequency = 10
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
-    p.trainer.num_epochs = 100
+    p.trainer.num_epochs = 300
 
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
@@ -163,7 +163,6 @@ def create_params():
 
     p.data_creation.data_points = 1e4
     # p.data_creation.data_points_per_file = int(1e2) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
-    p.data_creation.data_points_per_file= 1e2
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
     p.test.number_tests = 200

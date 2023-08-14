@@ -261,6 +261,7 @@ class BaseModel(object):
 
             poly = PolynomialFeatures(3)
             X_kerneled = [ poly.fit_transform(X)for X in feat_train_sc ]
+            X_kerneled = np.array(X_kerneled)
             stimators_coeffs =[]
             sample_weights =[]
 
@@ -290,6 +291,7 @@ class BaseModel(object):
                          x1, output in
                          zip(X_kerneled, nn_output)]
 
+
             accuracy_total = []
             prediction_total = []
             precision_total =[]
@@ -297,9 +299,13 @@ class BaseModel(object):
             output_total =[]
             percentage =[]
 
-            for prediction0, label,sample_weight  in zip(predicted, processed_data['labels'], sample_weights):
+
+            grad=0
+            for prediction0, label,sample_weight, WP  in zip(predicted, processed_data['labels'], sample_weights,processed_data['Action_waypoint'] ):
                 # prediction0 = prediction0.numpy()
                 prediction = tf.tanh(prediction0)
+                # v= label * prediction
+                # grad += 0 if v > 1 else -label * WP
                 output_total.append(prediction)
                 prediction = prediction.numpy()
                 prediction[np.where(prediction >= 0)] = 1
@@ -338,6 +344,7 @@ class BaseModel(object):
             hinge_losses_1 = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
                                  zip(output_total, processed_data['labels'])]
 
+
             prediction_losses = hinge_losses
             prediction_losses1 = hinge_losses_1
             # weights_v = 1 - processed_data['inputs'][1][:,0]
@@ -350,7 +357,7 @@ class BaseModel(object):
             # regularization_loss_svm = 0
             # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
             regularization_loss_svm =  self.p.loss.lam * tf.nn.l2_loss(nn_output.numpy()[:,1:])
-            regularization_loss = regularization_loss + 1e5*self.p.loss.regn*regularization_loss_svm + regularization_loss_kernel
+            regularization_loss = regularization_loss + regularization_loss_svm + regularization_loss_kernel
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
@@ -542,6 +549,24 @@ class BaseModel(object):
             plt.close('all')
             # end of 2d plot
             # print("regularization_loss: " + str(regularization_loss.numpy()))
+        prediction_loss = 0
+        num_total = 0
+        for (y, x, w) in zip(processed_data['labels'],  X_kerneled, nn_output):
+            for x1 , y1 in zip(x , y):
+                v = y1 * tf.tensordot(w, x1, axes=1)
+                if v[0] <0 :
+                    prediction_loss += 0.5 - v[0]
+                elif 0<v[0] and v[0]<1:
+                    prediction_loss += 0.5*(1-v[0])**2
+                else:
+                    prediction_loss+= 0
+                num_total+=1
+
+        prediction_loss= prediction_loss/ num_total
+
+
+        #     grad += 0 if v[0] > 1 else -y * x
+        # grad_dir = grad / tf.linalg.norm(grad)
 
         percentage_mean = np.mean(np.array(percentage))
         print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
@@ -558,18 +583,18 @@ class BaseModel(object):
 
 
 
-        total_loss = prediction_loss1 + c *regularization_loss
+        total_loss = prediction_loss + regularization_loss
         # print("total_loss: "+str(total_loss.numpy()))
         print("total_loss: " + str(total_loss))
 
         if return_loss_components_and_output:
-            return regularization_loss, prediction_loss, total_loss, nn_output
+            return regularization_loss, prediction_loss, total_loss, nn_output#, grad_dir
         # elif return_loss_components:
         #     return regularization_loss, prediction_loss, total_loss
         elif return_loss_components:
-            return regularization_loss, prediction_loss, total_loss, accuracy_mean, precision_mean, recall_mean , percentage_mean
+            return regularization_loss, prediction_loss, total_loss, accuracy_mean, precision_mean, recall_mean , percentage_mean#, grad_dir
         else:
-            return total_loss
+            return total_loss #, grad_dir
                 # return regularization_loss
 
     # @staticmethod

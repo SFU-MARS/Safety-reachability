@@ -16,7 +16,7 @@ class DubinsV4(Dubins4D):
 
 
     def _saturate_linear_velocity(self, vtilde_nk):
-        """ Linear clipping saturation function for linear velocity""" 
+        """ Linear clipping saturation function for linear velocity"""
         v_nk = tf.clip_by_value(vtilde_nk, self.v_bounds[0], self.v_bounds[1])
         return v_nk
 
