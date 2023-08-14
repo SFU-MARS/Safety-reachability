@@ -266,8 +266,6 @@ class BaseModel(object):
 
             for X, y , output in zip(X_kerneled, processed_data['labels'], nn_output):
                 try:
-
-
                     n_sample0 = np.size(np.where(y == -1)[0])
                     n_sample1 = np.size(np.where(y == 1)[0])
                     sample_weight = {-1: n_sample1, 1: n_sample0}
@@ -298,8 +296,6 @@ class BaseModel(object):
             recall_total =[]
             output_total =[]
             percentage =[]
-
-
 
             for prediction0, label,sample_weight  in zip(predicted, processed_data['labels'], sample_weights):
                 # prediction0 = prediction0.numpy()
@@ -332,9 +328,6 @@ class BaseModel(object):
                 # for label1 , prediction1 in zip(label, prediction):
                 correct_count = np.sum((label == -1) & (prediction == -1))
                 percentage.append(correct_count /np.sum(label == -1))
-
-
-
 
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]

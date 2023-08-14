@@ -108,9 +108,6 @@ class TrainerHelper(object):
                 #     feat_train_sc_batch.append(feat_train_sc)
                 # feat_train_sc_batch = np.array(feat_train_sc_batch)
                 # training_batch['all_waypoint_ego'] = feat_train_sc_batch
-
-
-
                 validation_batch = data_source.generate_validation_batch()
                 X_40_v = [x[::sample, :] for x in validation_batch['all_waypoint_ego']]
                 labels_40_v = [x[::sample, :] for x in validation_batch['labels']]
@@ -147,8 +144,6 @@ class TrainerHelper(object):
                 #     if grad == None:
                 #         grad = tf.constant([0])
                 #     grads1.append(grad)
-
-
 
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
@@ -213,12 +208,6 @@ class TrainerHelper(object):
             epoch_performance_validation_new.append(validation_new_metric.result().numpy())
             print("unsafe_acc_validation: " + str(epoch_performance_validation_new))
 
-
-
-
-
-
-            #
             self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,
                                          epoch_performance_training_acc, epoch_performance_validation_acc,
                                          epoch_performance_training_rec, epoch_performance_validation_rec,
