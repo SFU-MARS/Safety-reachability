@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 5#35 W kernel
+    p.model.num_outputs = 12 + 4 #35 W kernel
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 

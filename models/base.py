@@ -33,6 +33,29 @@ from sklearn.svm import SVC
 from scipy.interpolate import interp1d
 
 
+class PolynomialFeaturesLayer(tf.keras.layers.Layer):
+    def __init__(self, degree):
+        super(PolynomialFeaturesLayer, self).__init__()
+        self.degree = degree
+
+    def call(self, inputs):
+        batch_size = tf.shape(inputs)[0]
+        num_features = inputs.shape[-1]
+
+        # Generate powers for all possible combinations of polynomial terms
+        power_matrix = tf.tile(tf.expand_dims(tf.range(self.degree, dtype=tf.float32), 0), [num_features, 1])
+
+        # Expand dimensions of inputs for element-wise power operation
+        expanded_inputs = tf.expand_dims(inputs, axis=2)
+
+        # Compute polynomial features
+        powered_inputs = tf.pow(expanded_inputs, power_matrix)
+
+        # Reshape and concatenate polynomial terms
+        polynomial_features = tf.reshape(powered_inputs, [batch_size, -1])
+        return polynomial_features
+
+
 class BaseModel(object):
     """
     A base class for an input-output model that can be trained.
@@ -43,6 +66,7 @@ class BaseModel(object):
         self.make_architecture()
         self.make_processing_functions()
         self.sigma_sq=0.1
+        self.poly_layer = PolynomialFeaturesLayer(degree=3)
 
     def make_architecture(self):
         """
@@ -90,7 +114,7 @@ class BaseModel(object):
         # print ("nn before" +str(nn_output1))
         # if  np.all(nn_output1[:, :1])!=0:
         # nn_output = nn_output1 / (nn_output1[:, :1]+1e-5)
-        # print("nn after" + str(nn_output))
+        print("nn after" + str(nn_output))
         # else:
         #     nn_output = nn_output1
         # nn_output = nn_output1[:, :-1]
@@ -118,9 +142,10 @@ class BaseModel(object):
             sample = 1  #600 , 50
 
             feat_train_st = [standardize(X_tr)for X_tr in feat_train_sc]
-            poly = PolynomialFeatures(1)
-            X_kerneled = [ poly.fit_transform(X)for X in feat_train_st]
-            X_kerneled = np.array(X_kerneled)
+            # poly = PolynomialFeatures(1)
+            # X_kerneled = [ poly.fit_transform(X)for X in feat_train_st]
+            # X_kerneled = np.array(X_kerneled)
+            X_kerneled = [self.poly_layer(X) for X in feat_train_st]
             stimators_coeffs =[]
             sample_weights =[]
 
@@ -537,24 +562,31 @@ class BaseModel(object):
             sample = 1  #600 , 50
 
 
-            bound = 100
-            mX = [
-                interp1d([0, 2.5], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-                interp1d([-3, 3], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-                interp1d([-np.pi, np.pi], [-bound*10, bound*10], bounds_error=False, fill_value="extrapolate"),
-                interp1d([0, 0.6], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-            ]
+            # bound = 100
+            # mX = [
+            #     interp1d([0, 2.5], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
+            #     interp1d([-3, 3], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
+            #     interp1d([-np.pi, np.pi], [-bound*10, bound*10], bounds_error=False, fill_value="extrapolate"),
+            #     interp1d([0, 0.6], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
+            # ]
+            #
+            # def normalize(X):
+            #     # 4 x N
+            #     X = np.stack([mx(x) for x, mx in zip(X.transpose(), mX)], axis=0)
+            #     # N X 4
+            #     return X.transpose().astype(np.float32)
+
+            bias = nn_output[:, :4]
 
             def normalize(X):
-                # 4 x N
-                X = np.stack([mx(x) for x, mx in zip(X.transpose(), mX)], axis=0)
-                # N X 4
-                return X.transpose().astype(np.float32)
+                return tf.convert_to_tensor(X.astype(np.float32)) + bias
+
             X_norm = [normalize(X) for X in feat_train_sc]
 
-            poly = PolynomialFeatures(1)
-            X_kerneled = [  poly.fit_transform(X)for X in X_norm ]
-            X_kerneled = np.array(X_kerneled)
+            # poly = PolynomialFeatures(3)
+            # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
+            # X_kerneled = np.array(X_kerneled)
+            X_kerneled = tf.stack([self.poly_layer(X) for X in X_norm], axis=0)
             stimators_coeffs =[]
             sample_weights =[]
 
@@ -584,7 +616,7 @@ class BaseModel(object):
 
             predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
                          x1, output in
-                         zip(X_kerneled, nn_output)]
+                         zip(X_kerneled, nn_output[:, 4:])]
 
 
 
@@ -839,8 +871,7 @@ class BaseModel(object):
             prediction_loss = 0
             num_total = 0
             # for (y, x, w, weights_v) in zip(processed_data['labels'],  X_kerneled, nn_output, 1 - processed_data['inputs'][1][:, 0]):
-            for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output
-                                           ):
+            for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output[:, 4:]):
                 # weights_v = 1 - processed_data['inputs'][1][:, 0]
                 for x1 , y1 in zip(x , y):
                     v = y1 * tf.tensordot(w, x1, axes=1)
