@@ -26,9 +26,10 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
                             name='resnet50',
                             include_top=False,
                             pooling=None)
+        resnet50.trainable = False
 
         # Used to control batch_norm during training vs test time
-        is_training = tf.contrib.eager.Variable(False, dtype=tf.bool, name='is_training')
+        is_training = tf.contrib.eager.Variable(True, dtype=tf.bool, name='is_training')
         x = resnet50.call(x, is_training,
                           output_layer=params.resnet_output_layer)
 
@@ -70,6 +71,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     x = layers.Dense(num_outputs, activation=params.output_layer_activation_func)(x)
 
     # Generate a Keras model
+
 
     model = tf.keras.Model(inputs=[input_image, input_flat], outputs=x)
     # model = tf.keras.Model(inputs=[input_image], outputs=x)

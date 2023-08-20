@@ -504,7 +504,7 @@ class ImageDataSource(DataSource):
         idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] +1
         # idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0]
         try:
-            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:])+4  >= vs)[0][0] + 1
+            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
             # idx_valid = np.where(np.cumsum(data['num_samples_n1']) >= vs)[0][0] + 1
             idx_valid += (idx_train)
             # idx_valid += (60)

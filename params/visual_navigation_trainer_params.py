@@ -56,7 +56,7 @@ def create_params(simulator_params):
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
-                        # optimizer=tf.train.GradientDescentOptimizer,
+                        # optimizer=tf.keras.optimizers.Adagrad,
         
                         # Learning rate
                         lr=1e-3,

@@ -6,6 +6,8 @@ from training_utils.visual_navigation_trainer import VisualNavigationTrainer
 from models.visual_navigation.rgb.resnet50.rgb_resnet50_waypoint_model import RGBResnet50WaypointModel
 import os
 from array import array
+import random
+import numpy as np
 
 class RGBWaypointTrainer(VisualNavigationTrainer):
     """
@@ -35,4 +37,9 @@ class RGBWaypointTrainer(VisualNavigationTrainer):
 
 
 if __name__ == '__main__':
+    seed = 10
+    random.seed(seed)
+    np.random.seed(seed)
+    # tf.set_random_seed(seed)
+
     RGBWaypointTrainer().run()

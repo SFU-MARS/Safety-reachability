@@ -88,7 +88,7 @@ class TrainerHelper(object):
                 # plt.grid(False)
                 # plt.show()
 
-                sample = 5 #600
+                sample = 1 #600
 
                 X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
                 labels_40 = [x[::sample, :] for x in training_batch['labels']]
@@ -384,8 +384,8 @@ class TrainerHelper(object):
                                                                       epoch_performance_validation_rec[-1]))
         print('Epoch %i: training pre %0.3f, validation pre %0.3f' % (epoch, epoch_performance_training_pre[-1],
                                                                       epoch_performance_validation_pre[-1]))
-        print('Epoch %i: training unsafeper %0.3f, validation unsafeper %0.3f' % (epoch, epoch_performance_training_new[-1],
-                                                                      epoch_performance_validation_new[-1]))
+        # print('Epoch %i: training unsafeper %0.3f, validation unsafeper %0.3f' % (epoch, epoch_performance_training_new[-1],
+        #                                                               epoch_performance_validation_new[-1]))
 
         
         # Plot the loss curves
@@ -421,8 +421,9 @@ class TrainerHelper(object):
             # self.lr.assign(self.lr/(1 + (epoch / 2)))
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
-                self.lr.assign(self.lr * self.p.lr_decay_factor)
-                # self.lr.assign(self.lr * 1/epoch)
+                # self.lr.assign(self.lr * self.p.lr_decay_factor)
+                self.lr0 = 1e-4
+                self.lr.assign(self.lr0 *(1/(epoch+1)))
             # else:
             #     return
         else:

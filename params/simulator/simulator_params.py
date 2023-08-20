@@ -14,7 +14,7 @@ def create_params():
     # p.seed = 12
 
     # Horizons in seconds
-    p.episode_horizon_s = 20#80
+    p.episode_horizon_s = 1.5#80
     # TODO: when generating training data, we use control_horizon_s=1.5s, when testing, we find 0.25s will have the
     #  best performance for WayPtNav-reachability
     p.control_horizon_s = 1.5  # For data generation
