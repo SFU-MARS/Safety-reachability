@@ -622,9 +622,6 @@ class BaseModel(object):
                 correct_count = np.sum((label == -1) & (prediction == -1))
                 percentage_total.append(correct_count /np.sum(label == -1))
 
-
-
-
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
 
