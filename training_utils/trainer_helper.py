@@ -242,6 +242,8 @@ class TrainerHelper(object):
                                          epoch_performance_training_new, epoch_performance_validation_new,
                                          model, param,c,  callback_fn)
 
+
+
             # self.finish_epoch_processing(epoch+1, epoch_performance_training, epoch_performance_validation,
             #                              model, param,c,  callback_fn)
             

@@ -576,12 +576,12 @@ class BaseModel(object):
             #     # N X 4
             #     return X.transpose().astype(np.float32)
 
-            bias = nn_output[:, :4]
+            biases = nn_output[:, :4]
 
-            def normalize(X):
+            def normalize(X, bias):
                 return tf.convert_to_tensor(X.astype(np.float32)) + bias
 
-            X_norm = [normalize(X) for X in feat_train_sc]
+            X_norm = [normalize(X, bias) for X, bias in zip(feat_train_sc, biases) ]
 
             # poly = PolynomialFeatures(3)
             # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
@@ -868,7 +868,7 @@ class BaseModel(object):
             plt.close('all')
             # end of 2d plot
             # print("regularization_loss: " + str(regularization_loss.numpy()))
-            prediction_loss = 0
+            prediction_loss = tf.zeros(1)
             num_total = 0
             # for (y, x, w, weights_v) in zip(processed_data['labels'],  X_kerneled, nn_output, 1 - processed_data['inputs'][1][:, 0]):
             for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output[:, 4:]):

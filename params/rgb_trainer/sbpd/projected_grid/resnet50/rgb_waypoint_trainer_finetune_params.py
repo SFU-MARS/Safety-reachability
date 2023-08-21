@@ -61,7 +61,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 12 + 4 #35 W kernel
+    p.model.num_outputs = 12 + 4 #3*4 kernel 3
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -74,7 +74,7 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-4
-    p.trainer.batch_size = 1#48 original, changed after error 36
+    p.trainer.batch_size = 5#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
@@ -82,14 +82,14 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(2) #int(200)
+    p.trainer.num_samples = int(10) #int(200)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
     # p.trainer.num_samples = int(295)
 
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 1000
+    p.trainer.ckpt_save_frequency = 10
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
     p.trainer.num_epochs = 300
