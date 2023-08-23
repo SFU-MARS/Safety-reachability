@@ -1,4 +1,4 @@
-from systems.dubins_4d import Dubins4D
+from systems.dubins_4d_1 import Dubins4D
 import tensorflow as tf
 
 
@@ -46,3 +46,12 @@ class DubinsV4(Dubins4D):
         zero_idxs = tf.logical_or(less_than_idx, greater_than_idx)
         res = tf.cast(tf.logical_not(zero_idxs), wtilde_nk.dtype)
         return res
+
+    def _saturate_acceleration_prime(self, atilde_nk):
+        """ Time derivative of linear clipping saturation function"""
+        less_than_idx = (atilde_nk < self.a_bounds[0])
+        greater_than_idx = (atilde_nk > self.a_bounds[1])
+        zero_idxs = tf.logical_or(less_than_idx, greater_than_idx)
+        res = tf.cast(tf.logical_not(zero_idxs), atilde_nk.dtype)
+        return res
+

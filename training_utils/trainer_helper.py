@@ -146,8 +146,9 @@ class TrainerHelper(object):
                 #         grad = tf.constant([0])
                 #     grads1.append(grad)
 
-                self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
+                train_op = self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
+                tf.estimator.EstimatorSpec(mode=tf.estimator.ModeKeys.TRAIN, loss=loss, train_op=train_op)
                 # epoch_accuracy.update_state(accuracy)
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
