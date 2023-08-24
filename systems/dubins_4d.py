@@ -7,11 +7,10 @@ class Dubins4D(DubinsCar):
     """ A discrete time dubins car with state
     [x, y, theta,v] and actions [w, a]. The dynamics are:
 
-    x(t+1) = x(t) + saturate_linear_velocity(v(t)) cos(theta_t)*delta_t
-    y(t+1) = y(t) + saturate_linear_velocity(v(t)) sin(theta_t)*delta_t
+    x(t+1) = x(t) + v(t)*cos(theta_t)*delta_t
+    y(t+1) = y(t) + v(t)*sin(theta_t)*delta_t
     theta(t+1) = theta_t + saturate_angular_velocity(w(t))*delta_t
-    v(t+1) = v_t + saturate_acceleration(a(t))*delta_t
-
+    v(t+1) = saturate_linear_velocity(v(t) + a(t)*delta_t)
     """
 
     def __init__(self, dt, simulation_params=None):
@@ -51,32 +50,45 @@ class Dubins4D(DubinsCar):
             return x_nk4 + self._dt * delta_x_nk4
 
     def jac_x(self, trajectory):
-        x_nk3, u_nk2 = self.parse_trajectory(trajectory)
+        # Computes the A matrix in x_{t+1} = Ax_{t} + Bu_{t}
+        x_nk4, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
-            # Rightmost Column
-            update_nk3 = tf.stack([-self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.sin(x_nk3[:, :, 2]),
-                                   self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.cos(x_nk3[:, :, 2]),
-                                   tf.zeros(shape=x_nk3.shape[:2]), tf.zeros(shape=x_nk3.shape[:2])], axis=2)
-            update_nk33 = tf.stack([tf.zeros_like(x_nk3),
-                                   tf.zeros_like(x_nk3),
-                                   update_nk3], axis=3)
-            return tf.eye(3, batch_shape=x_nk3.shape[:2]) + self._dt*update_nk33
+            v_nk1 = x_nk4[:, :, 3]
+            theta_nk1 = x_nk4[:, :, 2]
+
+            diag_nk4 = tf.concat([tf.ones_like(x_nk4[:, :, :3]),
+                                  self._saturate_linear_velocity_prime(u_nk2[:, :, 1])*self._dt + v_nk1])
+            # theta column
+            column2_nk4 = tf.concat([-v_nk1*tf.sin(theta_nk1),
+                                     v_nk1*tf.cos(theta_nk1),
+                                     tf.zeros_like(x_nk4[:, :, :2])], axis=2)
+            # v column
+            column3_nk4 = tf.concat([tf.cos(theta_nk1),
+                                     tf.sin(theta_nk1),
+                                     tf.zeros_like(x_nk4[:, :, :2])], axis=2)
+            update_nk44 = tf.stack([tf.zeros_like(x_nk4),
+                                    tf.zeros_like(x_nk4),
+                                    column2_nk4,
+                                    column3_nk4], axis=3)
+            return tf.linalg.diag(diag_nk4) + self._dt*update_nk44
 
     def jac_u(self, trajectory):
-        x_nk3, u_nk2 = self.parse_trajectory(trajectory)
+        # This function computes the B matrix in x_{t+1} = Ax_{t} + Bu_{t}
+        x_nk4, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_u'):
-            vtilde_prime_nk = self._saturate_linear_velocity_prime(u_nk2[:, :, 0])
-            wtilde_prime_nk = self._saturate_angular_velocity_prime(u_nk2[:, :, 1])
-            zeros_nk = tf.zeros(shape=x_nk3.shape[:2], dtype=tf.float32)
+            # TODO: check if the index 0 corresponds to acceleration and index 1 corresponds to angle speed
+            wtilde_prime_nk = self._saturate_angular_velocity_prime(u_nk2[:, :, 0])
+            #vtilde_prime_nk = self._saturate_linear_velocity_prime(u_nk2[:, :, 1])
+            v_nk1 = x_nk4[:, :, 3]
 
-            # Columns
-            b1_nk3 = tf.stack([vtilde_prime_nk*tf.cos(x_nk3[:, :, 2]),
-                               vtilde_prime_nk*tf.sin(x_nk3[:, :, 2]),
-                               zeros_nk], axis=2)
-            b2_nk3 = tf.stack([zeros_nk,
-                               zeros_nk,
-                               wtilde_prime_nk], axis=2)
-
+            # w column
+            b1_nk3 = tf.stack([tf.zeros_like(x_nk4[:, :, :2]),
+                               wtilde_prime_nk,
+                               tf.zeros_like(x_nk4[:, :, 0])], axis=2)
+            # v column
+            b2_nk3 = tf.stack([tf.zeros_like(x_nk4[:, :, :3]),
+                               self._saturate_linear_velocity_prime(u_nk2[:, :, 1]*self._dt+v_nk1)],
+                              axis=2)
             B_nk32 = tf.stack([b1_nk3, b2_nk3], axis=3)
             return B_nk32*self._dt
 
