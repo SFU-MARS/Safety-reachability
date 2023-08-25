@@ -53,11 +53,11 @@ class Dubins4D(DubinsCar):
         # Computes the A matrix in x_{t+1} = Ax_{t} + Bu_{t}
         x_nk4, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
-            v_nk1 = x_nk4[:, :, 3]
-            theta_nk1 = x_nk4[:, :, 2]
+            v_nk1 = x_nk4[:, :, 3:4]
+            theta_nk1 = x_nk4[:, :, 2:3]
 
             diag_nk4 = tf.concat([tf.ones_like(x_nk4[:, :, :3]),
-                                  self._saturate_linear_velocity_prime(u_nk2[:, :, 1])*self._dt + v_nk1])
+                                  self._saturate_linear_velocity_prime(u_nk2[:, :, 0:1])*self._dt + v_nk1], axis=2)
             # theta column
             column2_nk4 = tf.concat([-v_nk1*tf.sin(theta_nk1),
                                      v_nk1*tf.cos(theta_nk1),
@@ -69,7 +69,7 @@ class Dubins4D(DubinsCar):
             update_nk44 = tf.stack([tf.zeros_like(x_nk4),
                                     tf.zeros_like(x_nk4),
                                     column2_nk4,
-                                    column3_nk4], axis=3)
+                                    column3_nk4], axis=2)
             return tf.linalg.diag(diag_nk4) + self._dt*update_nk44
 
     def jac_u(self, trajectory):

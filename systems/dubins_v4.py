@@ -1,4 +1,4 @@
-from systems.dubins_4d_1 import Dubins4D
+from systems.dubins_4d import Dubins4D
 import tensorflow as tf
 
 
