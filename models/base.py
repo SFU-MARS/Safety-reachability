@@ -630,8 +630,11 @@ class BaseModel(object):
                 n_sample0 =np.size(np.where(label == -1)[0])
                 n_sample1 = np.size(np.where(label == 1)[0])
                 # sample_weights  = (11 / 9 + label) * 9 / 2
-                r = n_sample0 / n_sample1
-                weight = (r + 1) / (r - 1), 1/(r-1)
+                if (n_sample1 != 0 and n_sample0 != 0):
+                    r = n_sample0 / n_sample1
+                    weight = (r + 1) / (r - 1), 1 / (r - 1)
+                else:
+                    weight= 1,1
                 sample_weights = (weight[0] + label )* weight[1]
                 # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
                 # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
@@ -919,7 +922,7 @@ class BaseModel(object):
 
 
 
-        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + 0.* regularization_loss
+        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss
         print("regularization_loss: "+str(regularization_loss.numpy()))
         print("prediction_loss: " + str(prediction_loss.numpy()))
 
