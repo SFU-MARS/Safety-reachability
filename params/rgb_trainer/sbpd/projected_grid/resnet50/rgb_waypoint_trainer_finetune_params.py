@@ -74,7 +74,7 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-4
-    p.trainer.batch_size = 5#48 original, changed after error 36
+    p.trainer.batch_size = 1#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(10) #int(200)
+    p.trainer.num_samples = int(2) #int(200)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -157,7 +157,7 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-1image_4d']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-1image']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 

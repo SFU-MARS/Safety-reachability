@@ -31,6 +31,7 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVC
 from scipy.interpolate import interp1d
+from sklearn import metrics
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -134,6 +135,7 @@ class BaseModel(object):
         recall_total = []
         output_total = []
         percentage_total = []
+        F1_total = []
 
         if self.p.loss.loss_type == 'mse':
 
@@ -196,12 +198,7 @@ class BaseModel(object):
 
 
 
-            accuracy_total = []
-            prediction_total = []
-            precision_total = []
-            recall_total = []
-            output_total =[]
-            percentage_total =[]
+
             #
             for prediction0, label in zip(predicted, processed_data['labels']):
                 # prediction0 = prediction.numpy()
@@ -622,12 +619,23 @@ class BaseModel(object):
 
 
             # grad=0
+            weights = []
+            class_weights =[]
 
             for prediction0, label, WP  in zip(predicted, processed_data['labels'], processed_data['Action_waypoint'] ):
                 # prediction0 = prediction0.numpy()
                 # prediction = tf.tanh(prediction0)
                 # v= label * prediction
                 # grad += 0 if v > 1 else -label * WP
+                n_sample0 =np.size(np.where(label == -1)[0])
+                n_sample1 = np.size(np.where(label == 1)[0])
+                # sample_weights  = (11 / 9 + label) * 9 / 2
+                r = n_sample0 / n_sample1
+                weight = (r + 1) / (r - 1), 1/(r-1)
+                sample_weights = (weight[0] + label )* weight[1]
+                # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
+                # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
+                # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
                 output_total.append(prediction0) # for loss
                 prediction = prediction0.numpy()
                 # prediction = np.tanh(prediction) #for accuracy
@@ -641,6 +649,8 @@ class BaseModel(object):
                 # accuracy = balanced_accuracy_score(label, prediction)
                 precision = precision_score (label, prediction)
                 recall = recall_score(label, prediction)
+                F1 = metrics.f1_score(label, prediction)
+                F1_total.append(F1)
                 if not tf.is_nan(accuracy):
                     accuracy_total.append(accuracy) # look at other metrics maybe auc
                 else:
@@ -654,11 +664,14 @@ class BaseModel(object):
                 correct_count = np.sum((label == -1) & (prediction == -1))
                 percentage_total.append(correct_count /np.sum(label == -1))
 
+            weights.append(np.array(sample_weights))
+            weights = np.array( weights )
+
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
 
-            hinge_losses = [tf.reduce_mean(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
-                                 zip(output_total, processed_data['labels'])] #reduce.mean?
+            hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 - wx * y)), axis=0) for wx, y, sample_weight in
+                                 zip(output_total, processed_data['labels'], weights)] #reduce.mean?
 
             # hinge_losses_1 = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
             #                      zip(output_total, processed_data['labels'])]
@@ -668,9 +681,9 @@ class BaseModel(object):
             # prediction_losses1 = hinge_losses_1
             # weights_v = 1 - processed_data['inputs'][1][:,0]
             # prediction_losses = np.float32(prediction_losses)
-            # prediction_loss = tf.reduce_sum(weights_v * prediction_losses) / tf.reduce_sum(weights_v)
+            # prediction_loss = tf.reduce_sum(weights * prediction_losses) / tf.reduce_sum(weights)
             prediction_loss =  tf.reduce_mean( prediction_losses)
-            prediction_loss1 = tf.reduce_sum(prediction_losses)
+            # prediction_loss1 = tf.reduce_sum(prediction_losses)
             print("prediction_loss: " + str(prediction_loss.numpy()))
             #
             # regularization_loss_svm = 0
@@ -868,22 +881,24 @@ class BaseModel(object):
             plt.close('all')
             # end of 2d plot
             # print("regularization_loss: " + str(regularization_loss.numpy()))
-            prediction_loss = tf.zeros(1)
-            num_total = 0
-            # for (y, x, w, weights_v) in zip(processed_data['labels'],  X_kerneled, nn_output, 1 - processed_data['inputs'][1][:, 0]):
-            for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output[:, 4:]):
-                # weights_v = 1 - processed_data['inputs'][1][:, 0]
-                for x1 , y1 in zip(x , y):
-                    v = y1 * tf.tensordot(w, x1, axes=1)
-                    if v[0] < 0 :
-                        prediction_loss += (0.5 - v[0])
-                    elif 0<v[0] and v[0]<1:
-                        prediction_loss += (0.5*(1-v[0])**2)
-                    else:
-                        prediction_loss+= 0
-                    num_total+=1
 
-            prediction_loss= prediction_loss/ num_total
+            ## SMOOTH HINGE
+            # prediction_loss = tf.zeros(1)
+            # num_total = 0
+            # # for (y, x, w, weights_v) in zip(processed_data['labels'],  X_kerneled, nn_output, 1 - processed_data['inputs'][1][:, 0]):
+            # for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output[:, 4:]):
+            #     # weights_v = 1 - processed_data['inputs'][1][:, 0]
+            #     for x1 , y1 in zip(x , y):
+            #         v = y1 * tf.tensordot(w, x1, axes=1)
+            #         if v[0] < 0 :
+            #             prediction_loss += (0.5 - v[0])
+            #         elif 0<v[0] and v[0]<1:
+            #             prediction_loss += (0.5*(1-v[0])**2)
+            #         else:
+            #             prediction_loss+= 0
+            #         num_total+=1
+            #
+            # prediction_loss= prediction_loss/ num_total
 
 
         #     grad += 0 if v[0] > 1 else -y * x
@@ -904,7 +919,7 @@ class BaseModel(object):
 
 
 
-        total_loss = prediction_loss + 0* regularization_loss
+        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + 0.* regularization_loss
         print("regularization_loss: "+str(regularization_loss.numpy()))
         print("prediction_loss: " + str(prediction_loss.numpy()))
 

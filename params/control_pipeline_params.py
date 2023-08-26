@@ -5,8 +5,8 @@ from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from control_pipelines.control_pipeline_v0 import ControlPipelineV0
 from control_pipelines.control_pipeline_v1 import ControlPipelineV1
-# from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
-from params.system_dynamics.dubins_v4_params import create_params as create_system_dynamics_params
+from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
+# from params.system_dynamics.dubins_v4_params import create_params as create_system_dynamics_params
 from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
 
 
@@ -24,7 +24,7 @@ def create_params():
     # The directory for saving the control pipeline files
     # p.dir = '/home/anjianl/Desktop/project/WayPtNav/data/control_data/control_pipelines'
     # New control pipeline v1 doesn't rescale the trajectory to maximize the speed
-    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines_FRS-M-4D'
+    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines_FRS-M'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
