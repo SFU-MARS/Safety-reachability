@@ -392,7 +392,7 @@ class ImageDataSource(DataSource):
                                        self.validation_info_dict)
         
         # Sample indices and get data
-        idxs = np.random.choice(len(data_shuffle_idxs), self.p.trainer.batch_size)
+        idxs = np.random.choice(len(data_shuffle_idxs), self.p.trainer.batch_size, replace=False)
         validation_batch = self.get_data_from_indices(self.validation_info_dict['data'],
                                                       data_shuffle_idxs[idxs])
         # validation_batch = self. validation_info_dict ['data']

@@ -630,12 +630,14 @@ class BaseModel(object):
                 n_sample0 =np.size(np.where(label == -1)[0])
                 n_sample1 = np.size(np.where(label == 1)[0])
                 # sample_weights  = (11 / 9 + label) * 9 / 2
+                # weight= weightb (weightS+ytrue)
                 if (n_sample1 != 0 and n_sample0 != 0):
-                    r = n_sample0 / n_sample1
-                    weight = (r + 1) / (r - 1), 1 / (r - 1)
+                    r = math.sqrt(n_sample0 / n_sample1)
+                    weightS = (r + 1) / (r - 1)
+                    weightb =  1 / (weightS - 1)
+                    sample_weights = (weightS + label) * weightb
                 else:
-                    weight= 1,1
-                sample_weights = (weight[0] + label )* weight[1]
+                    sample_weights = tf.ones(label.shape)
                 # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
                 # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
                 # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
@@ -652,7 +654,9 @@ class BaseModel(object):
                 # accuracy = balanced_accuracy_score(label, prediction)
                 precision = precision_score (label, prediction)
                 recall = recall_score(label, prediction)
-                F1 = metrics.f1_score(label, prediction)
+                F1 = metrics.f1_score(label, prediction, zero_division =0)
+                if F1==0:
+                    F1=1
                 F1_total.append(F1)
                 if not tf.is_nan(accuracy):
                     accuracy_total.append(accuracy) # look at other metrics maybe auc
@@ -666,9 +670,9 @@ class BaseModel(object):
                 # for label1 , prediction1 in zip(label, prediction):
                 correct_count = np.sum((label == -1) & (prediction == -1))
                 percentage_total.append(correct_count /np.sum(label == -1))
+                weights.append(sample_weights)
 
-            weights.append(np.array(sample_weights))
-            weights = np.array( weights )
+            weights = tf.stack(weights)
 
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
@@ -692,7 +696,7 @@ class BaseModel(object):
             # regularization_loss_svm = 0
             # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
             regularization_loss_svm = tf.nn.l2_loss(nn_output.numpy()[:,1:])
-            regularization_loss = 1e-4*(regularization_loss + regularization_loss_svm + regularization_loss_kernel)
+            regularization_loss = 1e-5*(regularization_loss + regularization_loss_svm + regularization_loss_kernel)
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
@@ -921,6 +925,9 @@ class BaseModel(object):
         print("recall in this batch: " + str(recall_mean))
 
 
+        F1_mean = np.mean(np.array(F1_total))
+        print("F1 in this batch: " + str(F1_mean))
+
 
         total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss
         print("regularization_loss: "+str(regularization_loss.numpy()))
@@ -931,7 +938,7 @@ class BaseModel(object):
         # elif return_loss_components:
         #     return regularization_loss, prediction_loss, total_loss
         elif return_loss_components:
-            return regularization_loss, prediction_loss, total_loss, accuracy_mean, precision_mean, recall_mean , percentage_mean#, grad_dir
+            return regularization_loss, prediction_loss, total_loss, accuracy_mean, precision_mean, recall_mean , percentage_mean, F1_mean
         else:
             return total_loss #, grad_dir
                 # return regularization_loss
