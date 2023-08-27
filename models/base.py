@@ -632,7 +632,8 @@ class BaseModel(object):
                 # sample_weights  = (11 / 9 + label) * 9 / 2
                 # weight= weightb (weightS+ytrue)
                 if (n_sample1 != 0 and n_sample0 != 0):
-                    r = math.sqrt(n_sample0 / n_sample1)
+                    # r = math.sqrt(n_sample0 / n_sample1)
+                    r = n_sample0 / n_sample1
                     weightS = (r + 1) / (r - 1)
                     weightb =  1 / (weightS - 1)
                     sample_weights = (weightS + label) * weightb
