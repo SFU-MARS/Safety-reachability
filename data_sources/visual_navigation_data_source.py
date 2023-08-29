@@ -227,14 +227,18 @@ class VisualNavigationDataSource(ImageDataSource):
         n = simulator.vehicle_data['system_config'].n
 
         # Vehicle data
-        data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())
-        data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
+        # data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())
+        data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_heading_speed_nk4().numpy())
+
+        # data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
+        data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].acceleration_and_angular_speed_nk2().numpy())
 
         # Convert to egocentric coordinates
         start_nk3 = simulator.vehicle_data['system_config'].position_and_heading_nk3().numpy()
         data['start_state'].append(start_nk3)
         goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3))
         waypoint_n13 = simulator.vehicle_data['waypoint_config'].position_and_heading_nk3().numpy()
+        # waypoint_n13 = simulator.vehicle_data['waypoint_config'].position_heading_speed_nk4.numpy()
         speed_n11= simulator.vehicle_data['waypoint_config']._speed_nk1.numpy()
         goal_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
                                                                                  goal_n13)
@@ -282,13 +286,13 @@ class VisualNavigationDataSource(ImageDataSource):
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
         N = 200 # MIN # OF WPS 4000
+
         # N = 200
         # randomRow = np.random.randint(3, size=N)
         # arr[np.random.randint(arr.numpy().shape[0], size=N), :]
         # random.sample(arr, N)
         # idx = np.random.randint(arr.numpy().shape[0], size=4000)
         # Stack the lists
-        idx = []
         # counter= 0
         data_tags = data.keys()
         import matplotlib.pyplot as plt
@@ -302,7 +306,7 @@ class VisualNavigationDataSource(ImageDataSource):
         # ax.scatter(X[:, 0], X[:, 1], marker='o', c=y)
         # ax.scatter3D(X[:, 0], X[:, 1],X[:, 2], marker='x', c=y)
         # plt.show()
-
+        idxes =[]
         for tag in data_tags:
             # data[tag] = np.concatenate(data[tag], axis=0)
             if tag != 'labels' and tag != 'all_waypoint_ego' and tag != 'all_waypoint':
@@ -312,18 +316,20 @@ class VisualNavigationDataSource(ImageDataSource):
                 arr1 = []
                 arr2 = []
                 arr4 = []
-                indx = []
                 for arr in data[tag]:
-                    arr2.append(np.expand_dims(arr[:N, :], axis=0))
+                    idx= np.random.randint(arr.shape[0], size=200)
+                    idxes.append(idx)
+                    arr2.append(np.expand_dims(arr[idx, :], axis=0))
                 data['all_waypoint_ego'] = np.concatenate(arr2, axis=0)
-                counter1 = 0
-                for arr3 in data['all_waypoint']:
-                    arr1.append(np.expand_dims(arr3[:N, :], axis=0))
+
+                for arr3 , idx in zip(data['all_waypoint'],idxes) :
+                    arr1.append(np.expand_dims(arr3[idx, :], axis=0))
                 data['all_waypoint'] = np.concatenate(arr1, axis=0)
-                counter1 = 0
+                i=0
                 for arr3 in data['labels']:
-                    for arr in arr3:
-                        arr4.append(np.expand_dims(arr[:N, :], axis=0))
+                    for arr in  arr3:
+                        arr4.append(np.expand_dims(arr[idxes[i], :], axis=0))
+                        i+=1
                 data['labels'] = np.concatenate(arr4, axis=0)
 
                 # arr1.append(np.expand_dims(op , axis=0))

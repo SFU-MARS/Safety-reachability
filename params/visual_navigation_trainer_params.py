@@ -99,10 +99,10 @@ def create_params(simulator_params):
     reset_params.obstacle_map.params = DotMap(min_n=5, max_n=5,
                                               min_r=.3, max_r=.8)
     reset_params.start_config.heading.reset_type = 'random'
-    reset_params.start_config.speed.reset_type = 'zero'
-    # reset_params.start_config.ang_speed.reset_type = 'zero'
     reset_params.start_config.speed.reset_type = 'random'
-    # reset_params.start_config.ang_speed.reset_type = 'random'
+    # reset_params.start_config.ang_speed.reset_type = 'zero'
+    # reset_params.start_config.speed.reset_type = 'random'
+
 
     p.data_creation = DotMap(
                                 # Number of data points

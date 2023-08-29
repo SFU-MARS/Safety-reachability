@@ -24,11 +24,12 @@ class Dubins4D(DubinsCar):
     def _simulate_ideal(self, x_nk4, u_nk2, t=None):
         with tf.name_scope('simulate'):
             theta_nk1 = x_nk4[:, :, 2:3]
-            v_nk1 = x_nk4[:, :, 3:4]
-            delta_x_nk4 = tf.stack([self._saturate_linear_velocity(x_nk4[:, :, 3])*tf.cos(x_nk4[:, :, 2]),
-                                    self._saturate_linear_velocity(x_nk4[:, :, 3])*tf.sin(x_nk4[:, :, 2]),
-                                    self._saturate_angular_velocity(u_nk2[:, :, 0:1]),
-                                    self._saturate_linear_velocity(v_nk1 + self._dt*self._saturate_linear_acceleration(u_nk2[:, :, 1:2]))],
+            v_nk1 = x_nk4[:, :, 3]
+            delta_x_nk4 = tf.stack([self._saturate_linear_velocity(x_nk4[:, :, 3]) * tf.cos(x_nk4[:, :, 2]),
+                                    self._saturate_linear_velocity(x_nk4[:, :, 3]) * tf.sin(x_nk4[:, :, 2]),
+                                    self._saturate_angular_velocity(u_nk2[:, :, 1]),
+                                    self._saturate_linear_velocity(
+                                        v_nk1 + self._dt * self._saturate_linear_acceleration(u_nk2[:, :, 0]))],
                                    axis=2)
 
             # theta_nk1 = x_nkd[:, :, 2:3]
@@ -81,16 +82,16 @@ class Dubins4D(DubinsCar):
             #vtilde_prime_nk = self._saturate_linear_velocity_prime(u_nk2[:, :, 1])
             v_nk1 = x_nk4[:, :, 3:4]
 
+            # v column
+            b1_nk3 = tf.concat([tf.zeros_like(x_nk4[:, :, :3]),
+                                self._saturate_linear_velocity_prime(u_nk2[:, :, 1:2]*self._dt+v_nk1)],
+                               axis=2)
             # w column
-            b1_nk3 = tf.concat([tf.zeros_like(x_nk4[:, :, :2]),
+            b2_nk3 = tf.concat([tf.zeros_like(x_nk4[:, :, :2]),
                                wtilde_prime_nk,
                                tf.zeros_like(x_nk4[:, :, 0:1])], axis=2)
-            # v column
-            b2_nk3 = tf.concat([tf.zeros_like(x_nk4[:, :, :3]),
-                               self._saturate_linear_velocity_prime(u_nk2[:, :, 1:2]*self._dt+v_nk1)],
-                              axis=2)
             B_nk32 = tf.stack([b1_nk3, b2_nk3], axis=3)
-            return B_nk32*self._dt
+        return B_nk32 * self._dt
 
     def parse_trajectory(self, trajectory):
         """ A utility function for parsing a trajectory object.

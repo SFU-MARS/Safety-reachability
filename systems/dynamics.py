@@ -12,6 +12,7 @@ class Dynamics(object):
         self.isStochastic = False
         self.isNonlinear = True
         self.isContinuous = False
+        # self.simulation_params.simulation_mode='ideal'
 
     @staticmethod
     def parse_params(p):

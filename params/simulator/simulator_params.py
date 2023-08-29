@@ -44,7 +44,7 @@ def create_params():
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
                                        goal_cost=.08,
-                                       goal_margin=.3)
+                                       goal_margin=0.3)
 
     # Reach avoid 4d parameters
     p.reach_avoid_4d_objective = DotMap(power=1)
