@@ -67,7 +67,7 @@ class BaseModel(object):
         self.make_architecture()
         self.make_processing_functions()
         self.sigma_sq=0.1
-        self.poly_layer = PolynomialFeaturesLayer(degree=3)
+        self.poly_layer = PolynomialFeaturesLayer(degree=1)
 
     def make_architecture(self):
         """
@@ -627,8 +627,9 @@ class BaseModel(object):
                 # prediction = tf.tanh(prediction0)
                 # v= label * prediction
                 # grad += 0 if v > 1 else -label * WP
-                n_sample0 =np.size(np.where(label == -1)[0])
-                n_sample1 = np.size(np.where(label == 1)[0])
+                label = -label
+                n_sample0 =np.size(np.where(label == 1)[0])
+                n_sample1 = np.size(np.where(label == -1)[0])
                 # sample_weights  = (11 / 9 + label) * 9 / 2
                 # weight= weightb (weightS+ytrue)
                 if (n_sample1 != 0 and n_sample0 != 0):
@@ -636,7 +637,7 @@ class BaseModel(object):
                     r = n_sample0 / n_sample1
                     weightS = (r + 1) / (r - 1)
                     weightb =  1 / (weightS - 1)
-                    sample_weights = (weightS + label) * weightb
+                    sample_weights = (weightS - label) * weightb
                 else:
                     sample_weights = tf.ones(label.shape)
                 # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
@@ -669,8 +670,8 @@ class BaseModel(object):
                 if not tf.is_nan(recall):
                     recall_total.append(recall)
                 # for label1 , prediction1 in zip(label, prediction):
-                correct_count = np.sum((label == -1) & (prediction == -1))
-                percentage_total.append(correct_count /np.sum(label == -1))
+                correct_count = np.sum((label == 1) & (prediction == 1))
+                percentage_total.append(correct_count /np.sum(label == 1))
                 weights.append(sample_weights)
 
             weights = tf.stack(weights)
@@ -678,7 +679,7 @@ class BaseModel(object):
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
 
-            hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 - wx * y)), axis=0) for wx, y, sample_weight in
+            hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 + wx * y)), axis=0) for wx, y, sample_weight in
                                  zip(output_total, processed_data['labels'], weights)] #reduce.mean?
 
             # hinge_losses_1 = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in

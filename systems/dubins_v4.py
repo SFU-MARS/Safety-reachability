@@ -10,6 +10,7 @@ class DubinsV4(Dubins4D):
 
     def __init__(self, dt, params):
         super().__init__(dt)
+        self.simulation_params=params.simulation_params
         self.v_bounds = params.v_bounds
         self.w_bounds = params.w_bounds
         self.a_bounds = params.a_bounds
@@ -25,7 +26,7 @@ class DubinsV4(Dubins4D):
         w_nk = tf.clip_by_value(wtilde_nk, self.w_bounds[0], self.w_bounds[1])
         return w_nk
 
-    def _saturate_acceleration(self, atilde_nk):
+    def _saturate_linear_acceleration(self, atilde_nk):
         """ Linear clipping saturation function for angular velocity"""
         a_nk = tf.clip_by_value(atilde_nk, self.a_bounds[0], self.a_bounds[1])
         # a_nk = tf.clip_by_value(atilde_nk, max(self.a_bounds[0],-1*tf.squeeze(vtilde_nk)/dt), min(self.a_bounds[1],tf.squeeze((self.v_bounds[1]-vtilde_nk)/dt)))

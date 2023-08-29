@@ -250,6 +250,9 @@ class Trajectory(object):
     def speed_and_angular_speed_nk2(self):
         return tf.concat([self.speed_nk1(), self.angular_speed_nk1()], axis=2)
 
+    def acceleration_and_angular_speed_nk2(self):
+        return tf.concat([self.acceleration_nk1(), self.angular_speed_nk1()], axis=2)
+
     def position_heading_speed_and_angular_speed_nk5(self):
         return tf.concat([self.position_and_heading_nk3(),
                           self.speed_and_angular_speed_nk2()], axis=2)
