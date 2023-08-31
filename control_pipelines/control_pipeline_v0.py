@@ -57,7 +57,7 @@ def vehicle_flat_reverse(zflag):
     x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
     # And next solve for the inputs
     u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
-            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2)
+            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2+1e-5)
     u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
     return x, u
 
@@ -113,7 +113,7 @@ def vehicle_flat_reverse(zflag, params={}):
     x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
     # And next solve for the inputs
     u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
-            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2)
+            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2+1e-5)
     u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
     return x, u
 

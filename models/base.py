@@ -68,7 +68,7 @@ class BaseModel(object):
         self.make_architecture()
         self.make_processing_functions()
         self.sigma_sq=0.1
-        self.poly_layer = PolynomialFeaturesLayer(degree=1)
+        self.poly_layer = PolynomialFeaturesLayer(degree=3)
 
     def make_architecture(self):
         """
@@ -455,10 +455,13 @@ class BaseModel(object):
 
             X_norm = [normalize(X, bias) for X, bias in zip(feat_train_sc, biases) ]
 
-            # poly = PolynomialFeatures(3)
+            poly = PolynomialFeatures(3)
+            X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
+            X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
+
             # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
-            # X_kerneled = np.array(X_kerneled)
-            X_kerneled = tf.stack([self.poly_layer(X) for X in X_norm], axis=0)
+
+            # X_kerneled = tf.stack([self.poly_layer(X) for X in X_norm], axis=0)
             stimators_coeffs =[]
             sample_weights =[]
 
@@ -604,6 +607,7 @@ class BaseModel(object):
                     all_waypoint_sampled,
                     processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13):#, predicted_contour):
 
+                label = -label
                 # robot
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
@@ -611,7 +615,7 @@ class BaseModel(object):
                 fig, ax = plt.subplots()
                 ax.imshow(np.squeeze(top))
                 ax.plot(0, (crop_size[0] - 1) / 2, 'k*')
-                color = ['red' if l == -1 else 'green' for l in label]
+                color = ['red' if l == 1 else 'green' for l in label]
                 WP_map_x = (WP[:, 0]/dx + 0)
                 WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
                 plt.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
@@ -628,7 +632,9 @@ class BaseModel(object):
                 hh, ss = np.tile(0, np.shape(xx)), np.tile(speed, np.shape(xx)),
                 X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
                 X_grid = tf.expand_dims(X_grid,axis=0)
-                X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
+                X_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
+                X_grid_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
+                # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
                 Z = [-np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
                      x1, output in
                      zip(X_grid_kerneled, nn_output[:, 4:])]
@@ -689,7 +695,7 @@ class BaseModel(object):
                 #               wrong[:, 2], s=80, edgecolors="k")
                 # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
 
-                color = ['red' if l == -1 else 'green' for l in label]
+                color = ['red' if l == 1 else 'green' for l in label]
                 # mycmap = ListedColormap(["red", "green"])
 
                 # ax2.scatter3D(WP[:, 0], WP[:, 1],
