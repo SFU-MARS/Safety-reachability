@@ -3,7 +3,8 @@ class WaypointGridBase(object):
     for a mobile ground robot."""
     def __init__(self, params):
         self.params = params.grid.parse_params(params)
-        self.n = self.compute_number_waypoints(params)
+        # self.n = self.compute_number_waypoints(params)
+        self.n = 200
 
     @staticmethod
     def parse_params(p):
@@ -11,7 +12,8 @@ class WaypointGridBase(object):
         Parse the parameters to add some additional helpful parameters.
         """
         # Update the number of waypoints based on how many will actually be sampled
-        p.n = p.grid.compute_number_waypoints(p)
+        # p.n = p.grid.compute_number_waypoints(p)
+        p.n = 200
         return p
 
     def sample_egocentric_waypoints(self, vf=0.):

@@ -285,7 +285,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 200 # MIN # OF WPS 4000
+        N = 10 # MIN # OF WPS 4000
 
         # N = 200
         # randomRow = np.random.randint(3, size=N)
@@ -317,7 +317,7 @@ class VisualNavigationDataSource(ImageDataSource):
                 arr2 = []
                 arr4 = []
                 for arr in data[tag]:
-                    idx= np.random.randint(arr.shape[0], size=200)
+                    idx= np.random.randint(arr.shape[0], size=N)
                     idxes.append(idx)
                     arr2.append(np.expand_dims(arr[idx, :], axis=0))
                 data['all_waypoint_ego'] = np.concatenate(arr2, axis=0)
