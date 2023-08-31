@@ -11,6 +11,116 @@ from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
 import math
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+import control as ct
+import control.flatsys as fs
+import control.optimal as opt
+from scipy.optimize import LinearConstraint
+
+
+# Function to take states, inputs and return the flat flag
+def vehicle_flat_forward(x, u):
+    # Get the parameter values
+    # Create a list of arrays to store the flat output and its derivatives
+    zflag = [np.zeros(4), np.zeros(4)]
+    # Flat output is the x, y position of the rear wheels
+    zflag[0][0] = x[0]
+    zflag[1][0] = x[1]
+    theta = x[2]
+    vel = x[3]
+    # zflag[3][0] = x[3]
+    # First derivatives of the flat output
+    zflag[0][1] = vel * np.cos(theta)  # dx/dt
+    zflag[1][1] = vel * np.sin(theta)  # dy/dt
+    # zflag[2][1] = u[0]
+    # zflag[3][1] = u[1]
+    # First derivative of the angle
+    thdot = u[0]
+    vdot = u[1]
+    # Second derivatives of the flat output (setting vdot = 0)
+    zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
+    zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
+    return zflag
+
+
+# Function to take the flat flag and return states, inputs
+def vehicle_flat_reverse(zflag):
+    # Get the parameter values
+    # Create a vector to store the state and inputs
+    x = np.zeros(4)
+    u = np.zeros(2)
+    # Given the flat variables, solve for the state
+    x[0] = zflag[0][0]  # x position
+    x[1] = zflag[1][0]  # y position
+    x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
+    x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
+    # And next solve for the inputs
+    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
+            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2)
+    u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
+    return x, u
+
+
+u0 = [0, 0]
+uf = [0, 0]
+dt = 0.05
+t = np.linspace(0, [6], 1 / dt)
+vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2,
+                             states=4)
+import numpy as np
+import matplotlib.pyplot as plt
+import control as ct
+import control.flatsys as fs
+import control.optimal as opt
+
+
+# Function to take states, inputs and return the flat flag
+def vehicle_flat_forward(x, u, params={}):
+    # Get the parameter values
+    # Create a list of arrays to store the flat output and its derivatives
+    zflag = [np.zeros(4), np.zeros(4)]
+    # Flat output is the x, y position of the rear wheels
+    zflag[0][0] = x[0]
+    zflag[1][0] = x[1]
+    theta = x[2]
+    vel = x[3]
+    # zflag[3][0] = x[3]
+    # First derivatives of the flat output
+    zflag[0][1] = vel * np.cos(theta)  # dx/dt
+    zflag[1][1] = vel * np.sin(theta)  # dy/dt
+    # zflag[2][1] = u[0]
+    # zflag[3][1] = u[1]
+    # First derivative of the angle
+    thdot = u[0]
+    vdot = u[1]
+    # Second derivatives of the flat output (setting vdot = 0)
+    zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
+    zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
+    return zflag
+
+
+# Function to take the flat flag and return states, inputs
+def vehicle_flat_reverse(zflag, params={}):
+    # Get the parameter values
+    # Create a vector to store the state and inputs
+    x = np.zeros(4)
+    u = np.zeros(2)
+    # Given the flat variables, solve for the state
+    x[0] = zflag[0][0]  # x position
+    x[1] = zflag[1][0]  # y position
+    x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
+    x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
+    # And next solve for the inputs
+    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
+            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2)
+    u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
+    return x, u
+
+
+
+
+
 class ControlPipelineV0(ControlPipelineBase):
     """
     A control pipeline that generate dynamically feasible spline trajectories of varying horizon.
@@ -141,6 +251,7 @@ class ControlPipelineV0(ControlPipelineBase):
                     start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
                                                                                      n=self.n, v=v0)
                     goal_config = SystemConfig.copy(waypoints_egocentric)
+
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(start_config, goal_config)
                     lqr_trajectory, K_nkfd, k_nkf1 = self._lqr(start_config)
                     # TODO: Put the initial bin information in here too. This will make debugging much easier.
@@ -191,16 +302,89 @@ class ControlPipelineV0(ControlPipelineBase):
     def _dynamically_fit_spline(self, start_config, goal_config):
         """Fit a spline between start_config and goal_config only keeping points that are dynamically feasible within
         the planning horizon."""
+
+
+        u0 = np.asarray([0, 0])
+        uf = np.asarray([0, 0])
+        dt = 0.05
+        t = np.arange(0, 6, dt)
+        Av = np.zeros((3, 6))
+        Av[0, 3] = 1
+        Av[1, 4] = 1
+        Av[2, 5] = 1
+        lbv = [0, -0.4, -1.1]
+        ubv = [0.7, 0.4, 1.1]
+
+        trajectory_constraints = [
+            (LinearConstraint, Av, lbv, ubv)
+        ]
+        vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2, states=4)
+        # x0=start_config
+        x0 = start_config.position_heading_speed_nk4()[0].numpy().reshape((4,))
+        # xf=goal_config
+
+        xfs = goal_config.position_heading_speed_nk4().numpy().reshape((-1,4))
+        xs, ys, headings, speeds, accs, omegas = [], [], [], [], [], []
+        valid_idxs = []
+
+        import tqdm
+        for idx, xf in tqdm.tqdm(enumerate(xfs), total=xfs.shape[0]):
+            try:
+                traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf, basis=None, # fs.PolyFamily(8),
+                                               constraints=trajectory_constraints)
+            except RuntimeError:
+                continue
+            # ,cost=cost_fcn)
+            # Create the trajectory
+            # x, u = traj_const.eval(t)
+            # traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf,
+            #                                basis=fs.PolyFamily(8))  # constraints=constraints,
+            # ,cost=cost_fcn)
+            # Create the trajectory
+
+            valid_idxs.append(idx)
+            x, u = traj_const.eval(t)
+            xs.append(x[0, :])
+            ys.append(x[1, :])
+            headings.append(x[2, :])
+            speeds.append(x[3, :])
+            accs.append(u[0, :])
+            omegas.append(u[1, :])
+
+        xs, ys, headings, speeds, accs, omegas \
+            = np.stack(xs), np.stack(ys), np.stack(headings), np.stack(speeds), np.stack(accs), np.stack(omegas)
+
+        xs= xs[:, :, np.newaxis].astype(np.float32)
+        ys = ys[:, :, np.newaxis].astype(np.float32)
+        headings = headings[:, :, np.newaxis].astype(np.float32)
+        omegas = omegas[:, :, np.newaxis].astype(np.float32)
+        accs = accs[:, :, np.newaxis].astype(np.float32)
+        # accs = np.stack([accs[0] for _ in range(21483)])
+        speeds = speeds[:, :, np.newaxis].astype(np.float32)
+
+
+        # self.spline_trajectory._acceleration_nk1.assign(tf.convert_to_tensor(accs))
+        self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate(xs,ys))
+        self.spline_trajectory._heading_nk1 = tf.convert_to_tensor(headings)
+        self.spline_trajectory._acceleration_nk1 = tf.convert_to_tensor(accs)
+        self.spline_trajectory._speed_nk1 = tf.convert_to_tensor(speeds)
+        self.spline_trajectory._angular_speed_nk1 = tf.convert_to_tensor(omegas)
+
+        self.spline_trajectory.vars = [self.spline_trajectory._position_nk2, self.spline_trajectory._speed_nk1,
+                     self.spline_trajectory._acceleration_nk1, self.spline_trajectory._heading_nk1,
+                     self.spline_trajectory._angular_speed_nk1, self.spline_trajectory._angular_acceleration_nk1]
+
         p = self.params
         times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None], [self.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
         final_times_n1 = tf.ones((self.n, 1), dtype=tf.float32) * p.planning_horizon_s
-        self.spline_trajectory.fit(start_config, goal_config, final_times_n1=final_times_n1)
-        self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
-        self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(
-            speed_max_system=self.system_dynamics.v_bounds[1],
-            angular_speed_max_system=self.system_dynamics.w_bounds[1], minimum_horizon=p.minimum_spline_horizon)
+        # self.spline_trajectory.fit(start_config, goal_config, final_times_n1=final_times_n1)
+        # self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
+        # self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(
+        #     speed_max_system=self.system_dynamics.v_bounds[1],
+        #     angular_speed_max_system=self.system_dynamics.w_bounds[1], minimum_horizon=p.minimum_spline_horizon)
 
-        valid_idxs = self.spline_trajectory.find_trajectories_within_a_horizon(p.planning_horizon_s)
+
+        # valid_idxs = self.spline_trajectory.find_trajectories_within_a_horizon(p.planning_horizon_s)
         horizons_n1 = self.spline_trajectory.final_times_n1
 
         # Only keep the valid problems and corresponding splines and horizons
@@ -439,7 +623,7 @@ class ControlPipelineV0(ControlPipelineBase):
         wy_n_all = -5 + result[1] * 10 / 100
         wv_n_all = 0 + result[3] * 0.6 / 61
         wtheta_n_all = -math.pi + result[2] * 2 * math.pi / 36
-        n_sample = 2000
+        n_sample = 200
         indx = np.random.choice(n, n_sample, replace=False)
         wx_n = wx_n_all [indx]
         wy_n = wy_n_all[indx]

@@ -32,6 +32,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVC
 from scipy.interpolate import interp1d
 from sklearn import metrics
+from sbpd.sbpd_renderer import SBPDRenderer
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -445,133 +446,7 @@ class BaseModel(object):
 
         elif self.p.loss.loss_type == 'hinge':
 
-            #
-            # feat_train_kr = []
-            # regularization_loss_svm = 0
-            # # for X in feat_train_sc:
-            # #     fX = [np.squeeze(poly.fit_transform(x2.reshape(1, -1))) for x2 in X]
-            # #     feat_train_kr.append(np.array(fX))
-            # # feat_train_sc = np.array(feat_train_kr)
-            # # X = feat_train_sc
-            #
-            # # for model_variable in model.weights:
-            # #     regularization_loss_kernel += tf.nn.l2_loss(model_variable)
-            # # regularization_loss_kernel = self.p.loss.regn * regularization_loss_kernel
-            # #
-            #
-            # for X in feat_train_sc:
-            #     fX = [np.squeeze(self.kernel_model(x2.reshape(1, -1))) for x2 in X]
-            #     feat_train_kr.append(np.array(fX))
-            # feat_train_sc1 = np.array(feat_train_kr)
-            # X = feat_train_sc1
-            #
-            #
-            # # feat_train_sc_1 = tf.concat(
-            # #     (feat_train_sc,
-            # #      tf.ones((feat_train_sc.shape[0], feat_train_sc.shape[1], 1))),
-            # #     axis=2)
-            # # X = feat_train_sc_1
-            #
-            #
-            #
-            # predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
-            #              x1, output in
-            #              zip(X, nn_output)]
-            #
-            # accuracy_total = []
-            # prediction_total = []
-            # precision_total =[]
-            # recall_total =[]
-            # output_total =[]
-            # metric =0
-            # num_1=0
-            # percentage =[]
-            #
-            # weight = np.ones((1249))
-            # weights=[]
-            #
-            # for prediction0, label in zip(predicted, processed_data['labels']):
-            #     # prediction0 = prediction0.numpy()
-            #     prediction = tf.tanh(prediction0)
-            #     output_total.append(prediction)
-            #     prediction = prediction.numpy()
-            #     prediction[np.where(prediction >= 0)] = 1
-            #     prediction[np.where(prediction < 0)] = -1
-            #     prediction_total.append(prediction)
-            #     class_weights = np.ones(np.shape(label)[0])
-            #     sample_weights = np.ones(np.shape(label)[0])
-            #     if np.min(label) == -1 and np.max(label) == -1 :
-            #
-            #         n_sample0 =np.size(np.where(label == -1)[0])
-            #         n_sample1 = np.size(np.where(label == 1)[0])
-            #         sample_weights = np.array([n_sample1/n_sample0 if i == -1 else 1.0 for i in label])
-            #         # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
-            #         # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
-            #
-            #         # Calculate the inverse of class frequencies as class weights
-            #
-            #         # Set higher weights for the critical class (Class 1)
-            #         critical_class_weight = 2 #10
-            #         # Multiply the class weights by the critical class weight
-            #         sample_weights = np.squeeze(class_weights) * (np.squeeze(label) == -1) * critical_class_weight + (np.squeeze(label) == 1)
-            #         # r = n_sample1/n_sample0
-            #         # r= r/10
-            #         # weight[np.where(label == 1)[0]] = 1249 /(2*n_sample1)
-            #         # weight[np.where(label == -1)[0]] = 1249 /(2*n_sample0)
-            #         # weight = -(r+1)/(r-1), (1-r)/2
-            #         # weight[np.where(label == 1)[0]] = 1
-            #         # weight[np.where(label == -1)[0]] = 10
-            #     weights.append(np.array(sample_weights))
-            #     # accuracy = np.count_nonzero(prediction == label) / np.size(label)
-            #     print(label)
-            #     print(prediction)
-            #     accuracy = accuracy_score(label, prediction)
-            #     # accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
-            #
-            #
-            #     precision = precision_score (label, prediction, sample_weights)
-            #     recall = recall_score(label, prediction, precision_score)
-            #     accuracy_total.append(accuracy)
-            #     precision_total.append(precision)
-            #     recall_total.append(recall)
-            #     # for label1 , prediction1 in zip(label, prediction):
-            #     correct_count = np.sum((label == -1) & (prediction == -1))
-            #     percentage.append(correct_count /np.sum(label == -1))
-            #     #     if label1==-1:
-            #     #         num_1 +=1
-            #     #         # weight.append(10)
-            #     #         if prediction1==-1:
-            #     #             metric +=1
-            #     #     # else:
-            #     #     #     weight.append(1)
-            #     # if num_1 !=0:
-            #     #     percentage.append(metric/num_1)
-            #
-            # hinge_losses = [tf.reduce_mean(np.expand_dims(weights1, axis=1) * tf.maximum(0, 1 - wx * y), axis=0)
-            #                 for wx, y, weights1 in zip(output_total, processed_data['labels'], weights)]
-            #
-            # # hinge_losses = [tf.reduce_mean(tf.multiply((-11/9+y)*-9/2 ,  tf.maximum(0, 1 - wx * y)), axis=0) for wx, y,weights1  in
-            # #                      zip(output_total, processed_data['labels'],weights )] #reduce.mean?
-            # # hinge_losses = [tf.reduce_mean(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
-            # #                      zip(output_total, processed_data['labels'])] #reduce.mean?
-
-
             sample = 1  #600 , 50
-
-
-            # bound = 100
-            # mX = [
-            #     interp1d([0, 2.5], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-            #     interp1d([-3, 3], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-            #     interp1d([-np.pi, np.pi], [-bound*10, bound*10], bounds_error=False, fill_value="extrapolate"),
-            #     interp1d([0, 0.6], [-bound*10, bound], bounds_error=False, fill_value="extrapolate"),
-            # ]
-            #
-            # def normalize(X):
-            #     # 4 x N
-            #     X = np.stack([mx(x) for x, mx in zip(X.transpose(), mX)], axis=0)
-            #     # N X 4
-            #     return X.transpose().astype(np.float32)
 
             biases = nn_output[:, :4]
 
@@ -615,6 +490,16 @@ class BaseModel(object):
                          x1, output in
                          zip(X_kerneled, nn_output[:, 4:])]
 
+            # X[:, 0] =
+            # x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+            # y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+            # h= 0.1
+            # xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+            #                      np.arange(y_min, y_max, h))
+
+            # predicted_contour = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
+            #              x1, output in
+            #              zip(X_kerneled, nn_output[:, 4:])]
 
 
 
@@ -702,28 +587,60 @@ class BaseModel(object):
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
+            camera_pos_13 = raw_data['start_state'][:, :, 2:3]
+            dx = self.p.simulator_params.reachability_map_params.dMax_avoid_xy
+            camera_grid_world_pos_12 = raw_data['start_state'][:, :, :2] / self.p.simulator_params.reachability_map_params.dMax_avoid_xy
+            # SBPDRenderer.get_renderer_already_exists()
+            renderer = SBPDRenderer.get_renderer(self.p.simulator_params.obstacle_map_params.renderer_params)
+
             # 2d plots
-            pdf = PdfPages("output_fov_sample40_FRS.pdf")
-            for WP, prediction, label, C1, image, start_nk3, goal, wp, control in zip(
+            pdf = PdfPages("output_fov_sample40_FRS_4.pdf")
+            for WP, prediction, label, C1, image, start_nk3, goal, wp, speed, robot_pos,robot_head in zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
                     raw_data['img_nmkd'][:, :, :, :3],
                     raw_data['start_state'],
                     raw_data['goal_position_n2'],
                     all_waypoint_sampled,
-                    raw_data['vehicle_controls_nk2'][:, 0]
-                    ):
+                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13):#, predicted_contour):
 
-                # camera_pos_13 = config.heading_nk1()[0]
-                # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-                #
-                # # image of current state
-                # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-                #
-                # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-                #
-                # plt.imshow(np.squeeze(top))
+                # robot
+                crop_size = [100, 100]
+                top = renderer._get_topview(robot_pos, robot_head, crop_size)
+                # ax = plt.figure()
+                fig, ax = plt.subplots()
+                ax.imshow(np.squeeze(top))
+                ax.plot(0, (crop_size[0] - 1) / 2, 'k*')
+                color = ['red' if l == -1 else 'green' for l in label]
+                WP_map_x = (WP[:, 0]/dx + 0)
+                WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
+                plt.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
+                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+                q = plt.quiver(WP_map_x, WP_map_y, u, v)
+                ax.set_title('speed ' + str(speed))
+
+                x_min, x_max = 0, crop_size[0]*dx
+                y_min, y_max = -dx* (crop_size[0] - 1)/2 , dx* (crop_size[0] -1)/2
+                h= 0.05
+                xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                                     np.arange(y_min, y_max, h))
+                hh, ss = np.tile(0, np.shape(xx)), np.tile(speed, np.shape(xx)),
+                X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
+                X_grid = tf.expand_dims(X_grid,axis=0)
+                X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
+                Z = [-np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
+                     x1, output in
+                     zip(X_grid_kerneled, nn_output[:, 4:])]
+                Z = np.array(Z)
+                ax.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
                 # plt.show()
+                #
+                # x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+                # y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+                # xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                #                      np.arange(y_min, y_max, h))
+
 
                 fig = plt.figure()
                 ax1 = fig.add_subplot(221)
@@ -749,13 +666,13 @@ class BaseModel(object):
                 wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
                 wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
                 wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
-                color = ['red' if l == -1 else 'green' for l in label]
+                color = ['red' if l == 1 else 'green' for l in label]
                 ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
                 # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
                 theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
                 u, v = 1 * (np.cos(theta), np.sin(theta))
                 q = ax1.quiver(wp_image_x, wp_image_y, u, v)
-                ax1.set_title('v , w: ' + str(control))
+                ax1.set_title('speed ' + str(speed))
                 # plt.show()
 
 

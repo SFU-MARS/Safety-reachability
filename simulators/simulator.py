@@ -57,7 +57,7 @@ class Simulator(SimulatorHelper):
         commanded_actions_nkf = []
         while not end_episode:
             trajectory_segment, next_config, data, commanded_actions_1kf = self._iterate(
-                config)  # while not get to the goal, or not collide? Keep iterating
+              config)  # while not get to the goal, or not collide? Keep iterating
 
             ###plots
 
