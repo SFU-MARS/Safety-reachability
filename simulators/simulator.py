@@ -58,64 +58,6 @@ class Simulator(SimulatorHelper):
         while not end_episode:
             trajectory_segment, next_config, data, commanded_actions_1kf = self._iterate(
                 config)  # while not get to the goal, or not collide? Keep iterating
-
-            ###plots
-
-            # r = SBPDRenderer.get_renderer_already_exists()
-            # dx_m = 0.05
-            # camera_pos_13 = config.heading_nk1()[0]
-            # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-            #
-            # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-            # fig, ax = plt.subplots()
-            # ax.imshow(img1[0][:, :, 0])
-            # plt.show()
-            #
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111)
-            # obstacle_map = SBPDMap(self.params.obstacle_map_params)
-            # obstacle_map.render(ax)
-            # start_pos_n2 = config.position_nk2()[0]
-            # ax.plot(start_pos_n2[0, 0], start_pos_n2[0, 1], 'k*') #robot
-            # goal_pos_n2 = self.goal_config._position_nk2[0].numpy()
-            # ax.plot(goal_pos_n2[0, 0], goal_pos_n2[0, 1], 'b*')
-            # # pos_nk2 = tf.constant([[[8., 16.], [8., 12.5], [18., 16.5]]], dtype=tf.float32)
-            # # ax.plot(pos_nk2[0, :, 0].numpy(), pos_nk2[0, :, 1].numpy(), 'r.')
-            # pos_nk2 =data['all_waypoint'].position_nk2()
-            # theta_nk1 = data['all_waypoint'].heading_nk1()
-            # # ax.plot(pos_nk2[:, 0, 0].numpy(), pos_nk2[:, 0, 1].numpy(), cmap=data['labels'])
-            # # plt.show()
-            # from matplotlib.colors import ListedColormap
-            # mycmap = ListedColormap(["red", "green"])
-            # label = np.squeeze(data['labels'])
-            # color = ['red' if l == -1 else 'green' for l in label]
-            # # ax.scatter(pos_nk2[:, 0, 0].numpy(), pos_nk2[:, 0, 1].numpy(), c=label, cmap=mycmap)
-            # ax.scatter(pos_nk2[:, 0, 0].numpy(), pos_nk2[:, 0, 1].numpy(), color=color)
-            #
-            # x = pos_nk2[:, 0, 0]
-            # y = pos_nk2[:, 0, 1]
-            # theta = theta_nk1[:, 0, 0]  # theta of the arrow
-            # u, v =  1 * (0.1*np.cos(theta), 0.1*np.sin(theta))
-            #
-            # q = ax.quiver(x, y, u, v)
-            # plt.show()
-            #
-            # fig, ax = plt.subplots()
-            # ax.imshow(data['img_nmkd'][0].astype(np.uint8))
-            # plt.show()
-            #
-            # waypoints_pos_nk2 = data['all_waypoint'].position_nk2()
-            # waypoints_heading_nk1 = data['all_waypoint'].heading_nk1()
-            #
-            # from mpl_toolkits import mplot3d
-            # fig, ax = plt.subplots()
-            # ax = plt.axes(projection="3d")
-            # ax.scatter3D(waypoints_pos_nk2[:, 0, 0].numpy(), waypoints_pos_nk2[:, 0, 1].numpy(),
-            #              waypoints_heading_nk1[:, 0, 0].numpy(), c=label, marker='o', alpha=0.6, cmap=mycmap)
-            # plt.show()
-
-            ### plots end
-
             # Append to Vehicle Data
             for key in vehicle_data.keys():
                 vehicle_data[key].append(data[key])
