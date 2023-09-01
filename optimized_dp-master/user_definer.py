@@ -26,7 +26,7 @@ import matplotlib
 """
 
 g = Grid(np.array([0, 0, -math.pi, 0.0]), np.array([30, 26.05, math.pi, 0.7+0.1]),
-         4, np.array([600, 521, 31, 9]), [2])
+         4, np.array([600, 521, 31, 61]), [2])
 my_car = DubinsCar4D_new2()
 
 # Load value from my map

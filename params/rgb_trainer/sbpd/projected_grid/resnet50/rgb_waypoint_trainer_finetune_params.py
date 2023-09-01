@@ -89,7 +89,7 @@ def create_params():
     # p.trainer.num_samples = int(295)
 
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 10
+    p.trainer.ckpt_save_frequency = 1000
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
     p.trainer.num_epochs = 300
@@ -157,7 +157,7 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-        '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-further']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 

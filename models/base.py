@@ -33,6 +33,7 @@ from sklearn.svm import SVC
 from scipy.interpolate import interp1d
 from sklearn import metrics
 from sbpd.sbpd_renderer import SBPDRenderer
+from itertools import combinations_with_replacement as combinations_w_r
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -101,6 +102,26 @@ class BaseModel(object):
             tilt=0.7853981633974483
         )
         return p
+
+    @staticmethod
+    def polyfeatures(X, degree=3):
+        n_features = X.shape[1]
+
+        combs = []
+        for n in range(1, degree+1):
+            comb = list(combinations_w_r(range(n_features), n))
+            combs.extend(comb)
+
+        features = [tf.ones_like(X[:, 0])]
+
+        for comb in combs:
+            feature = tf.ones_like(X[:, 0])
+            for i in comb:
+                feature *= X[:, i]
+
+            features.append(feature)
+
+        return tf.stack(features, axis=-1)
 
     def compute_loss_function(self, raw_data, param,c,  is_training=None, return_loss_components=False,
                               return_loss_components_and_output=False):
@@ -455,9 +476,14 @@ class BaseModel(object):
 
             X_norm = [normalize(X, bias) for X, bias in zip(feat_train_sc, biases) ]
 
-            poly = PolynomialFeatures(3)
-            X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
-            X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
+            # poly = PolynomialFeatures(3)
+            # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
+            # X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
+
+            X_kerneled = [
+                self.polyfeatures(X) for X in X_norm
+            ]
+            X_kerneled = tf.stack(X_kerneled, axis=0)
 
             # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
 
@@ -632,9 +658,22 @@ class BaseModel(object):
                 hh, ss = np.tile(0, np.shape(xx)), np.tile(speed, np.shape(xx)),
                 X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
                 X_grid = tf.expand_dims(X_grid,axis=0)
-                X_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
-                X_grid_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
-                # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
+                # X_grid_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
+                # X_grid_kerneled = np.array(X_kerneled)
+                X_grid_kerneled = [
+                    self.polyfeatures(tf.constant(X)) for X in X_grid
+                ]
+                X_grid_kerneled = tf.stack(X_grid_kerneled, axis=0)
+
+                # ta = tf.TensorArray(tf.float32, size=np.size(X_kerneled), dynamic_size=True, clear_after_read=False)
+                # v = tf.contrib.eager.Variable(1, dtype=tf.float32)
+                # for idx, i in X_kerneled:
+                #     for jdx, j in i:
+                #         for kdx, k in j:
+                #             v.assign_add(k)
+                #             ta = ta.write([idx, jdx, kdx], v)
+                # X_grid_kerneled = ta
+                # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
                 Z = [-np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
                      x1, output in
                      zip(X_grid_kerneled, nn_output[:, 4:])]
@@ -982,3 +1021,16 @@ def standardize(X_tr):
     return X_tr
 
 
+if __name__ == '__main__':
+    tf.enable_eager_execution()
+    X = tf.constant(np.random.rand(20, 4).astype(np.float32))
+    # X = tf.constant(np.asarray(range(1, 5)).reshape(1, 4).astype(np.float32))
+    feats = BaseModel.polyfeatures(X, degree=3)
+    print('inp', X.numpy())
+    print('out\n', feats.numpy())
+
+    poly = PolynomialFeatures(3)
+    X_kerneled = poly.fit_transform(X).astype(np.float32)
+    print(f'{X_kerneled}')
+    print(X_kerneled - feats.numpy())
+    print(np.mean(X_kerneled - feats.numpy()))

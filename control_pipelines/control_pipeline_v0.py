@@ -20,62 +20,6 @@ from scipy.optimize import LinearConstraint
 
 
 # Function to take states, inputs and return the flat flag
-def vehicle_flat_forward(x, u):
-    # Get the parameter values
-    # Create a list of arrays to store the flat output and its derivatives
-    zflag = [np.zeros(4), np.zeros(4)]
-    # Flat output is the x, y position of the rear wheels
-    zflag[0][0] = x[0]
-    zflag[1][0] = x[1]
-    theta = x[2]
-    vel = x[3]
-    # zflag[3][0] = x[3]
-    # First derivatives of the flat output
-    zflag[0][1] = vel * np.cos(theta)  # dx/dt
-    zflag[1][1] = vel * np.sin(theta)  # dy/dt
-    # zflag[2][1] = u[0]
-    # zflag[3][1] = u[1]
-    # First derivative of the angle
-    thdot = u[0]
-    vdot = u[1]
-    # Second derivatives of the flat output (setting vdot = 0)
-    zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
-    zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
-    return zflag
-
-
-# Function to take the flat flag and return states, inputs
-def vehicle_flat_reverse(zflag):
-    # Get the parameter values
-    # Create a vector to store the state and inputs
-    x = np.zeros(4)
-    u = np.zeros(2)
-    # Given the flat variables, solve for the state
-    x[0] = zflag[0][0]  # x position
-    x[1] = zflag[1][0]  # y position
-    x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
-    x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
-    # And next solve for the inputs
-    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
-            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2+1e-5)
-    u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
-    return x, u
-
-
-u0 = [0, 0]
-uf = [0, 0]
-dt = 0.05
-t = np.linspace(0, [6], 1 / dt)
-vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2,
-                             states=4)
-import numpy as np
-import matplotlib.pyplot as plt
-import control as ct
-import control.flatsys as fs
-import control.optimal as opt
-
-
-# Function to take states, inputs and return the flat flag
 def vehicle_flat_forward(x, u, params={}):
     # Get the parameter values
     # Create a list of arrays to store the flat output and its derivatives
@@ -120,7 +64,6 @@ def vehicle_flat_reverse(zflag, params={}):
 
 
 
-
 class ControlPipelineV0(ControlPipelineBase):
     """
     A control pipeline that generate dynamically feasible spline trajectories of varying horizon.
@@ -131,6 +74,7 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(params.binning_parameters.min_speed, params.binning_parameters.max_speed,
                                             params.binning_parameters.num_bins)  # Divide velocity bins
+        print('self.start_velocities:', self.start_velocities)
         self.helper = ControlPipelineV0Helper()
         self.instance_variables_loaded = False
         super(ControlPipelineV0, self).__init__(params)
@@ -364,7 +308,7 @@ class ControlPipelineV0(ControlPipelineBase):
 
 
         # self.spline_trajectory._acceleration_nk1.assign(tf.convert_to_tensor(accs))
-        self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate(xs,ys))
+        self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate((xs,ys), axis=2))
         self.spline_trajectory._heading_nk1 = tf.convert_to_tensor(headings)
         self.spline_trajectory._acceleration_nk1 = tf.convert_to_tensor(accs)
         self.spline_trajectory._speed_nk1 = tf.convert_to_tensor(speeds)
@@ -377,7 +321,9 @@ class ControlPipelineV0(ControlPipelineBase):
         p = self.params
         times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None], [self.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
         final_times_n1 = tf.ones((self.n, 1), dtype=tf.float32) * p.planning_horizon_s
-        # self.spline_trajectory.fit(start_config, goal_config, final_times_n1=final_times_n1)
+
+        # self.spline_trajectory.final_times_n1.assign(tf.convert_to_tensor(final_times_n1))
+        # valid_idxs = self.spline_trajectory.fit1(start_config, goal_config, final_times_n1=final_times_n1)
         # self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
         # self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(
         #     speed_max_system=self.system_dynamics.v_bounds[1],
@@ -385,9 +331,10 @@ class ControlPipelineV0(ControlPipelineBase):
 
 
         # valid_idxs = self.spline_trajectory.find_trajectories_within_a_horizon(p.planning_horizon_s)
-        horizons_n1 = self.spline_trajectory.final_times_n1
-
+        # horizons_n1 = self.spline_trajectory.final_times_n1
+        horizons_n1 = final_times_n1
         # Only keep the valid problems and corresponding splines and horizons
+        valid_idxs = np.array(valid_idxs)
         start_config.gather_across_batch_dim(valid_idxs)
         goal_config.gather_across_batch_dim(valid_idxs)
         horizons_n1 = tf.gather(horizons_n1, valid_idxs)
@@ -448,6 +395,7 @@ class ControlPipelineV0(ControlPipelineBase):
         if self.params.verbose:
             # N = self.params.waypoint_params.n
             N = self.n
+            print('self.start_velocities:', self.start_velocities)
             for v0, start_config in zip(self.start_velocities, self.start_configs):
                 print('Velocity: {:.3f}, {:.3f}% of goals kept({:d}).'.format(v0, 100.*start_config.n/N,
                                                                               start_config.n))
@@ -615,7 +563,7 @@ class ControlPipelineV0(ControlPipelineBase):
         p = self.params.waypoint_params
 
         FRS = np.load(
-            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result2/FRS_v{}_H6.npy'.format(
+            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result3/FRS_v{:.2f}_H6.npy'.format(
                 v0))
         result = np.where(FRS <= 0)
         n = len(result[0])

@@ -148,7 +148,8 @@ class Trajectory(object):
     def gather_across_batch_dim(self, idxs):
         """Given a tensor of indexes to gather in the batch dimension,
         update this trajectories instance variables and shape."""
-        self.n = len(idxs.numpy())
+        # self.n = len(idxs.numpy())
+        self.n = len(idxs)
         self._position_nk2 = tf.gather(self._position_nk2, idxs)
         self._speed_nk1 = tf.gather(self._speed_nk1, idxs)
         self._acceleration_nk1 = tf.gather(self._acceleration_nk1, idxs)

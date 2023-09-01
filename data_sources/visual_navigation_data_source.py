@@ -247,7 +247,9 @@ class VisualNavigationDataSource(ImageDataSource):
         i = 0
         for waypoints in simulator.vehicle_data['all_waypoint']:
             waypoints_n13 = waypoints.position_and_heading_nk3().numpy()
-            data['all_waypoint'].append(np.concatenate((np.squeeze(waypoints_n13),waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1))
+            # data['all_waypoint'].append(np.concatenate((np.squeeze(waypoints_n13),waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1))
+            data['all_waypoint'].append(
+                np.concatenate((waypoints_n13, waypoints._speed_nk1.numpy()), axis=2).reshape(-1, 1))
             start = np.tile(start_nk3[i], (np.shape(waypoints_n13)[0], 1, 1))
             waypoints_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(start, waypoints_n13)
             waypoints_ego =np.concatenate((waypoints_ego[:, 0],waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1)
@@ -285,7 +287,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 10 # MIN # OF WPS 4000
+        N = 40 # MIN # OF WPS 4000
 
         # N = 200
         # randomRow = np.random.randint(3, size=N)
