@@ -8,6 +8,7 @@ from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
+from trajectory.spline.spline_3rd_order import vehicle_flat_forward, vehicle_flat_reverse
 import math
 
 
@@ -19,47 +20,47 @@ import control.optimal as opt
 from scipy.optimize import LinearConstraint
 
 
-# Function to take states, inputs and return the flat flag
-def vehicle_flat_forward(x, u, params={}):
-    # Get the parameter values
-    # Create a list of arrays to store the flat output and its derivatives
-    zflag = [np.zeros(4), np.zeros(4)]
-    # Flat output is the x, y position of the rear wheels
-    zflag[0][0] = x[0]
-    zflag[1][0] = x[1]
-    theta = x[2]
-    vel = x[3]
-    # zflag[3][0] = x[3]
-    # First derivatives of the flat output
-    zflag[0][1] = vel * np.cos(theta)  # dx/dt
-    zflag[1][1] = vel * np.sin(theta)  # dy/dt
-    # zflag[2][1] = u[0]
-    # zflag[3][1] = u[1]
-    # First derivative of the angle
-    thdot = u[0]
-    vdot = u[1]
-    # Second derivatives of the flat output (setting vdot = 0)
-    zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
-    zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
-    return zflag
-
-
-# Function to take the flat flag and return states, inputs
-def vehicle_flat_reverse(zflag, params={}):
-    # Get the parameter values
-    # Create a vector to store the state and inputs
-    x = np.zeros(4)
-    u = np.zeros(2)
-    # Given the flat variables, solve for the state
-    x[0] = zflag[0][0]  # x position
-    x[1] = zflag[1][0]  # y position
-    x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
-    x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
-    # And next solve for the inputs
-    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
-            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2+1e-5)
-    u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
-    return x, u
+# # Function to take states, inputs and return the flat flag
+# def vehicle_flat_forward(x, u, params={}):
+#     # Get the parameter values
+#     # Create a list of arrays to store the flat output and its derivatives
+#     zflag = [np.zeros(4), np.zeros(4)]
+#     # Flat output is the x, y position of the rear wheels
+#     zflag[0][0] = x[0]
+#     zflag[1][0] = x[1]
+#     theta = x[2]
+#     vel = x[3]
+#     # zflag[3][0] = x[3]
+#     # First derivatives of the flat output
+#     zflag[0][1] = vel * np.cos(theta)  # dx/dt
+#     zflag[1][1] = vel * np.sin(theta)  # dy/dt
+#     # zflag[2][1] = u[0]
+#     # zflag[3][1] = u[1]
+#     # First derivative of the angle
+#     thdot = u[1]
+#     vdot = u[0]
+#     # Second derivatives of the flat output (setting vdot = 0)
+#     zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
+#     zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
+#     return zflag
+#
+#
+# # Function to take the flat flag and return states, inputs
+# def vehicle_flat_reverse(zflag, params={}):
+#     # Get the parameter values
+#     # Create a vector to store the state and inputs
+#     x = np.zeros(4)
+#     u = np.zeros(2)
+#     # Given the flat variables, solve for the state
+#     x[0] = zflag[0][0]  # x position
+#     x[1] = zflag[1][0]  # y position
+#     x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
+#     x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
+#     # And next solve for the inputs
+#     u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
+#             (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2+1e-5)
+#     u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
+#     return x, u
 
 
 
@@ -274,9 +275,12 @@ class ControlPipelineV0(ControlPipelineBase):
         import tqdm
         for idx, xf in tqdm.tqdm(enumerate(xfs), total=xfs.shape[0]):
             try:
-                traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf, basis=None, # fs.PolyFamily(8),
-                                               constraints=trajectory_constraints)
-            except RuntimeError:
+                traj_const = fs.point_to_point(
+                    vehicle_flat, t, x0, u0, xf, uf, basis=None, # fs.PolyFamily(18),
+                    constraints=trajectory_constraints
+               )
+            except RuntimeError as e:
+                print(e)
                 continue
             # ,cost=cost_fcn)
             # Create the trajectory
@@ -565,7 +569,10 @@ class ControlPipelineV0(ControlPipelineBase):
         FRS = np.load(
             '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result3/FRS_v{:.2f}_H6.npy'.format(
                 v0))
-        result = np.where(FRS <= 0)
+        if v0<0.05:
+            result = np.where(FRS <= 0)
+        else:
+            result = np.where(FRS[:,:,:,:-5] <= 0)
         n = len(result[0])
         wx_n_all = 0 + result[0] * 5 / 100
         wy_n_all = -5 + result[1] * 10 / 100

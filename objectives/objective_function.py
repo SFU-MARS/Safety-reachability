@@ -102,7 +102,7 @@ class ObjectiveFunction(object):
                 if tag == 'avoid_4d':
                     obj = objective_values
                     label_11 = (np.min(np.sign(obj.numpy()), axis=1))
-                    label_11[np.where(label_11 == 0)[0]] = -1  # -1 and 1
+                    label_11[np.where(label_11 <= 0)[0]] = -1  # -1 and 1
                     # label_01 = (np.min((obj.numpy()), axis=1))== 100
                     # label_11 = 2 * label_01 - 1
                     # labels = np.reshape(np.array(label_11), (1, -1))

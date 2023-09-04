@@ -38,7 +38,7 @@ my_car = DubinsCar4D(uMin=[-1.1, -0.4], uMax=[1.1, 0.4],
 horizon = 6
 t_step = 0.05
 
-v_init = np.linspace(0.3, 0.6, 31)
+v_init = np.linspace(0.25, 0.3, 6)
 tau = np.arange(start= 0, stop= horizon + t_step, step = t_step)
 
 compMethods = { "TargetSetMode": "minVWithVInit"}

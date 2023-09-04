@@ -10,7 +10,7 @@ from scipy.optimize import LinearConstraint
 def vehicle_flat_forward(x, u, params={}):
     # Get the parameter values
     # Create a list of arrays to store the flat output and its derivatives
-    zflag = [np.zeros(4), np.zeros(4)]
+    zflag = [np.zeros(3), np.zeros(3)]
     # Flat output is the x, y position of the rear wheels
     zflag[0][0] = x[0]
     zflag[1][0] = x[1]
@@ -23,11 +23,11 @@ def vehicle_flat_forward(x, u, params={}):
     # zflag[2][1] = u[0]
     # zflag[3][1] = u[1]
     # First derivative of the angle
-    thdot = u[0]
-    vdot = u[1]
+    thdot = u[1]
+    vdot = u[0]
     # Second derivatives of the flat output (setting vdot = 0)
-    zflag[0][2] = - vel * thdot * np.sin(theta) + vdot * np.cos(theta)
-    zflag[1][2] = vel * thdot * np.cos(theta) + vdot * np.sin(theta)
+    zflag[0][2] = (- vel * thdot * np.sin(theta)) + (vdot * np.cos(theta))
+    zflag[1][2] = (vel * thdot * np.cos(theta)) + (vdot * np.sin(theta))
     return zflag
 
 
@@ -35,18 +35,32 @@ def vehicle_flat_forward(x, u, params={}):
 def vehicle_flat_reverse(zflag, params={}):
     # Get the parameter values
     # Create a vector to store the state and inputs
-    x = np.zeros(4)
+    X = np.zeros(4)
     u = np.zeros(2)
+
+    x = zflag[0][0]
+    y = zflag[1][0]
+
+    xd = zflag[0][1]
+    yd = zflag[1][1]
+
+    xdd = zflag[0][2]
+    ydd = zflag[1][2]
+
+    theta = np.arctan2(yd, xd+1e-5)
+    v = np.linalg.norm([yd, xd])
+
     # Given the flat variables, solve for the state
-    x[0] = zflag[0][0]  # x position
-    x[1] = zflag[1][0]  # y position
-    x[2] = np.arctan2(zflag[1][1], zflag[0][1])  # tan(theta) = ydot/xdot
-    x[3] = np.linalg.norm([zflag[1][1], zflag[0][1]])
+    X[0] = x  # x position
+    X[1] = y # y position
+    X[2] = theta # tan(theta) = ydot/xdot
+    X[3] = v
     # And next solve for the inputs
-    u[0] = 1 / (1 + (zflag[0][1] / zflag[0][1]) ** 2) * (
-            (zflag[1][2] * zflag[0][1]) - (zflag[0][2] * zflag[1][1])) / (zflag[0][1] ** 2 + 1e-5)
-    u[1] = 0.5 * (1 / x[3]) * (2 * zflag[1][2] * zflag[1][1] + 2 * zflag[0][2] * zflag[0][1])
-    return x, u
+    u[1] = 1 / (1 + (yd / (xd + 1e-5)) ** 2) * (
+            (ydd * xd) - (xdd * yd) / (xd ** 2 + 1e-5)
+    )
+    u[0] = 1.0 / (2*(v + 1e-5)) * ((2 * ydd * yd) + (2 * xdd * xd))
+    return X, u
 
 
 class Spline3rdOrder(Spline):
@@ -61,90 +75,92 @@ class Spline3rdOrder(Spline):
     """
 
 
-    def fit1(self, start_config, goal_config, final_times_n1=None, factors=None):
-
-        u0 = np.asarray([0, 0])
-        uf = np.asarray([0, 0])
-        dt = 0.05
-        t = np.arange(0, 6, dt)
-        Av = np.zeros((3, 6))
-        Av[0, 3] = 1
-        Av[1, 4] = 1
-        Av[2, 5] = 1
-        lbv = [0, -0.4, -1.1]
-        ubv = [0.7, 0.4, 1.1]
-
-        trajectory_constraints = [
-            (LinearConstraint, Av, lbv, ubv)
-        ]
-        vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2, states=4)
-        # x0=start_config
-        x0 = start_config.position_heading_speed_nk4()[0].numpy().reshape((4,))
-        # xf=goal_config
-
-        xfs = goal_config.position_heading_speed_nk4().numpy().reshape((-1, 4))
-        xs, ys, headings, speeds, accs, omegas = [], [], [], [], [], []
-        valid_idxs = []
-
-        import tqdm
-        for idx, xf in tqdm.tqdm(enumerate(xfs), total=xfs.shape[0]):
-            try:
-                traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf, basis=None,  # fs.PolyFamily(8),
-                                               constraints=trajectory_constraints)
-            except RuntimeError:
-                continue
-            # ,cost=cost_fcn)
-            # Create the trajectory
-            # x, u = traj_const.eval(t)
-            # traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf,
-            #                                basis=fs.PolyFamily(8))  # constraints=constraints,
-            # ,cost=cost_fcn)
-            # Create the trajectory
-
-            valid_idxs.append(idx)
-            x, u = traj_const.eval(t)
-            xs.append(x[0, :])
-            ys.append(x[1, :])
-            headings.append(x[2, :])
-            speeds.append(x[3, :])
-            accs.append(u[0, :])
-            omegas.append(u[1, :])
-
-        xs, ys, headings, speeds, accs, omegas \
-            = np.stack(xs), np.stack(ys), np.stack(headings), np.stack(speeds), np.stack(accs), np.stack(omegas)
-
-        xs = xs[:, :, np.newaxis].astype(np.float32)
-        ys = ys[:, :, np.newaxis].astype(np.float32)
-        headings = headings[:, :, np.newaxis].astype(np.float32)
-        omegas = omegas[:, :, np.newaxis].astype(np.float32)
-        accs = accs[:, :, np.newaxis].astype(np.float32)
-        # accs = np.stack([accs[0] for _ in range(21483)])
-        speeds = speeds[:, :, np.newaxis].astype(np.float32)
-
-        # self.spline_trajectory._acceleration_nk1.assign(tf.convert_to_tensor(accs))
-        self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate((xs, ys), axis=2))
-        self.spline_trajectory._heading_nk1 = tf.convert_to_tensor(headings)
-        self.spline_trajectory._acceleration_nk1 = tf.convert_to_tensor(accs)
-        self.spline_trajectory._speed_nk1 = tf.convert_to_tensor(speeds)
-        self.spline_trajectory._angular_speed_nk1 = tf.convert_to_tensor(omegas)
-
-        self.spline_trajectory.vars = [self.spline_trajectory._position_nk2, self.spline_trajectory._speed_nk1,
-                                       self.spline_trajectory._acceleration_nk1, self.spline_trajectory._heading_nk1,
-                                       self.spline_trajectory._angular_speed_nk1,
-                                       self.spline_trajectory._angular_acceleration_nk1]
-
-        p = self.params
-        times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None],
-                           [self.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
-        final_times_n1 = tf.ones((self.n, 1), dtype=tf.float32) * p.planning_horizon_s
-        self.final_times_n1 = final_times_n1
-
-        # Update the batch size as the same spline object
-        # can be used with multiple start/ goal configurations
-        self.n = start_config.n
-        self.valid_horizons_n1 = tf.ceil(self.final_times_n1 / self.dt)
-
-        return valid_idxs
+    # def fit1(self, start_config, goal_config, final_times_n1=None, factors=None):
+    #
+    #     u0 = np.asarray([0, 0])
+    #     uf = np.asarray([0, 0])
+    #     dt = 0.05
+    #     t = np.arange(0, 6, dt)
+    #     Av = np.zeros((3, 6))
+    #     Av[0, 3] = 1
+    #     Av[1, 4] = 1
+    #     Av[2, 5] = 1
+    #     lbv = [0, -0.4, -1.1]
+    #     ubv = [0.7, 0.4, 1.1]
+    #
+    #     trajectory_constraints = [
+    #         (LinearConstraint, Av, lbv, ubv)
+    #     ]
+    #     vehicle_flat = fs.FlatSystem(forward=vehicle_flat_forward, reverse=vehicle_flat_reverse, inputs=2, states=4)
+    #     # x0=start_config
+    #     x0 = start_config.position_heading_speed_nk4()[0].numpy().reshape((4,))
+    #     # xf=goal_config
+    #
+    #     xfs = goal_config.position_heading_speed_nk4().numpy().reshape((-1, 4))
+    #     xs, ys, headings, speeds, accs, omegas = [], [], [], [], [], []
+    #     valid_idxs = []
+    #
+    #     import tqdm
+    #     for idx, xf in tqdm.tqdm(enumerate(xfs), total=xfs.shape[0]):
+    #         try:
+    #             traj_const = fs.point_to_point(
+    #                 vehicle_flat, t, x0, u0, xf, uf, basis=None,  # fs.PolyFamily(8),
+    #                 # constraints=trajectory_constraints
+    #             )
+    #         except RuntimeError:
+    #             continue
+    #         # ,cost=cost_fcn)
+    #         # Create the trajectory
+    #         # x, u = traj_const.eval(t)
+    #         # traj_const = fs.point_to_point(vehicle_flat, t, x0, u0, xf, uf,
+    #         #                                basis=fs.PolyFamily(8))  # constraints=constraints,
+    #         # ,cost=cost_fcn)
+    #         # Create the trajectory
+    #
+    #         valid_idxs.append(idx)
+    #         x, u = traj_const.eval(t)
+    #         xs.append(x[0, :])
+    #         ys.append(x[1, :])
+    #         headings.append(x[2, :])
+    #         speeds.append(x[3, :])
+    #         accs.append(u[0, :])
+    #         omegas.append(u[1, :])
+    #
+    #     xs, ys, headings, speeds, accs, omegas \
+    #         = np.stack(xs), np.stack(ys), np.stack(headings), np.stack(speeds), np.stack(accs), np.stack(omegas)
+    #
+    #     xs = xs[:, :, np.newaxis].astype(np.float32)
+    #     ys = ys[:, :, np.newaxis].astype(np.float32)
+    #     headings = headings[:, :, np.newaxis].astype(np.float32)
+    #     omegas = omegas[:, :, np.newaxis].astype(np.float32)
+    #     accs = accs[:, :, np.newaxis].astype(np.float32)
+    #     # accs = np.stack([accs[0] for _ in range(21483)])
+    #     speeds = speeds[:, :, np.newaxis].astype(np.float32)
+    #
+    #     # self.spline_trajectory._acceleration_nk1.assign(tf.convert_to_tensor(accs))
+    #     self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate((xs, ys), axis=2))
+    #     self.spline_trajectory._heading_nk1 = tf.convert_to_tensor(headings)
+    #     self.spline_trajectory._acceleration_nk1 = tf.convert_to_tensor(accs)
+    #     self.spline_trajectory._speed_nk1 = tf.convert_to_tensor(speeds)
+    #     self.spline_trajectory._angular_speed_nk1 = tf.convert_to_tensor(omegas)
+    #
+    #     self.spline_trajectory.vars = [self.spline_trajectory._position_nk2, self.spline_trajectory._speed_nk1,
+    #                                    self.spline_trajectory._acceleration_nk1, self.spline_trajectory._heading_nk1,
+    #                                    self.spline_trajectory._angular_speed_nk1,
+    #                                    self.spline_trajectory._angular_acceleration_nk1]
+    #
+    #     p = self.params
+    #     times_nk = tf.tile(tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None],
+    #                        [self.n, 1])  # number of waypoints * number of planning horizon. maximum time = 6
+    #     final_times_n1 = tf.ones((self.n, 1), dtype=tf.float32) * p.planning_horizon_s
+    #     self.final_times_n1 = final_times_n1
+    #
+    #     # Update the batch size as the same spline object
+    #     # can be used with multiple start/ goal configurations
+    #     self.n = start_config.n
+    #     self.valid_horizons_n1 = tf.ceil(self.final_times_n1 / self.dt)
+    #
+    #     return valid_idxs
 
 
     def fit(self, start_config, goal_config, final_times_n1=None, factors=None):  # Get the coefficients of Spline based on start and goal

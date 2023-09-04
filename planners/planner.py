@@ -123,6 +123,7 @@ class Planner(object):
         data_last['system_config'] = data['system_config'][last_data_idx]
         data_last['waypoint_config'] = data['waypoint_config'][last_data_idx]
         data_last['trajectory'] = data['trajectory'][last_data_idx]
+
         data_last['spline_trajectory'] = data['spline_trajectory'][last_data_idx]
         data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]]
         data_last['K_nkfd'] = data['K_nkfd'][last_data_idx]

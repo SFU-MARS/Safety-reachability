@@ -14,7 +14,7 @@ def create_params():
     # p.seed = 12
 
     # Horizons in seconds
-    p.episode_horizon_s = 1.5#80
+    p.episode_horizon_s = 1.5 #80
     # TODO: when generating training data, we use control_horizon_s=1.5s, when testing, we find 0.25s will have the
     #  best performance for WayPtNav-reachability
     p.control_horizon_s = 1.5  # For data generation
@@ -33,8 +33,8 @@ def create_params():
     p.avoid_obstacle_objective = DotMap(#obstacle_margin0=0.25,
                                         #obstacle_margin1=0.45,
 
-                                        obstacle_margin0=0.9,
-                                        obstacle_margin1=1.5,
+                                        obstacle_margin0=0.3,
+                                        obstacle_margin1=0.5,
 
                                         power=3,
                                         obstacle_cost=1.0)
