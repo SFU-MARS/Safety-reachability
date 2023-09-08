@@ -53,7 +53,7 @@ class DubinsCar(Dynamics):
         ref_config is the origin. If mode is assign the result is assigned to traj_egocentric. If
         mode is new a new trajectory object is returned."""
 
-        ego_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
+        ego_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_world_coordinates(
             ref_config.position_and_heading_nk3().numpy(),
             traj_world.position_and_heading_nk3().numpy())
         position_nk2 = ego_position_and_heading_nk3[:, :, :2]

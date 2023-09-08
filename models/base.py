@@ -657,17 +657,17 @@ class BaseModel(object):
                 WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
                 plt.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
 
-                traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-                    np.expand_dims(start_nk3, 0),
-                    np.expand_dims(traj[:, :3], 0)
-                )
-                traj_x = (traj_ego[:, 0] / dx + 0)
-                traj_y = (traj_ego[:, 1] / dx + (crop_size[0] - 1) / 2)
-                plt.plot(traj_x, traj_y)
-
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = plt.quiver(WP_map_x, WP_map_y, u, v)
+                # traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
+                #     np.expand_dims(start_nk3, 0),
+                #     traj[:,:, :3]
+                # )
+                traj_x = (traj[:,:,  0] / dx + 0)
+                traj_y = (traj[:,:, 1] / dx + (crop_size[0] - 1) / 2)
+                theta = np.pi / 2 + traj[:,:, 2]
+                for i, _ in enumerate (traj_x):
+                    plt.plot(traj_x[i], traj_y[i] )
+                    u, v = 1 * (np.cos(theta), np.sin(theta))
+                    q = ax4.quiver(traj_x, traj_y, u, v)
                 ax4.set_title('speed ' + str(speed))
 
                 x_min, x_max = 0, crop_size[0]*dx
@@ -706,6 +706,7 @@ class BaseModel(object):
                      x1, output in
                      zip(X_grid_kerneled, kernel_weights)]
                 Z = np.array(Z)
+
                 ax4.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
                 # plt.show()
                 #
@@ -734,19 +735,19 @@ class BaseModel(object):
 
 
 
-                # Initialize and Create a grid
-                grid = p.grid(p)
-                wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
-                wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
-                wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
-                color = ['red' if l == 1 else 'green' for l in label]
-                ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # # Initialize and Create a grid
+                # grid = p.grid(p)
+                # wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
+                # wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
+                # wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
+                # # color = ['red' if l == 1 else 'green' for l in label]
                 # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = ax1.quiver(wp_image_x, wp_image_y, u, v)
-                ax1.set_title('speed ' + str(speed))
-                # plt.show()
+                # # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
+                # u, v = 1 * (np.cos(theta), np.sin(theta))
+                # q = ax1.quiver(wp_image_x, wp_image_y, u, v)
+                # ax1.set_title('speed ' + str(speed))
+                # # plt.show()
 
 
                 # matplotlib.use('Qt4Agg')
@@ -762,7 +763,7 @@ class BaseModel(object):
                 #               wrong[:, 2], s=80, edgecolors="k")
                 # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
 
-                color = ['red' if l == 1 else 'green' for l in label]
+                # color = ['red' if l == 1 else 'green' for l in label]
                 # mycmap = ListedColormap(["red", "green"])
 
                 # ax2.scatter3D(WP[:, 0], WP[:, 1],
@@ -828,7 +829,7 @@ class BaseModel(object):
                 # ax4.set_title('accuracy: ' + str(accuracy))
                 # ax4.scatter(WP[:, 0], WP[:, 1]
                 #             , c=np.squeeze(prediction), marker='o', alpha=0.6, cmap=mycmap)
-                q1 = ax4.quiver(x, y, u, v)
+                # q1 = ax4.quiver(x, y, u, v)
 
                 # ax4.scatter(safe[:, 0], safe[:, 1], s=80, edgecolors="g")
                 # ax4.scatter(unsafe[:, 0], unsafe[:, 1], s=80, edgecolors="r")

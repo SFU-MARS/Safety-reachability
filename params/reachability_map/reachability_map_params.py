@@ -25,13 +25,13 @@ def create_params():
     p.clip_extension = np.float32(2.0)
 
     # System dynamics (state constraints and discretization)
-    p.theta_dim = int(30)
+    p.theta_dim = int(31)
     p.v_dim = int(31)
-    p.v_dv = float(.1)
+    p.v_dv = float(0.6/31)
     p.wMax = float(1.1)
     p.aMax = float(.4)
     p.v_high = float(.7)
-    p.v_low = float(-.1)
+    p.v_low = float(0)
 
     # System dynamics (disturbances constraints)
     # Additive disturbances

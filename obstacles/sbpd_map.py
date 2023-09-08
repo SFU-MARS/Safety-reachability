@@ -120,8 +120,8 @@ class SBPDMap(ObstacleMap):
             dist_to_nearest_obs_nmk1 = tf.reshape(dist_to_nearest_obs_nk2, (n, m, k, 1))
             imgs = 0.5 * (1. - tf.sign(dist_to_nearest_obs_nmk1)).numpy()
         else:
-            starts_n2 = self._point_to_map(pos_n3[:, :2])
-            thetas_n1 = pos_n3[:, 2:3]
+            starts_n2 = self._point_to_map(pos_n3[:,:2])
+            thetas_n1 = pos_n3[:,2:3]
             imgs = self._r.render_images(starts_n2, thetas_n1,pos_n3, **kwargs)
             # topviews= self._r._get_topview(starts_n2, thetas_n1, **kwargs)
         # return imgs , topviews

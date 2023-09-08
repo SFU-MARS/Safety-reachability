@@ -91,7 +91,7 @@ class ObjectiveFunction(object):
                 if tag == 'reach_avoid_4d' or 'avoid_4d':
                 # if tag == 'avoid_4d':
                     objective_function_values += self._reduce_objective_values(trajectory, objective_values)
-
+                    #
                     # labels = self._reduce_objective_values(trajectory, objective_values)
         else:
             for tag, objective_values in objective_values_by_tag:
