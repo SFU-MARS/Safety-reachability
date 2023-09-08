@@ -30,12 +30,6 @@ class Avoid4d(Objective):
         # 100 - avoid value:, 0 means never enter the obstacles. 100 means in the obstacles
         avoid_4d_negative = tf.subtract(largest_ttr, avoid_4d)
 
-        # If freezing the cost:
-        # try:
-        #     avoid_4d_negative = self._freeze_cost_obstacle_enter(avoid_4d_negative)
-        # except ValueError:
-        #     print("cannot freeze_cost_obstacle_enter in avoid 4d")
-
         return self.avoid_4d_ttr_scale * avoid_4d_negative
 
 

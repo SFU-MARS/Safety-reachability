@@ -427,13 +427,10 @@ class Simulator(SimulatorHelper):
                     objective.fmm_map = self.fmm_map
                 elif isinstance(objective, AngleDistance):
                     objective.fmm_map = self.fmm_map
+
             elif self.params.cost == 'reachability':
-                if isinstance(objective, ReachAvoid4d):
+                if isinstance(objective, Avoid4d):
                     objective.reachability_map = self.reachability_map
-                elif isinstance(objective, Avoid4d):
-                    objective.reachability_map = self.reachability_map
-                elif isinstance(objective, GoalDistance):
-                    objective.fmm_map = self.fmm_map
             else:
                 assert (False)
 
@@ -479,14 +476,6 @@ class Simulator(SimulatorHelper):
             if not p.avoid_4d_objective.empty():
                 obj_fn.add_objective(Avoid4d(
                     params=p.avoid_4d_objective,
-                    reachability_map=None))
-            if not p.goal_distance_objective.empty():
-                obj_fn.add_objective(GoalDistance(
-                    params=p.goal_distance_objective,
-                    fmm_map=None))
-            if not p.reach_avoid_4d_objective.empty():
-                obj_fn.add_objective(ReachAvoid4d(
-                    params=p.reach_avoid_4d_objective,
                     reachability_map=None))
         return obj_fn
 

@@ -31,6 +31,7 @@ def create_params():
     p.wMax = float(1.1)
     p.aMax = float(.4)
     p.v_high = float(.7)
+    #p.v_low = float(0.)
     p.v_low = float(-.1)
 
     # System dynamics (disturbances constraints)
