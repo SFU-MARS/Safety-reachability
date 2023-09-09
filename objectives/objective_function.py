@@ -37,26 +37,11 @@ class ObjectiveFunction(object):
         """
         Evaluate each objective corresponding to a system trajectory.
         """
-        objective_values_by_tag = []
         avoid_values_by_tag=[]
-        reachability_cost = False
 
-        # judge the cost to use, if there is ReachAvoid4d, there must be reachability cost
         for objective in self.objectives:
             if isinstance(objective, Avoid4d):
-                reachability_cost = True
-
-        if reachability_cost:
-            for objective in self.objectives:
-                if isinstance(objective, Avoid4d):
-                    # objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
-                    # if isinstance(objective, Avoid4d):
-                    avoid_values_by_tag.append([objective.tag, objective.evaluate_avoid(trajectory)])
-
-        else:
-            for objective in self.objectives:
-                objective_values_by_tag.append([objective.tag, objective.evaluate_objective(trajectory)])
-
+                avoid_values_by_tag.append([objective.tag, objective.evaluate_avoid(trajectory)])
 
         return avoid_values_by_tag
 
@@ -66,8 +51,6 @@ class ObjectiveFunction(object):
         """
         objective_values_by_tag = self.evaluate_function_by_objective(trajectory)
         objective_function_values = 0.
-        objective_distance_to_goal = 0.
-        objective_function_values_init = 0.
         labels=[]
 
         reachability_cost = False
