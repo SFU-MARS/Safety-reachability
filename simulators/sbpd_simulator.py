@@ -30,7 +30,7 @@ class SBPDSimulator(Simulator):
         else:
             kwargs = {}
 
-        img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+        img_nmkd = self.get_observation(pos_n3=data_dict['start_state'][:,0,:],
                                         **kwargs)
         # top_view = self.get_topview(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
         #                                 **kwargs)

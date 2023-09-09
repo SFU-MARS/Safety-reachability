@@ -14,10 +14,10 @@ def create_params():
     # p.seed = 12
 
     # Horizons in seconds
-    p.episode_horizon_s = 1.5#80
+    p.episode_horizon_s = 6 #80
     # TODO: when generating training data, we use control_horizon_s=1.5s, when testing, we find 0.25s will have the
     #  best performance for WayPtNav-reachability
-    p.control_horizon_s = 1.5  # For data generation
+    p.control_horizon_s = 6  # For data generation
     # p.control_horizon_s = 0.25  # Best performance for WayPtNav testing
 
     # Whether to log videos taken during trajectories
@@ -33,8 +33,8 @@ def create_params():
     p.avoid_obstacle_objective = DotMap(#obstacle_margin0=0.25,
                                         #obstacle_margin1=0.45,
 
-                                        obstacle_margin0=0.9,
-                                        obstacle_margin1=1.5,
+                                        obstacle_margin0=0.3,
+                                        obstacle_margin1=0.5,
 
                                         power=3,
                                         obstacle_cost=1.0)
@@ -81,7 +81,7 @@ def create_params():
                                                     # For description of reset types see heading parameters above.
                                                     reset_type='zero',
                                                     # reset_type='random',
-                                                    bounds=[0.1, 0.6]
+                                                    bounds=[0.3, 0.31]
                                                 ),
                                                 ang_speed=DotMap(
                                                     # For description of reset types see heading parameters above.
@@ -103,7 +103,7 @@ def create_params():
 
     p.goal_cutoff_dist = p.goal_distance_objective.goal_margin
     p.goal_dist_norm = p.goal_distance_objective.power  # Default is l2 norm
-    p.episode_termination_reasons = ['Timeout', 'Collision', 'Success']
+    p.episode_termination_reasons = ['Timeout']#, 'Success' ]'Collision']
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 

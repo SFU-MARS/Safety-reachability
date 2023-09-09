@@ -24,7 +24,7 @@ def create_params():
     # The directory for saving the control pipeline files
     # p.dir = '/home/anjianl/Desktop/project/WayPtNav/data/control_data/control_pipelines'
     # New control pipeline v1 doesn't rescale the trajectory to maximize the speed
-    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines_FRS-M-4d-spline1'
+    p.dir = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/control_pipelines_FRS-M-4d-spline200-2-t-safe2'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
@@ -43,7 +43,7 @@ def create_params():
                           linear_coeffs=np.zeros((6), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=61,
+    p.binning_parameters = DotMap(num_bins=1,
                                   min_speed=p.system_dynamics_params.v_bounds[0],
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 

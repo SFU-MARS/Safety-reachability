@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
+from scipy.interpolate import LinearNDInterpolator
 
 class VoxelMap4d(object):
     """
@@ -180,9 +180,52 @@ class VoxelMap4d(object):
         valid_voxels_4d = self.is_valid_voxel(position_nk2, heading_nk2, speed_nk1)
         return tf.where(valid_voxels_4d, data, tf.ones_like(data) * invalid_value)
 
-    def compute_voxel_function_interpolation(self, position_nk2, heading_nk2, speed_nk1, invalid_value=100.):
+    def compute_voxel_function_interpolation(self, position_nk2, heading_nk1, speed_nk1, invalid_value=100.):
         # TODO: We can use scipy.interpolate.LinearNDInterpolator for approximating the values
-        return
+
+        voxel_space_position_nk1_x, voxel_space_position_nk1_y, voxel_space_heading_nk1, voxel_space_speed_nk1 \
+            = self.grid_world_to_voxel_world(position_nk2, heading_nk1, speed_nk1)
+
+
+        # All the out-of-bounds indices are mapped to the top and bottom indices
+        voxel_space_position_nk1_x = tf.where(voxel_space_position_nk1_x < 0,
+                                     tf.zeros_like(voxel_space_position_nk1_x), voxel_space_position_nk1_x)
+
+        voxel_space_position_nk1_x = tf.where(voxel_space_position_nk1_x > self.map_size_int32_4[0]-1,
+                                    (self.map_size_int32_4[0]-1) * tf.ones_like(voxel_space_position_nk1_x), voxel_space_position_nk1_x)
+
+
+        voxel_space_position_nk1_y = tf.where(voxel_space_position_nk1_y < 0,
+                                     tf.zeros_like(voxel_space_position_nk1_y), voxel_space_position_nk1_y)
+        voxel_space_position_nk1_y = tf.where(voxel_space_position_nk1_y > self.map_size_int32_4[1]-1,
+                                    (self.map_size_int32_4[1]-1)*tf.ones_like(voxel_space_position_nk1_y), voxel_space_position_nk1_y)
+
+        voxel_space_heading_nk1 = tf.where(voxel_space_heading_nk1 < 0,
+                                              tf.zeros_like(voxel_space_heading_nk1), voxel_space_heading_nk1)
+        voxel_space_heading_nk1 = tf.where(voxel_space_heading_nk1 > self.map_size_int32_4[2]-1,
+                                           (self.map_size_int32_4[2]-1) * tf.ones_like(voxel_space_heading_nk1),
+                                              voxel_space_heading_nk1)
+
+        voxel_space_speed_nk1 = tf.where(voxel_space_speed_nk1 < 0,
+                                           tf.zeros_like(voxel_space_speed_nk1), voxel_space_speed_nk1)
+        voxel_space_speed_nk1 = tf.where(voxel_space_speed_nk1 > self.map_size_int32_4[3]-1,
+                                         (self.map_size_int32_4[3] - 1) * tf.ones_like(voxel_space_speed_nk1),
+                                           voxel_space_speed_nk1)
+
+        voxel_index_8 = tf.concat([voxel_space_position_nk1_x, voxel_space_position_nk1_y,
+                                   voxel_space_heading_nk1, voxel_space_speed_nk1], axis=2)
+
+        voxel_index_int64_8 = tf.cast(voxel_index_8, dtype=tf.int64)
+
+        data = tf.gather_nd(self.voxel_function_4d, voxel_index_int64_8)
+
+        interp = LinearNDInterpolator(list(voxel_index_int64_8), data)
+
+        X, Y ,H, V= np.meshgrid(voxel_space_position_nk1_x, voxel_space_position_nk1_y,voxel_space_heading_nk1,  voxel_space_speed_nk1)
+
+        Z = interp (X, Y, H,  V)
+
+        return Z
 
     def grid_world_to_voxel_world(self, position_nk2, heading_nk1, speed_nk1):
         """

@@ -92,7 +92,7 @@ class SBPDRenderer():
         # internally scales theta by delta_theta
 
         nodes_n3 = np.concatenate([starts_n2*1.,
-                                   thetas_n1 / self.building.robot.delta_theta], axis=1)
+                                   thetas_n1 / self.building.robot.delta_theta], axis=-1)
         imgs_nmk3 = self.building.render_nodes(nodes_n3,modality='rgb')
         return imgs_nmk3
 

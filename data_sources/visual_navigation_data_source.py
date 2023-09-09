@@ -164,6 +164,8 @@ class VisualNavigationDataSource(ImageDataSource):
         data['all_waypoint_ego'] = []
         data['all_waypoint'] = []
         data['labels'] = []
+        data['value_function']=[]
+
 
         return data
 
@@ -172,13 +174,13 @@ class VisualNavigationDataSource(ImageDataSource):
         Returns the number of data points inside
         data.
         """
-        if type(data['vehicle_state_nk3']) is list:
-            if len(data['vehicle_state_nk3']) == 0:
+        if type(data['start_state']) is list:
+            if len(data['start_state']) == 0:
                 return 0
-            ns = [x.shape[0] for x in data['vehicle_state_nk3']]
+            ns = [x.shape[0] for x in data['start_state']]
             return np.sum(ns)
-        elif type(data['vehicle_state_nk3']) is np.ndarray:
-            return data['vehicle_state_nk3'].shape[0]
+        elif type(data['start_state']) is np.ndarray:
+            return data['start_state'].shape[0]
         else:
             raise NotImplementedError
 
@@ -228,10 +230,12 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Vehicle data
         # data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())
-        data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_heading_speed_nk4().numpy())
+        data['vehicle_state_nk3'].append(simulator.vehicle_data['spline_trajectory'].position_heading_speed_nk4().numpy())
 
         # data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
-        data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].acceleration_and_angular_speed_nk2().numpy())
+        data['vehicle_controls_nk2'].append(simulator.vehicle_data['spline_trajectory'].acceleration_and_angular_speed_nk2().numpy())
+
+        data['value_function'].append(simulator.vehicle_data['value_function'])
 
         # Convert to egocentric coordinates
         start_nk3 = simulator.vehicle_data['system_config'].position_and_heading_nk3().numpy()
@@ -246,8 +250,14 @@ class VisualNavigationDataSource(ImageDataSource):
                                                                                      waypoint_n13)
         i = 0
         for waypoints in simulator.vehicle_data['all_waypoint']:
+
             waypoints_n13 = waypoints.position_and_heading_nk3().numpy()
-            data['all_waypoint'].append(np.concatenate((np.squeeze(waypoints_n13),waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1))
+            # print(waypoints_n13.shape)
+            # print(waypoints._speed_nk1.numpy().shape)
+            # data['all_waypoint'].append(np.concatenate((np.squeeze(waypoints_n13),waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1))
+            data['all_waypoint'].append(
+                np.concatenate((waypoints_n13, waypoints._speed_nk1.numpy()), axis=2).reshape(-1, 4))
+            print (data['all_waypoint'][-1].shape)
             start = np.tile(start_nk3[i], (np.shape(waypoints_n13)[0], 1, 1))
             waypoints_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(start, waypoints_n13)
             waypoints_ego =np.concatenate((waypoints_ego[:, 0],waypoints._speed_nk1.numpy().reshape(-1,1)),axis=1)
@@ -285,7 +295,7 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
         """
-        N = 10 # MIN # OF WPS 4000
+        N = 100 # MIN # OF WPS 4000
 
         # N = 200
         # randomRow = np.random.randint(3, size=N)
@@ -306,35 +316,43 @@ class VisualNavigationDataSource(ImageDataSource):
         # ax.scatter(X[:, 0], X[:, 1], marker='o', c=y)
         # ax.scatter3D(X[:, 0], X[:, 1],X[:, 2], marker='x', c=y)
         # plt.show()
+
         idxes =[]
+        for arr in data['all_waypoint_ego']:
+            idx = np.random.randint(arr.shape[0], size=N)
+            idxes.append(idx)
+
         for tag in data_tags:
             # data[tag] = np.concatenate(data[tag], axis=0)
-            if tag != 'labels' and tag != 'all_waypoint_ego' and tag != 'all_waypoint':
+            if tag not in ['labels', 'all_waypoint_ego', 'all_waypoint', 'vehicle_state_nk3', 'vehicle_controls_nk2', 'value_function']:
                 data[tag] = np.concatenate(data[tag], axis=0)
-            elif tag == 'all_waypoint_ego':
+            else:
                 # tag == 'all_waypoint_ego':
-                arr1 = []
                 arr2 = []
-                arr4 = []
-                for arr in data[tag]:
-                    idx= np.random.randint(arr.shape[0], size=N)
-                    idxes.append(idx)
+                for arr, idx in zip(data[tag], idxes):
+                    if tag in ['labels','value_function'] :
+                        assert(len(arr) == 1)
+                        arr = np.array(arr[0])
                     arr2.append(np.expand_dims(arr[idx, :], axis=0))
-                data['all_waypoint_ego'] = np.concatenate(arr2, axis=0)
+                data[tag] = np.concatenate(arr2, axis=0)
+            # elif tag == 'labels':
+            #     i = 0
+            #     arr2 = []
+            #     for arr3 in data['labels']:
+            #         for arr in arr3:
+            #             arr2.append(np.expand_dims(arr[idxes[i], :], axis=0))
+            #             i += 1
+            #     data['labels'] = np.concatenate(arr2, axis=0)
+            # elif tag == 'all_waypoint':
+            #     for arr3 , idx in zip(data['all_waypoint'],idxes) :
+            #         arr1.append(np.expand_dims(arr3[idx, :], axis=0))
+            #     data['all_waypoint'] = np.concatenate(arr1, axis=0)
+            #     print(data['all_waypoint'] .shape)
 
-                for arr3 , idx in zip(data['all_waypoint'],idxes) :
-                    arr1.append(np.expand_dims(arr3[idx, :], axis=0))
-                data['all_waypoint'] = np.concatenate(arr1, axis=0)
-                i=0
-                for arr3 in data['labels']:
-                    for arr in  arr3:
-                        arr4.append(np.expand_dims(arr[idxes[i], :], axis=0))
-                        i+=1
-                data['labels'] = np.concatenate(arr4, axis=0)
 
                 # arr1.append(np.expand_dims(op , axis=0))
-            else:
-                pass
+            # else:
+            #     pass
 
         # Save the data
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)

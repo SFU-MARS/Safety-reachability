@@ -101,7 +101,7 @@ def create_params(simulator_params):
     reset_params.start_config.heading.reset_type = 'random'
     reset_params.start_config.speed.reset_type = 'random'
     # reset_params.start_config.ang_speed.reset_type = 'zero'
-    # reset_params.start_config.speed.reset_type = 'random'
+    #reset_params.start_config.speed.reset_type = 'zero'
 
 
     p.data_creation = DotMap(

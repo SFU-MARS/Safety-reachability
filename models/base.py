@@ -33,7 +33,9 @@ from sklearn.svm import SVC
 from scipy.interpolate import interp1d
 from sklearn import metrics
 from sbpd.sbpd_renderer import SBPDRenderer
-
+from itertools import combinations_with_replacement as combinations_w_r
+from time import time
+from systems.dubins_car import DubinsCar
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
     def __init__(self, degree):
@@ -101,6 +103,26 @@ class BaseModel(object):
             tilt=0.7853981633974483
         )
         return p
+
+    @staticmethod
+    def polyfeatures(X, degree=3):
+        n_features = X.shape[1]
+
+        combs = []
+        for n in range(1, degree+1):
+            comb = list(combinations_w_r(range(n_features), n))
+            combs.extend(comb)
+
+        features = [tf.ones_like(X[:, 0])]
+
+        for comb in combs:
+            feature = tf.ones_like(X[:, 0])
+            for i in comb:
+                feature *= X[:, i]
+
+            features.append(feature)
+
+        return tf.stack(features, axis=-1)
 
     def compute_loss_function(self, raw_data, param,c,  is_training=None, return_loss_components=False,
                               return_loss_components_and_output=False):
@@ -449,16 +471,27 @@ class BaseModel(object):
             sample = 1  #600 , 50
 
             biases = nn_output[:, :4]
+            scales = nn_output[:, 4:8]
+            kernel_weights = nn_output[:, 8:]
 
-            def normalize(X, bias):
-                return tf.convert_to_tensor(X.astype(np.float32)) + bias
+            def normalize(X, biases, scales):
+                if isinstance(X, np.ndarray):
+                    X = tf.convert_to_tensor(X)
+                # expand for all waypoints
+                return tf.expand_dims(scales, 1) * (tf.cast(X, dtype=tf.float32) + tf.expand_dims(biases, 1))
 
-            X_norm = [normalize(X, bias) for X, bias in zip(feat_train_sc, biases) ]
+            # X_norm = [normalize(X, bias, scale) for X, bias, scale in zip(feat_train_sc, biases, scales) ]
+            X_norm = normalize(feat_train_sc, biases, scales)
 
-            poly = PolynomialFeatures(3)
-            X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
-            X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
+            # poly = PolynomialFeatures(3)
+            # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
+            # X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
 
+            X_kerneled = [
+                self.polyfeatures(X) for X in X_norm
+            ]
+            X_kerneled = tf.stack(X_kerneled, axis=0)
+            #
             # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
 
             # X_kerneled = tf.stack([self.poly_layer(X) for X in X_norm], axis=0)
@@ -491,7 +524,7 @@ class BaseModel(object):
 
             predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
                          x1, output in
-                         zip(X_kerneled, nn_output[:, 4:])]
+                         zip(X_kerneled, kernel_weights)]
 
             # X[:, 0] =
             # x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
@@ -502,7 +535,7 @@ class BaseModel(object):
 
             # predicted_contour = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
             #              x1, output in
-            #              zip(X_kerneled, nn_output[:, 4:])]
+            #              zip(X_kerneled, kernel_weights)]
 
 
 
@@ -520,14 +553,14 @@ class BaseModel(object):
                 n_sample1 = np.size(np.where(label == -1)[0])
                 # sample_weights  = (11 / 9 + label) * 9 / 2
                 # weight= weightb (weightS+ytrue)
-                if (n_sample1 != 0 and n_sample0 != 0):
-                    # r = math.sqrt(n_sample0 / n_sample1)
-                    r = n_sample0 / n_sample1
-                    weightS = (r + 1) / (r - 1)
-                    weightb =  1 / (weightS - 1)
-                    sample_weights = (weightS - label) * weightb
-                else:
-                    sample_weights = tf.ones(label.shape)
+                # if (n_sample1 != 0 and n_sample0 != 0):
+                #     # r = math.sqrt(n_sample0 / n_sample1)
+                #     r = n_sample0 / n_sample1
+                #     weightS = (r + 1) / (r - 1)
+                #     weightb =  1 / (weightS - 1)
+                #     sample_weights = (weightS - label) * weightb
+                # else:
+                sample_weights = tf.ones(label.shape)
                 # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
                 # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
                 # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
@@ -597,32 +630,82 @@ class BaseModel(object):
             renderer = SBPDRenderer.get_renderer(self.p.simulator_params.obstacle_map_params.renderer_params)
 
             # 2d plots
-            pdf = PdfPages("output_fov_sample40_FRS_4.pdf")
-            for WP, prediction, label, C1, image, start_nk3, goal, wp, speed, robot_pos,robot_head in zip(
+            stamp = time()
+            pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
+            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
                     raw_data['img_nmkd'][:, :, :, :3],
                     raw_data['start_state'],
                     raw_data['goal_position_n2'],
+                    raw_data['vehicle_state_nk3'],
                     all_waypoint_sampled,
-                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13):#, predicted_contour):
+                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
 
                 label = -label
                 # robot
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
                 # ax = plt.figure()
-                fig, ax = plt.subplots()
-                ax.imshow(np.squeeze(top))
-                ax.plot(0, (crop_size[0] - 1) / 2, 'k*')
+                fig = plt.figure()
+                ax4 = fig.add_subplot(224)
+                # fig, ax = plt.subplots()
+                ax4.imshow(np.squeeze(top))
+                ax4.plot(0, (crop_size[0] - 1) / 2, 'k*')
                 color = ['red' if l == 1 else 'green' for l in label]
                 WP_map_x = (WP[:, 0]/dx + 0)
                 WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
                 plt.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = plt.quiver(WP_map_x, WP_map_y, u, v)
-                ax.set_title('speed ' + str(speed))
+
+                # traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
+                #     np.expand_dims(start_nk3, 0),
+                #     traj[:,:, :3]
+                # )
+                traj_x = (traj[:,:,  0] / dx + 0)
+                traj_y = (traj[:,:, 1] / dx + (crop_size[0] - 1) / 2)
+                theta = np.pi / 2 + traj[:,:, 2]
+                n=120
+                for i, _ in enumerate(traj_x):
+                    s = 1  # Segment length
+                        # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                    for j in range(0, n , s):
+                        plt.plot(traj_x[i][j:j +s+  1], traj_y[i][j:j + s+ 1], color=(0.0, 0.0, value[i][j]/100))
+                        u, v = 1 * (np.cos(theta), np.sin(theta))
+                        q = ax4.quiver(traj_x, traj_y, u, v)
+
+                ax4.set_title('speed ' + str(speed))
+                for i, _ in enumerate(traj_x):
+                    s = 1  # Segment length
+                    # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                    for j in range(0, n, s):
+
+                    # zip joins x and y coordinates in pairs
+                        for x, y in zip(traj_x[i][j:j + 1], traj_y[i][j:j + 1]):
+
+                            annotation = "{:.1f}".format(value[i][j])
+                            plt.annotate(annotation,  # this is the text
+                                         (x, y),  # this is the point to label
+                                         textcoords="offset points",  # how to position the text
+                                         xytext=(0, 20),  # distance from text to points (x,y)
+                                         ha='center')
+                    # plt.annotate(str(value[i][j]), xy=(traj_x[i][j:j + 1], traj_x[i][j:j + 1] + 0.5))
+
+                plt.show()
+
+                # colors=[]
+                # for i, onetraj in enumerate(traj_x[:1]):
+                #     for j, _ in enumerate(onetraj):
+                #         colors.append((0.0, 0.5, value[i][j]))
+                # colors = np.array(colors)
+                # for i, onetraj in enumerate(traj_x[:1]):
+                #     # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                #     # color.append((0.0, 0.5, value[i]))
+                #     plt.plot(onetraj[][i], traj_y[i], color=colors)
+                #     u, v = 1 * (np.cos(theta), np.sin(theta))
+                #     q = ax4.quiver(traj_x, traj_y, u, v)
+                # ax4.set_title('speed ' + str(speed))
+                # plt.show()
+
 
                 x_min, x_max = 0, crop_size[0]*dx
                 y_min, y_max = -dx* (crop_size[0] - 1)/2 , dx* (crop_size[0] -1)/2
@@ -631,15 +714,37 @@ class BaseModel(object):
                                      np.arange(y_min, y_max, h))
                 hh, ss = np.tile(0, np.shape(xx)), np.tile(speed, np.shape(xx)),
                 X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
-                X_grid = tf.expand_dims(X_grid,axis=0)
-                X_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
-                X_grid_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
-                # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
+                X_grid = tf.expand_dims(X_grid, axis=0)
+                # X_grid = [normalize(X, bias) for X, bias in zip(X_grid, biases)]
+                X_grid = normalize(
+                    X_grid,
+                    biases[img_idx:(img_idx+1)],
+                    scales[img_idx:(img_idx+1)]
+                )
+
+                # X_grid = tf.expand_dims(X_grid,axis=0)
+                # X_grid_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
+                # X_grid_kerneled = np.array(X_grid_kerneled)
+                X_grid_kerneled = [
+                    self.polyfeatures(tf.constant(X)) for X in X_grid
+                ]
+                X_grid_kerneled = tf.stack(X_grid_kerneled, axis=0)
+
+                # ta = tf.TensorArray(tf.float32, size=np.size(X_kerneled), dynamic_size=True, clear_after_read=False)
+                # v = tf.contrib.eager.Variable(1, dtype=tf.float32)
+                # for idx, i in X_kerneled:
+                #     for jdx, j in i:
+                #         for kdx, k in j:
+                #             v.assign_add(k)
+                #             ta = ta.write([idx, jdx, kdx], v)
+                # X_grid_kerneled = ta
+                # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
                 Z = [-np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
                      x1, output in
-                     zip(X_grid_kerneled, nn_output[:, 4:])]
+                     zip(X_grid_kerneled, kernel_weights)]
                 Z = np.array(Z)
-                ax.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
+
+                ax4.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
                 # plt.show()
                 #
                 # x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
@@ -648,7 +753,7 @@ class BaseModel(object):
                 #                      np.arange(y_min, y_max, h))
 
 
-                fig = plt.figure()
+                # fig = plt.figure()
                 ax1 = fig.add_subplot(221)
                 ax1.imshow(image.astype(np.uint8))
                 plt.grid()
@@ -667,19 +772,19 @@ class BaseModel(object):
 
 
 
-                # Initialize and Create a grid
-                grid = p.grid(p)
-                wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
-                wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
-                wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
-                color = ['red' if l == 1 else 'green' for l in label]
-                ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # # Initialize and Create a grid
+                # grid = p.grid(p)
+                # wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
+                # wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
+                # wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
+                # # color = ['red' if l == 1 else 'green' for l in label]
                 # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = ax1.quiver(wp_image_x, wp_image_y, u, v)
-                ax1.set_title('speed ' + str(speed))
-                # plt.show()
+                # # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
+                # u, v = 1 * (np.cos(theta), np.sin(theta))
+                # q = ax1.quiver(wp_image_x, wp_image_y, u, v)
+                # ax1.set_title('speed ' + str(speed))
+                # # plt.show()
 
 
                 # matplotlib.use('Qt4Agg')
@@ -695,7 +800,7 @@ class BaseModel(object):
                 #               wrong[:, 2], s=80, edgecolors="k")
                 # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
 
-                color = ['red' if l == 1 else 'green' for l in label]
+                # color = ['red' if l == 1 else 'green' for l in label]
                 # mycmap = ListedColormap(["red", "green"])
 
                 # ax2.scatter3D(WP[:, 0], WP[:, 1],
@@ -743,25 +848,25 @@ class BaseModel(object):
                 # u, v =  1 * (np.cos(theta_world), np.sin(theta_world))
                 # q = ax3.quiver(pos_nk2[:, 0], pos_nk2[:, 1], u, v)
                 # plt.show()
-                ax4 = fig.add_subplot(224)
-                x = WP[:, 0]
-                y = WP[:, 1]
-                theta = WP[:, 2]
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                accuracy = np.count_nonzero(prediction == label) / np.size(label)
-                color_result = ['red' if l == -1 else 'green' for l in prediction]
-                wrong = WP[np.where(prediction != label)[0]]
-                ax4.scatter(wrong[:, 0], wrong[:, 1], s=60, edgecolors="k")
-                ax4.scatter(x, y
-                            , marker='o', alpha=0.6, color=color_result)
-                # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
-                #               wrong[:, 2], s=80, edgecolors="k")
-                # safe = WP[np.where(prediction == 1)[0]]
-                # unsafe = WP[np.where(prediction == -1)[0]]
-                ax4.set_title('accuracy: ' + str(accuracy))
+                # ax4 = fig.add_subplot(224)
+                # x = WP[:, 0]
+                # y = WP[:, 1]
+                # theta = WP[:, 2]
+                # u, v = 1 * (np.cos(theta), np.sin(theta))
+                # accuracy = np.count_nonzero(prediction == label) / np.size(label)
+                # color_result = ['red' if l == -1 else 'green' for l in prediction]
+                # wrong = WP[np.where(prediction != label)[0]]
+                # ax4.scatter(wrong[:, 0], wrong[:, 1], s=60, edgecolors="k")
+                # ax4.scatter(x, y
+                #             , marker='o', alpha=0.6, color=color_result)
+                # # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
+                # #               wrong[:, 2], s=80, edgecolors="k")
+                # # safe = WP[np.where(prediction == 1)[0]]
+                # # unsafe = WP[np.where(prediction == -1)[0]]
+                # ax4.set_title('accuracy: ' + str(accuracy))
                 # ax4.scatter(WP[:, 0], WP[:, 1]
                 #             , c=np.squeeze(prediction), marker='o', alpha=0.6, cmap=mycmap)
-                q1 = ax4.quiver(x, y, u, v)
+                # q1 = ax4.quiver(x, y, u, v)
 
                 # ax4.scatter(safe[:, 0], safe[:, 1], s=80, edgecolors="g")
                 # ax4.scatter(unsafe[:, 0], unsafe[:, 1], s=80, edgecolors="r")
@@ -818,7 +923,7 @@ class BaseModel(object):
             # prediction_loss = tf.zeros(1)
             # num_total = 0
             # # for (y, x, w, weights_v) in zip(processed_data['labels'],  X_kerneled, nn_output, 1 - processed_data['inputs'][1][:, 0]):
-            # for y, x, w in zip(processed_data['labels'], X_kerneled, nn_output[:, 4:]):
+            # for y, x, w in zip(processed_data['labels'], X_kerneled, kernel_weights):
             #     # weights_v = 1 - processed_data['inputs'][1][:, 0]
             #     for x1 , y1 in zip(x , y):
             #         v = y1 * tf.tensordot(w, x1, axes=1)
@@ -982,3 +1087,16 @@ def standardize(X_tr):
     return X_tr
 
 
+if __name__ == '__main__':
+    tf.enable_eager_execution()
+    X = tf.constant(np.random.rand(20, 4).astype(np.float32))
+    # X = tf.constant(np.asarray(range(1, 5)).reshape(1, 4).astype(np.float32))
+    feats = BaseModel.polyfeatures(X, degree=3)
+    print('inp', X.numpy())
+    print('out\n', feats.numpy())
+
+    poly = PolynomialFeatures(3)
+    X_kerneled = poly.fit_transform(X).astype(np.float32)
+    print(f'{X_kerneled}')
+    print(X_kerneled - feats.numpy())
+    print(np.mean(X_kerneled - feats.numpy()))

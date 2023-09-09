@@ -25,12 +25,17 @@ import matplotlib
 - Run
 """
 
-g = Grid(np.array([0, 0, -math.pi, 0.0]), np.array([30, 26.05, math.pi, 0.7+0.1]),
-         4, np.array([600, 521, 31, 9]), [2])
+g = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
+         4, np.array([600, 521, 31, 31]), [2])
 my_car = DubinsCar4D_new2()
 
 # Load value from my map
-obstacles = np.load("obstacle_grid_4d_ver2.npy")
+obstacle_2d=np.load("/local-scratch/tara/project/WayPtNav-reachability/obstacle_grid_2d.npy")
+# obstacles = np.load("obstacle_grid_4d_ver2.npy")
+obstacles = np.tile(
+    np.expand_dims(obstacle_2d, (-2, -1)),
+    (1,1,31,31)
+)
 
 
 # Velocity constraint - negative level set [0., 0.7]
@@ -52,5 +57,5 @@ compMethods = { "TargetSetMode": "minVWithV0"}
 
 # Solve the HJ pde
 result = HJSolver(my_car, g, Initial_value_f, tau, compMethods, po2, saveAllTimeSteps=False )
-np.save("V_safe.npy", result)
+np.save("V_safe2.npy", result)
 
