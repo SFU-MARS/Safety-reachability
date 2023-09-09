@@ -44,6 +44,7 @@ velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.7), Upper_Half_Space(g, 
 # Combine it with the original obstacle map
 Initial_value_f = Union(-velocity_constr, obstacles)
 
+
 # Look-back lenght and time step
 lookback_length = 10.0
 t_step = 0.05

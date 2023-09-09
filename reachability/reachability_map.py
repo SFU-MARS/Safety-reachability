@@ -72,7 +72,7 @@ class ReachabilityMap(object):
                 #self._reset_avoid_4d_map_from_whole(brt_4d_avoid_whole)#!!!!
 
                 # These numbers should be copied from optimized_dp-master/user_definer.py
-                self.grid = Grid(np.array([0, 0, -math.pi, 0.0]), np.array([30, 26.05, math.pi, 0.7+0.1]),
+                self.grid = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
                          4, np.array([600, 521, 31, 31]), [2])
 
                 # We can't clip the map since we're checking BRT for safety

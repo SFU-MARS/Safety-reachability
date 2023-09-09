@@ -94,6 +94,7 @@ class ObjectiveFunction(object):
             for tag, objective_values in objective_values_by_tag:
                 if tag == 'avoid_4d':
                     obj = objective_values
+                    # label_11 = (np.min(np.sign(np.array(obj)), axis=1))
                     label_11 = (np.min(np.sign(np.array(obj)), axis=1))
                     label_11[np.where(label_11 <= 0)[0]] = -1  # -1 and 1
                     # label_01 = (np.min((obj.numpy()), axis=1))== 100

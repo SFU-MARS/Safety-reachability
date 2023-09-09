@@ -647,9 +647,10 @@ class BaseModel(object):
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
                 # ax = plt.figure()
-                fig = plt.figure()
+                # ax4 = plt.figure()
+                fig = plt.subplots()
                 ax4 = fig.add_subplot(224)
-                # fig, ax = plt.subplots()
+                # fig, ax4 = plt.subplots()
                 ax4.imshow(np.squeeze(top))
                 ax4.plot(0, (crop_size[0] - 1) / 2, 'k*')
                 color = ['red' if l == 1 else 'green' for l in label]
@@ -661,50 +662,42 @@ class BaseModel(object):
                 #     np.expand_dims(start_nk3, 0),
                 #     traj[:,:, :3]
                 # )
-                traj_x = (traj[:,:,  0] / dx + 0)
-                traj_y = (traj[:,:, 1] / dx + (crop_size[0] - 1) / 2)
+                traj_x = (traj[:10,:,  0] / dx + 0)
+                traj_y = (traj[:10,:, 1] / dx + (crop_size[0] - 1) / 2)
                 theta = np.pi / 2 + traj[:,:, 2]
-                n=120
+                for i, _ in enumerate(traj_x):
+                    # s = 1  # Segment length
+                    plt.plot(traj_x[i], traj_y[i])
+
+                n = 120
                 for i, _ in enumerate(traj_x):
                     s = 1  # Segment length
                         # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
                     for j in range(0, n , s):
-                        plt.plot(traj_x[i][j:j +s+  1], traj_y[i][j:j + s+ 1], color=(0.0, 0.0, value[i][j]/100))
+                        b=round((1.03 + value[i][j]) / 2, 2)
+                        print ("color"+str(b))
+                        plt.plot(traj_x[i][j:j + 1], traj_y[i][j:j + 1], color=(0.0, 0.0, b))
                         u, v = 1 * (np.cos(theta), np.sin(theta))
-                        q = ax4.quiver(traj_x, traj_y, u, v)
+                        # q = ax4.quiver(traj_x, traj_y, u, v)
 
                 ax4.set_title('speed ' + str(speed))
+                #
+                #
                 for i, _ in enumerate(traj_x):
-                    s = 1  # Segment length
-                    # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
-                    for j in range(0, n, s):
 
-                    # zip joins x and y coordinates in pairs
-                        for x, y in zip(traj_x[i][j:j + 1], traj_y[i][j:j + 1]):
-
-                            annotation = "{:.1f}".format(value[i][j])
-                            plt.annotate(annotation,  # this is the text
-                                         (x, y),  # this is the point to label
-                                         textcoords="offset points",  # how to position the text
-                                         xytext=(0, 20),  # distance from text to points (x,y)
-                                         ha='center')
-                    # plt.annotate(str(value[i][j]), xy=(traj_x[i][j:j + 1], traj_x[i][j:j + 1] + 0.5))
+                    for j in range(0, n , s):
+                        annotation = "{:.1f}".format(value[i][j])
+                        # plt.annotate(annotation,  # this is the text
+                        #              (x, y),  # this is the point to label
+                        #              textcoords="offset points",  # how to position the text
+                        #              xytext=(0, 20),  # distance from text to points (x,y)
+                        #              ha='center')
+                        plt.annotate(str(annotation), xy=(traj_x[i][j:j + 1], traj_y[i][j:j + 1] + 0.5))
+                # plt.annotate(str(value[i][j]), xy=(traj_x[i][j:j + 1], traj_x[i][j:j + 1] + 0.5))
 
                 plt.show()
 
-                # colors=[]
-                # for i, onetraj in enumerate(traj_x[:1]):
-                #     for j, _ in enumerate(onetraj):
-                #         colors.append((0.0, 0.5, value[i][j]))
-                # colors = np.array(colors)
-                # for i, onetraj in enumerate(traj_x[:1]):
-                #     # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
-                #     # color.append((0.0, 0.5, value[i]))
-                #     plt.plot(onetraj[][i], traj_y[i], color=colors)
-                #     u, v = 1 * (np.cos(theta), np.sin(theta))
-                #     q = ax4.quiver(traj_x, traj_y, u, v)
-                # ax4.set_title('speed ' + str(speed))
-                # plt.show()
+
 
 
                 x_min, x_max = 0, crop_size[0]*dx
