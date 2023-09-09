@@ -38,11 +38,11 @@ class Planner(object):
         # waypts, horizons, trajectories_lqr, trajectories_spline = self.control_pipeline.plan(start_config,
         #                                                                                                   goal_config)
         # obj_val = self.obj_fn.evaluate_function(trajectories_lqr) # Why evaluate lqr trajectory?
-        obj_val ,labels  = self.obj_fn.evaluate_function(trajectories_lqr)
+        obj_val , avoid_values, labels  = self.obj_fn.evaluate_function(trajectories_lqr)
         # return obj_val, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
         # return obj_val, labels, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers ]
 
-        return obj_val, labels, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
+        return obj_val,  avoid_values,  labels, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
     def _init_control_pipeline(self):
         """If the control pipeline has exists already (i.e. precomputed),
         load it. Otherwise generate create it from scratch and save it."""
@@ -71,7 +71,9 @@ class Planner(object):
                 'K_nkfd': [],
                 'k_nkf1': [],
                 'img_nmkd': [],
-                'labels': []}
+                'labels': [],
+                'value_function':[]
+                }
                 # 'two_groups': []}
         # data = {'system_config': [],
         #         'waypoint_config': [],

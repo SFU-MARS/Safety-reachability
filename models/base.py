@@ -632,7 +632,7 @@ class BaseModel(object):
             # 2d plots
             stamp = time()
             pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
-            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head) in enumerate(zip(
+            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
                     raw_data['img_nmkd'][:, :, :, :3],
@@ -640,7 +640,7 @@ class BaseModel(object):
                     raw_data['goal_position_n2'],
                     raw_data['vehicle_state_nk3'],
                     all_waypoint_sampled,
-                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13)):#, predicted_contour):
+                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
 
                 label = -label
                 # robot
@@ -664,11 +664,48 @@ class BaseModel(object):
                 traj_x = (traj[:,:,  0] / dx + 0)
                 traj_y = (traj[:,:, 1] / dx + (crop_size[0] - 1) / 2)
                 theta = np.pi / 2 + traj[:,:, 2]
-                for i, _ in enumerate (traj_x):
-                    plt.plot(traj_x[i], traj_y[i] )
-                    u, v = 1 * (np.cos(theta), np.sin(theta))
-                    q = ax4.quiver(traj_x, traj_y, u, v)
+                n=120
+                for i, _ in enumerate(traj_x):
+                    s = 1  # Segment length
+                        # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                    for j in range(0, n , s):
+                        plt.plot(traj_x[i][j:j +s+  1], traj_y[i][j:j + s+ 1], color=(0.0, 0.0, value[i][j]/100))
+                        u, v = 1 * (np.cos(theta), np.sin(theta))
+                        q = ax4.quiver(traj_x, traj_y, u, v)
+
                 ax4.set_title('speed ' + str(speed))
+                for i, _ in enumerate(traj_x):
+                    s = 1  # Segment length
+                    # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                    for j in range(0, n, s):
+
+                    # zip joins x and y coordinates in pairs
+                        for x, y in zip(traj_x[i][j:j + 1], traj_y[i][j:j + 1]):
+
+                            annotation = "{:.1f}".format(value[i][j])
+                            plt.annotate(annotation,  # this is the text
+                                         (x, y),  # this is the point to label
+                                         textcoords="offset points",  # how to position the text
+                                         xytext=(0, 20),  # distance from text to points (x,y)
+                                         ha='center')
+                    # plt.annotate(str(value[i][j]), xy=(traj_x[i][j:j + 1], traj_x[i][j:j + 1] + 0.5))
+
+                plt.show()
+
+                # colors=[]
+                # for i, onetraj in enumerate(traj_x[:1]):
+                #     for j, _ in enumerate(onetraj):
+                #         colors.append((0.0, 0.5, value[i][j]))
+                # colors = np.array(colors)
+                # for i, onetraj in enumerate(traj_x[:1]):
+                #     # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
+                #     # color.append((0.0, 0.5, value[i]))
+                #     plt.plot(onetraj[][i], traj_y[i], color=colors)
+                #     u, v = 1 * (np.cos(theta), np.sin(theta))
+                #     q = ax4.quiver(traj_x, traj_y, u, v)
+                # ax4.set_title('speed ' + str(speed))
+                # plt.show()
+
 
                 x_min, x_max = 0, crop_size[0]*dx
                 y_min, y_max = -dx* (crop_size[0] - 1)/2 , dx* (crop_size[0] -1)/2

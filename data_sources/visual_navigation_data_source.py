@@ -164,6 +164,8 @@ class VisualNavigationDataSource(ImageDataSource):
         data['all_waypoint_ego'] = []
         data['all_waypoint'] = []
         data['labels'] = []
+        data['value_function']=[]
+
 
         return data
 
@@ -232,6 +234,8 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
         data['vehicle_controls_nk2'].append(simulator.vehicle_data['spline_trajectory'].acceleration_and_angular_speed_nk2().numpy())
+
+        data['value_function'].append(simulator.vehicle_data['value_function'])
 
         # Convert to egocentric coordinates
         start_nk3 = simulator.vehicle_data['system_config'].position_and_heading_nk3().numpy()
@@ -320,15 +324,15 @@ class VisualNavigationDataSource(ImageDataSource):
 
         for tag in data_tags:
             # data[tag] = np.concatenate(data[tag], axis=0)
-            if tag not in ['labels', 'all_waypoint_ego', 'all_waypoint', 'vehicle_state_nk3', 'vehicle_controls_nk2']:
+            if tag not in ['labels', 'all_waypoint_ego', 'all_waypoint', 'vehicle_state_nk3', 'vehicle_controls_nk2', 'value_function']:
                 data[tag] = np.concatenate(data[tag], axis=0)
             else:
                 # tag == 'all_waypoint_ego':
                 arr2 = []
                 for arr, idx in zip(data[tag], idxes):
-                    if tag == 'labels':
+                    if tag in ['labels','value_function'] :
                         assert(len(arr) == 1)
-                        arr = arr[0]
+                        arr = np.array(arr[0])
                     arr2.append(np.expand_dims(arr[idx, :], axis=0))
                 data[tag] = np.concatenate(arr2, axis=0)
             # elif tag == 'labels':
