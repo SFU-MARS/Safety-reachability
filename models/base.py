@@ -632,6 +632,8 @@ class BaseModel(object):
             # 2d plots
             stamp = time()
             pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
+            Vc= np.load('optimized_dp-master/V_safe2.npy')
+
             for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
@@ -643,11 +645,13 @@ class BaseModel(object):
                     processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
 
                 label = -label
+
+                #
                 # robot
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
                 fig = plt.figure()
-                ax4 = fig.add_subplot(224)
+                ax4 = fig.add_subplot()
                 # fig, ax4 = plt.subplots()
                 ax4.imshow(np.squeeze(top))
                 ax4.plot(0, (crop_size[0] - 1) / 2, 'k*')
@@ -655,6 +659,7 @@ class BaseModel(object):
                 WP_map_x = (WP[:, 0]/dx + 0)
                 WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
                 ax4.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
+                ax4.set_title('speed ' + str(speed))
 
                 # traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
                 #     np.expand_dims(start_nk3, 0),
@@ -666,11 +671,28 @@ class BaseModel(object):
                 j = 0
                 for i, _ in enumerate(traj_x):
                     # s = 1  # Segment length
-                    j += 1
                     plt.plot(traj_x[i], traj_y[i])
-                    # if j == 119:
                     u, v = u, v = 10* np.cos(theta[i, -1]), np.sin(theta[i, -1])
+                    # print ("value: ", str(value[i,-1]))
                     q = ax4.quiver(traj_x[i,-1], traj_y[i,-1], u, v)
+                    plt.annotate(value[i,-1], xy=(traj_x[i,-1], traj_y[i,-1] + 0.5))
+
+                plt.show()
+
+                X_10 = wp[:10, 0] / dx
+                Y_10 = wp[:10, 1] / dx
+                WP_10 = WP[:10]
+
+                for X, Y, WP_1 in zip(X_10, Y_10, WP_10):
+                    V_neighbor = Vc[int(X) - 10:int(X) + 10, int(Y) - 10:int(Y) + 10, int(robot_head / (6.28 / 31)),
+                                 int(speed / (0.6 / 31))]
+                    fig, ax = plt.subplots(1, 1)
+                    ax.set_title(
+                        "waypoint: " + str(int(WP_1[0] / dx)) + " , " + str(int(WP_1[1] / dx + (crop_size[0] - 1) / 2)))
+                    plt.imshow(V_neighbor, vmin=-1.1, vmax=0.5)
+                    plt.plot(10, 10, 'k*')
+                    plt.colorbar()
+                # plt.show()
 
                 # n = 120
                 # for i, _ in enumerate(traj_x):
@@ -683,7 +705,7 @@ class BaseModel(object):
                 #         u, v = 1 * (np.cos(theta), np.sin(theta))
                 #         # q = ax4.quiver(traj_x, traj_y, u, v)
 
-                ax4.set_title('speed ' + str(speed))
+
 
 
                 # for i, _ in enumerate(traj_x):
