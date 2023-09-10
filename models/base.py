@@ -661,10 +661,9 @@ class BaseModel(object):
                 ax4.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
                 ax4.set_title('speed ' + str(speed))
 
-                # traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-                #     np.expand_dims(start_nk3, 0),
-                #     traj[:,:, :3]
-                # )
+
+                ## plotting traj
+
                 traj_x = (traj[:10,:,  0] / dx + 0)
                 traj_y = (traj[:10,:, 1] / dx + (crop_size[0] - 1) / 2)
                 theta = np.pi / 2 + traj[:10, :, 2]
@@ -678,6 +677,8 @@ class BaseModel(object):
                     plt.annotate(value[i,-1], xy=(traj_x[i,-1], traj_y[i,-1] + 0.5))
 
                 plt.show()
+                
+                ###plotting value fuction in waypoint near area
 
                 X_10 = wp[:10, 0] / dx
                 Y_10 = wp[:10, 1] / dx
@@ -692,37 +693,7 @@ class BaseModel(object):
                     plt.imshow(V_neighbor, vmin=-1.1, vmax=0.5)
                     plt.plot(10, 10, 'k*')
                     plt.colorbar()
-                # plt.show()
-
-                # n = 120
-                # for i, _ in enumerate(traj_x):
-                #     s = 1  # Segment length
-                #         # ax.plot(x[i:i + s + 1], y[i:i + s + 1], color=(0.0, 0.5, T[i]))
-                #     for j in range(0, n , s):
-                #         b=round((1.03 + value[i][j]) / 2, 2)
-                #         print ("color: "+str(b))
-                #         plt.plot(traj_x[i][j:j + 1], traj_y[i][j:j + 1]), cmap=color)
-                #         u, v = 1 * (np.cos(theta), np.sin(theta))
-                #         # q = ax4.quiver(traj_x, traj_y, u, v)
-
-
-
-
-                # for i, _ in enumerate(traj_x):
-                #
-                #     for j in range(0, n , s):
-                #         annotation = "{:.1f}".format(value[i][j])
-                #         # plt.annotate(annotation,  # this is the text
-                #         #              (x, y),  # this is the point to label
-                #         #              textcoords="offset points",  # how to position the text
-                #         #              xytext=(0, 20),  # distance from text to points (x,y)
-                #         #              ha='center')
-                #         plt.annotate(str(annotation), xy=(traj_x[i][j:j + 1], traj_y[i][j:j + 1] + 0.5))
-                # # plt.annotate(str(value[i][j]), xy=(traj_x[i][j:j + 1], traj_x[i][j:j + 1] + 0.5))
-                #
-                # plt.show()
-                #
-
+                plt.show()
 
 
                 x_min, x_max = 0, crop_size[0]*dx
