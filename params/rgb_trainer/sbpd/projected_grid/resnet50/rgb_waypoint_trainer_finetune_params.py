@@ -29,7 +29,7 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
 
     # Change episode horizon
-    simulator_params.episode_horizon_s = 1.5 #0.5 : TTR calculation, 80: waypoints calculation (seconds)
+    simulator_params.episode_horizon_s = 6 #0.5 : TTR calculation, 80: waypoints calculation (seconds)
 
     # Ensure the renderer is using area3
     # TODO: When generating our own data, choose area 3, area4, area5
@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(50) #int(200)
+    p.trainer.num_samples = int(1000) #int(200)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -157,11 +157,11 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-vsafe']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-500_2']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
-    p.data_creation.data_points = 50
+    p.data_creation.data_points = 500
     p.data_creation.data_points_per_file = int(5) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

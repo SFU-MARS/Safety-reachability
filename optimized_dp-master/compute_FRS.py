@@ -35,10 +35,10 @@ my_car = DubinsCar4D(uMin=[-1.1, -0.4], uMax=[1.1, 0.4],
                      dMin=[0,0], dMax=[0,0], uMode="max", dMode="min")
 
 # Look-back lenght and time step
-horizon = 6
+horizon = 2
 t_step = 0.05
 
-v_init = np.linspace(0.25, 0.3, 6)
+v_init = np.linspace(0.0, 0.6, 61)
 tau = np.arange(start= 0, stop= horizon + t_step, step = t_step)
 
 compMethods = { "TargetSetMode": "minVWithVInit"}
@@ -55,7 +55,7 @@ for idx, v in enumerate(v_init):
     # base_dir = os.path.join('FRS_result/FRS_v{}_H{}'.format(v, horizon))
     # if not os.path.exists(base_dir):
     #     os.makedirs(base_dir)
-    dir = "FRS_result3" +"/"+"FRS_v{:.2f}_H{}".format(v, horizon)
+    dir = "FRS_result4" +"/"+"FRS_v{:.2f}_H{}".format(v, horizon)
     # utils.mkdir_if_missing(base_dir)
     np.save(dir, result)
 

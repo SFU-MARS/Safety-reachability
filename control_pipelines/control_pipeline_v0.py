@@ -205,6 +205,7 @@ class ControlPipelineV0(ControlPipelineBase):
                                 'start_speeds': self.spline_trajectory.speed_nk1()[:, 0],
                                 'spline_trajectories': Trajectory.copy(self.spline_trajectory),
                                 'horizons': horizons_n1,
+
                                 'lqr_trajectories': lqr_trajectory,
                                 'K_nkfd': K_nkfd,
                                 'k_nkf1': k_nkf1}
@@ -312,11 +313,13 @@ class ControlPipelineV0(ControlPipelineBase):
 
 
         # self.spline_trajectory._acceleration_nk1.assign(tf.convert_to_tensor(accs))
+        self.spline_trajectory.n = len(valid_idxs)
         self.spline_trajectory._position_nk2 = tf.convert_to_tensor(np.concatenate((xs,ys), axis=2))
         self.spline_trajectory._heading_nk1 = tf.convert_to_tensor(headings)
         self.spline_trajectory._acceleration_nk1 = tf.convert_to_tensor(accs)
         self.spline_trajectory._speed_nk1 = tf.convert_to_tensor(speeds)
         self.spline_trajectory._angular_speed_nk1 = tf.convert_to_tensor(omegas)
+        self.spline_trajectory._angular_acceleration_nk1 = tf.zeros_like(self.spline_trajectory._acceleration_nk1)
 
         self.spline_trajectory.vars = [self.spline_trajectory._position_nk2, self.spline_trajectory._speed_nk1,
                      self.spline_trajectory._acceleration_nk1, self.spline_trajectory._heading_nk1,
@@ -339,14 +342,22 @@ class ControlPipelineV0(ControlPipelineBase):
         horizons_n1 = final_times_n1
         # Only keep the valid problems and corresponding splines and horizons
         valid_idxs = np.array(valid_idxs)
+
+        # debug
+        from copy import deepcopy
+        orig_start_config = deepcopy(start_config)
+        orig_goal_config = deepcopy(goal_config)
+        orig_spline = deepcopy(self.spline_trajectory)
+
         start_config.gather_across_batch_dim(valid_idxs)
         goal_config.gather_across_batch_dim(valid_idxs)
         horizons_n1 = tf.gather(horizons_n1, valid_idxs)
-        self.spline_trajectory.gather_across_batch_dim(valid_idxs)
+        # self.spline_trajectory.gather_across_batch_dim(valid_idxs)
         return start_config, goal_config, horizons_n1
 
     def _lqr(self, start_config):
         # Update the shape of the cost function as the batch dim of spline may have changed.
+        self.lqr_solver.trajectory_ref = self.spline_trajectory
         self.lqr_solver.cost.update_shape()
         lqr_res = self.lqr_solver.lqr(start_config, self.spline_trajectory, verbose=False)
         # The LQR trajectory's valid_horizon is the same as the spline reference trajectory that it tracks.
@@ -570,7 +581,14 @@ class ControlPipelineV0(ControlPipelineBase):
             '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result3/FRS_v{:.2f}_H6.npy'.format(
                 v0))
         if v0<0.05:
-            result = np.where(FRS <= 0)
+            # Load value from my map
+            # obstacle_2d = np.load("/local-scratch/tara/project/WayPtNav-reachability/obstacle_grid_2d.npy")
+            # # obstacles = np.load("obstacle_grid_4d_ver2.npy")
+            # obstacles = np.tile(
+            #     np.expand_dims(obstacle_2d, (-2, -1)),
+            #     (1, 1, 31, 31)
+            # )
+            result = np.where(FRS <= 0 )#& ~obstacles)
         else:
             result = np.where(FRS[:,:,:,:-5] <= 0)
         n = len(result[0])
@@ -578,8 +596,7 @@ class ControlPipelineV0(ControlPipelineBase):
         wy_n_all = -5 + result[1] * 10 / 100
         wv_n_all = 0 + result[3] * 0.6 / 61
         wtheta_n_all = -math.pi + result[2] * 2 * math.pi / 36
-        n_sample = 200
-        indx = np.random.choice(n, n_sample, replace=False)
+        indx = np.random.choice(n, self.waypoint_grid.n, replace=False)
         wx_n = wx_n_all [indx]
         wy_n = wy_n_all[indx]
         wtheta_n = wtheta_n_all[indx]
@@ -594,11 +611,11 @@ class ControlPipelineV0(ControlPipelineBase):
         waypoints_egocentric = self._ensure_waypoints_valid(waypoints_egocentric)
         wx_n11, wy_n11, wtheta_n11, wv_n11, ww_n11 = waypoints_egocentric
         waypt_pos_n12 = np.concatenate([wx_n11, wy_n11], axis=2)
-        waypoint_egocentric_config = SystemConfig(dt=self.params.dt, n=n_sample, k=1,
+        waypoint_egocentric_config = SystemConfig(dt=self.params.dt, n=self.waypoint_grid.n, k=1,
                                                   position_nk2=np.float32(waypt_pos_n12), speed_nk1=wv_n11,
                                                   heading_nk1=wtheta_n11, angular_speed_nk1=ww_n11,
                                                   variable=True)
-        return waypoint_egocentric_config , n_sample
+        return waypoint_egocentric_config , self.waypoint_grid.n
 
     def _ensure_waypoints_valid(self, waypoints_egocentric):
         """Ensure that a unique spline exists between start_x=0.0, start_y=0.0 goal_x, goal_y, goal_theta. If a unique

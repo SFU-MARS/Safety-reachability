@@ -258,6 +258,7 @@ class QValueDataSource(ImageDataSource):
         data['episode_type_string_n1'].append([simulator.params.episode_termination_reasons[simulator.episode_type]]*n)
         data['episode_number_n1'].append([self.episode_counter]*n)
 
+
         data = self._append_last_step_info_to_dictionary(data, simulator)
         return data
 

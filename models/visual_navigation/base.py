@@ -72,7 +72,8 @@ class VisualNavigationModelBase(BaseModel):
         data = {}
 
         # state_featres_n2 = vehicle_controls[:,0]
-        state_featres_n2 = raw_data['vehicle_state_nk3'][:, 0, -1]
+        # state_featres_n2 = raw_data['vehicle_state_nk3'][:, 0, -1]
+        state_featres_n2 = raw_data['vehicle_state_nk3'][:, 0, 0, -1]
         state_features_n21 = np.reshape(state_featres_n2, (-1, 1))
         # Action_waypoint = raw_data['all_waypoint_ego']
         data['inputs'] = [img_nmkd, state_features_n21]

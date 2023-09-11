@@ -1,6 +1,7 @@
 import tensorflow as tf
 from planners.planner import Planner
 from trajectory.trajectory import Trajectory, SystemConfig
+import numpy as np
 
 
 class SamplingPlanner(Planner):
@@ -32,7 +33,7 @@ class SamplingPlanner(Planner):
             2. Evaluates the objective function on the resulting trajectories
             3. Return the minimum cost waypoint, trajectory, and cost
         """
-        obj_vals, labels, data = self.eval_objective(start_config)
+        obj_vals, avoid_values, labels, data = self.eval_objective(start_config)
         # obj_vals, data = self.eval_objective(start_config)
         min_idx = tf.argmin(obj_vals)
         min_cost = obj_vals[min_idx]
@@ -81,7 +82,9 @@ class SamplingPlanner(Planner):
                 'K_nkfd': K_nkfd,
                 'k_nkf1': k_nkf1,
                 'img_nmkd': img_nmkd,
-                'labels': labels}
+                'labels': labels,
+                'value_function': np.array(avoid_values)
+                }
         # data = {'system_config': SystemConfig.copy(start_config),
         #         'waypoint_config': SystemConfig.copy(self.opt_waypt),
         #         'all_waypoint': SystemConfig.copy(self.allwaypts),

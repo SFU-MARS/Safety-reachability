@@ -25,7 +25,7 @@ import matplotlib
 - Run
 """
 
-g = Grid(np.array([0, 0, -math.pi, 0.0]), np.array([30, 26.05, math.pi, 0.7+0.1]),
+g = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
          4, np.array([600, 521, 31, 31]), [2])
 my_car = DubinsCar4D_new2()
 
@@ -39,10 +39,11 @@ obstacles = np.tile(
 
 
 # Velocity constraint - negative level set [0., 0.7]
-velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.6), Upper_Half_Space(g, 3, 0.0))
+velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.7), Upper_Half_Space(g, 3, 0.0))
 
 # Combine it with the original obstacle map
 Initial_value_f = Union(-velocity_constr, obstacles)
+
 
 # Look-back lenght and time step
 lookback_length = 10.0
@@ -57,5 +58,5 @@ compMethods = { "TargetSetMode": "minVWithV0"}
 
 # Solve the HJ pde
 result = HJSolver(my_car, g, Initial_value_f, tau, compMethods, po2, saveAllTimeSteps=False )
-np.save("V_safe1.npy", result)
+np.save("V_safe2.npy", result)
 

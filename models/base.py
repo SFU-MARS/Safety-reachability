@@ -632,7 +632,9 @@ class BaseModel(object):
             # 2d plots
             stamp = time()
             pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
-            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head) in enumerate(zip(
+            Vc= np.load('optimized_dp-master/V_safe2.npy')
+
+            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
                     raw_data['img_nmkd'][:, :, :, :3],
@@ -640,35 +642,59 @@ class BaseModel(object):
                     raw_data['goal_position_n2'],
                     raw_data['vehicle_state_nk3'],
                     all_waypoint_sampled,
-                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13)):#, predicted_contour):
+                    processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
 
                 label = -label
+
+                #
                 # robot
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
-                # ax = plt.figure()
                 fig = plt.figure()
-                ax4 = fig.add_subplot(224)
-                # fig, ax = plt.subplots()
+                ax4 = fig.add_subplot()
+                # fig, ax4 = plt.subplots()
                 ax4.imshow(np.squeeze(top))
                 ax4.plot(0, (crop_size[0] - 1) / 2, 'k*')
                 color = ['red' if l == 1 else 'green' for l in label]
                 WP_map_x = (WP[:, 0]/dx + 0)
                 WP_map_y = (WP[:, 1]/dx + (crop_size[0] - 1) / 2)
-                plt.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
-
-                traj_ego = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-                    np.expand_dims(start_nk3, 0),
-                    np.expand_dims(traj[:, :3], 0)
-                )
-                traj_x = (traj_ego[:, 0] / dx + 0)
-                traj_y = (traj_ego[:, 1] / dx + (crop_size[0] - 1) / 2)
-                plt.plot(traj_x, traj_y)
-
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = plt.quiver(WP_map_x, WP_map_y, u, v)
+                ax4.scatter(WP_map_x, WP_map_y, marker= 'o', color=color,  s=5)
                 ax4.set_title('speed ' + str(speed))
+
+
+                ## plotting traj
+
+                traj_x = (traj[:10,:,  0] / dx + 0)
+                traj_y = (traj[:10,:, 1] / dx + (crop_size[0] - 1) / 2)
+                theta = np.pi / 2 + traj[:10, :, 2]
+                j = 0
+                for i, _ in enumerate(traj_x):
+                    # s = 1  # Segment length
+                    plt.plot(traj_x[i], traj_y[i])
+                    u, v = u, v = 10* np.cos(theta[i, -1]), np.sin(theta[i, -1])
+                    # print ("value: ", str(value[i,-1]))
+                    q = ax4.quiver(traj_x[i,-1], traj_y[i,-1], u, v)
+                    plt.annotate(value[i,-1], xy=(traj_x[i,-1], traj_y[i,-1] + 0.5))
+
+                plt.show()
+                
+                ###plotting value fuction in waypoint near area
+
+                X_10 = wp[:10, 0] / dx
+                Y_10 = wp[:10, 1] / dx
+                WP_10 = WP[:10]
+
+                for X, Y, WP_1 in zip(X_10, Y_10, WP_10):
+                    V_neighbor = Vc[int(X) - 10:int(X) + 10, int(Y) - 10:int(Y) + 10, int(robot_head / (6.28 / 31)),
+                                 int(speed / (0.6 / 31))]
+                    fig, ax = plt.subplots(1, 1)
+                    ax.set_title(
+                        "waypoint: " + str(int(WP_1[0] / dx)) + " , " + str(int(WP_1[1] / dx + (crop_size[0] - 1) / 2)))
+                    plt.imshow(V_neighbor, vmin=-1.1, vmax=0.5)
+                    plt.plot(10, 10, 'k*')
+                    plt.colorbar()
+                plt.show()
+
 
                 x_min, x_max = 0, crop_size[0]*dx
                 y_min, y_max = -dx* (crop_size[0] - 1)/2 , dx* (crop_size[0] -1)/2
@@ -706,6 +732,7 @@ class BaseModel(object):
                      x1, output in
                      zip(X_grid_kerneled, kernel_weights)]
                 Z = np.array(Z)
+
                 ax4.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
                 # plt.show()
                 #
@@ -734,19 +761,19 @@ class BaseModel(object):
 
 
 
-                # Initialize and Create a grid
-                grid = p.grid(p)
-                wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
-                wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
-                wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
-                color = ['red' if l == 1 else 'green' for l in label]
-                ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # # Initialize and Create a grid
+                # grid = p.grid(p)
+                # wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
+                # wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
+                # wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
+                # # color = ['red' if l == 1 else 'green' for l in label]
                 # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = ax1.quiver(wp_image_x, wp_image_y, u, v)
-                ax1.set_title('speed ' + str(speed))
-                # plt.show()
+                # # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
+                # theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
+                # u, v = 1 * (np.cos(theta), np.sin(theta))
+                # q = ax1.quiver(wp_image_x, wp_image_y, u, v)
+                # ax1.set_title('speed ' + str(speed))
+                # # plt.show()
 
 
                 # matplotlib.use('Qt4Agg')
@@ -762,7 +789,7 @@ class BaseModel(object):
                 #               wrong[:, 2], s=80, edgecolors="k")
                 # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
 
-                color = ['red' if l == 1 else 'green' for l in label]
+                # color = ['red' if l == 1 else 'green' for l in label]
                 # mycmap = ListedColormap(["red", "green"])
 
                 # ax2.scatter3D(WP[:, 0], WP[:, 1],
@@ -828,7 +855,7 @@ class BaseModel(object):
                 # ax4.set_title('accuracy: ' + str(accuracy))
                 # ax4.scatter(WP[:, 0], WP[:, 1]
                 #             , c=np.squeeze(prediction), marker='o', alpha=0.6, cmap=mycmap)
-                q1 = ax4.quiver(x, y, u, v)
+                # q1 = ax4.quiver(x, y, u, v)
 
                 # ax4.scatter(safe[:, 0], safe[:, 1], s=80, edgecolors="g")
                 # ax4.scatter(unsafe[:, 0], unsafe[:, 1], s=80, edgecolors="r")
