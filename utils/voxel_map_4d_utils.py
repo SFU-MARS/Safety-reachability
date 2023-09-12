@@ -269,5 +269,6 @@ class VoxelMap4d(object):
         valid_1 = tf.logical_and(valid_x, valid_y)
         valid_2 = tf.logical_and(valid_1, valid_theta)
         valid_3 = tf.logical_and(valid_2, valid_v)
+        print ("voxel_validation", str(np.min(valid_3)))
 
         return valid_3

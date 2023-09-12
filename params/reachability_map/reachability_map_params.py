@@ -27,10 +27,10 @@ def create_params():
     # System dynamics (state constraints and discretization)
     p.theta_dim = int(31)
     p.v_dim = int(31)
-    p.v_dv = float(0.6/31)
+    p.v_dv = float(0.9/31)
     p.wMax = float(1.1)
     p.aMax = float(.4)
-    p.v_high = float(.7)
+    p.v_high = float(.8)
     #p.v_low = float(0.)
     p.v_low = float(-.1)
 
