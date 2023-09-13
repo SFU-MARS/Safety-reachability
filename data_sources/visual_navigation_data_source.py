@@ -355,7 +355,7 @@ class VisualNavigationDataSource(ImageDataSource):
             #     pass
 
         # Save the data
-        filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % (100+counter))
+        filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % (counter))
         if counter == 6:
             pass
 

@@ -65,7 +65,7 @@ def create_reachability_data_dir_params(p):
         p.avoid_map_4d_path = '/data_tmp/avoid_map_4d/v1/'
         # p.avoid_map_4d_name = 'TTR_grid_All_Anjians_test.npy'
         # p.avoid_map_4d_name = 'ttr_avoid_map_4d_whole_area3_no_dist.npy'
-        p.avoid_map_4d_name = 'V_safe2.npy'
+        p.avoid_map_4d_name = 'V_safe2_wodisturb.npy'
         # Configure map tmp
         p.reach_avoid_4d_map_tmp_path = '/data_tmp/tmp/v1/reach_avoid_map_4d.mat'
         p.avoid_4d_map_tmp_path = '/data_tmp/tmp/v1/avoid_map_4d_clipped.mat'

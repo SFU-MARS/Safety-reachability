@@ -36,6 +36,8 @@ from sbpd.sbpd_renderer import SBPDRenderer
 from itertools import combinations_with_replacement as combinations_w_r
 from time import time
 from systems.dubins_car import DubinsCar
+from math import log
+
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
     def __init__(self, degree):
@@ -235,24 +237,31 @@ class BaseModel(object):
             #              zip(X, nn_output)]
             #
 
-            predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
+            predicted = [K.dot(x1, tf.expand_dims(output, axis=1)) for
                          x1, output in
                          zip(X_kerneled, kernel_weights)]
-            # cce = tf.losses.log_loss ()
-            prediction_losses =  [tf.reduce_mean( tf.losses.log_loss((label+1)/2,  tf.sigmoid(prediction0))) for label, prediction0  in zip(processed_data['labels'], predicted)]
-
-            # prediction_losses = [-tf.reduce_mean((label+1)/2*tf.log(prediction0 + 1e-9) + (1 - (label+1)/2) * tf.log(1 - prediction0 + 1e-9)) for
-            #                    label, prediction0 in zip(processed_data['labels'], predicted)]
-
-            prediction_loss = tf.reduce_mean(tf.boolean_mask(prediction_losses, tf.is_finite(prediction_losses)))
 
 
-            #
+
+            weights = []
+
             for prediction0, label in zip(predicted, processed_data['labels']):
                 # prediction0 = prediction.numpy()
 
                 label=(-label+1) /2
-
+                n_sample0 =np.size(np.where(label == 1)[0])
+                n_sample1 = np.size(np.where(label == 0)[0])
+                # sample_weights  = (11 / 9 + label) * 9 / 2
+                # weight= weightb (weightS+ytrue)
+                # if (n_sample1 != 0 and n_sample0 != 0):
+                #     # r = math.sqrt(n_sample0 / n_sample1)
+                #     r = n_sample0 / n_sample1
+                #     weightS = (r + 1) / (r - 1)
+                #     weightb =  1 / (weightS - 1)
+                #     sample_weights = (weightS - label) * weightb
+                # else:
+                sample_weights = tf.ones(label.shape)
+                # sample_weights = np.array([n_sample0 / n_sample1 if i == 0 else 1.0 for i in label])
                 prediction = tf.sigmoid(prediction0)
                 # prediction = prediction0
 
@@ -262,7 +271,8 @@ class BaseModel(object):
                 prediction[np.where(prediction >= 0.5)] = 0
                 prediction[np.where(prediction < 0.5)] = 1
                 prediction_total.append(prediction)
-
+                print("label: ", label.transpose())
+                print("prediction: ", prediction.transpose())
                 accuracy = np.count_nonzero(prediction == label) / np.size(label)
                 # accuracy_total.append(accuracy)
                 # prediction_loss1 = tf.losses.mean_squared_error(prediction0,label)
@@ -293,6 +303,20 @@ class BaseModel(object):
                 percentage= correct_count / np.sum(label == 1)
                 if not tf.is_nan(percentage):
                     percentage_total.append(percentage)
+
+                weights.append(sample_weights)
+
+            weights = tf.stack(weights)
+
+
+            # cce = tf.losses.log_loss ()
+            prediction_losses =  [tf.reduce_mean( tf.losses.log_loss((label+1)/2,  tf.sigmoid(prediction0), tf.cast(weigth, tf.float32)) ) for label, prediction0, weigth  in zip(processed_data['labels'], predicted, weights)]
+            #
+            # prediction_losses =  [tf.reduce_mean( bin_cross_entropy((label+1)/2,  tf.sigmoid(prediction0) )) for label, prediction0, weigth  in zip(processed_data['labels'], predicted, weights)]
+            # prediction_losses = [-tf.reduce_mean((label+1)/2*tf.log(prediction0 + 1e-9) + (1 - (label+1)/2) * tf.log(1 - prediction0 + 1e-9)) for
+            #                    label, prediction0 in zip(processed_data['labels'], predicted)]
+
+            prediction_loss = tf.reduce_mean(tf.boolean_mask(prediction_losses, tf.is_finite(prediction_losses)))
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
@@ -591,7 +615,7 @@ class BaseModel(object):
                 #     sample_weights = (weightS - label) * weightb
                 # else:
                 sample_weights = tf.ones(label.shape)
-                # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
+                sample_weights = np.array([n_sample0 / n_sample1 if i == -1 else 1.0 for i in label])
                 # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
                 # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
                 output_total.append(prediction0) # for loss
@@ -600,8 +624,8 @@ class BaseModel(object):
                 prediction[np.where(prediction >= 0)] = 1
                 prediction[np.where(prediction < 0)] = -1
                 prediction_total.append(prediction)
-                print(label.transpose())
-                print(prediction.transpose())
+                print("label: ", label.transpose())
+                print("prediction: ",prediction.transpose())
                 accuracy = accuracy_score(label, prediction)
                 # accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
                 # accuracy = balanced_accuracy_score(label, prediction)
@@ -630,9 +654,11 @@ class BaseModel(object):
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
 
-            hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 + wx * y)), axis=0) for wx, y, sample_weight in
-                                 zip(output_total, processed_data['labels'], weights)] #reduce.mean?
-
+            # hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 + wx * y)), axis=0) for wx, y, sample_weight in
+            #                      zip(output_total, processed_data['labels'], tf.cast(weights, tf.float32))] #reduce.mean?
+            hinge_losses = [tf.reduce_mean(tf.losses.hinge_loss(wx, y, sample_weight)) for
+                            wx, y, sample_weight in
+                            zip(output_total, processed_data['labels'], tf.expand_dims(tf.cast(weights, tf.float32),axis=-1))]
             # tf.losses.hinge_loss
 
             # hinge_losses_1 = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
@@ -664,7 +690,7 @@ class BaseModel(object):
             # 2d plots
 
             # pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
-            Vc= np.load('optimized_dp-master/V_safe2.npy')
+            # Vc= np.load('optimized_dp-master/V_safe2.npy')
 
             for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
@@ -1113,6 +1139,11 @@ def standardize(X_tr):
     for i in range(np.shape(X_tr)[1]):
         X_tr[:,i] = (X_tr[:,i] - np.mean(X_tr[:,i]))/np.std(X_tr[:,i])
     return X_tr
+
+
+def bin_cross_entropy(p, q):
+    n = len(p)
+    return -sum(p[i]*log(q[i]+1e-9) + (1-p[i])*log(1-q[i] + 1e-9) for i in range(n)) / n
 
 
 if __name__ == '__main__':
