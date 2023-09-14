@@ -9,6 +9,9 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 
+def EuclidDistance(wpt1, wpt2):
+    return np.sqrt( (wpt1[0] - wpt2[0]) ** 2 + (wpt1[1] - wpt2[1]) ** 2 )
+
 # Configure depth and color streams
 pipeline = rs.pipeline()
 config = rs.config()
@@ -64,15 +67,27 @@ try:
         """
 
         wpts_list =  [(20, 200), (200, 200)]
+        chosen_wpt = []
+        radius = 4
 
         # For now, let's just plot wpts onto the image
         for wpts in wpts_list:
-            rgb_image = cv2.circle(rgb_image, wpts, radius=3, color=(0, 0, 255), thickness=1)
+            rgb_image = cv2.circle(rgb_image, wpts, radius=radius, color=(0, 0, 255), thickness=1)
+
+
+        def draw_circle(event,x,y,flags,param):
+            global mouseX,mouseY
+            if event == cv2.EVENT_LBUTTONDBLCLK:
+                mouseX,mouseY = x,y
+                # TODO: check which waypoint has been clicked
+
+        cv2.namedWindow('image')
+        cv2.setMouseCallback('image',draw_circle)
 
         # Show images
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', rgb_image)
-        cv2.waitKey(1)
+        k = cv2.waitKey(20) & 0xFF
 
 finally:
 
