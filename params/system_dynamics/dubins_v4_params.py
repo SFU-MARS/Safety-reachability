@@ -8,7 +8,7 @@ def create_params():
     p = DotMap()
     p.system = DubinsV4
     p.dt = .05
-    p.v_bounds = [0.3,0.6]
+    p.v_bounds = [0.0,0.6]
     p.w_bounds = [-1.1, 1.1]
     p.a_bounds = [-0.4, 0.4]
 

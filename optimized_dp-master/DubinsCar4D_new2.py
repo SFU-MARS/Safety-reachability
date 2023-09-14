@@ -11,8 +11,8 @@ import time
  """
 
 class DubinsCar4D_new2:
-    def __init__(self, x=[0,0,0,0], uMin = [-0.4, -1.1], uMax = [0.4, 1.1], dTheta_Min = -0.15, \
-                 dTheta_Max=0.15, d_xy = 0.05 , uMode="max", dMode="min"):
+    def __init__(self, x=[0,0,0,0], uMin = [-0.4, -1.1], uMax = [0.4, 1.1], dTheta_Min = -0.0, \
+                 dTheta_Max=0.0, d_xy = 0.0 , uMode="max", dMode="min"):
         self.x = x
         self.uMax = uMax
         self.uMin = uMin

@@ -89,7 +89,7 @@ def create_params():
     # p.trainer.num_samples = int(295)
 
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 1000
+    p.trainer.ckpt_save_frequency = 10
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
     p.trainer.num_epochs = 300
@@ -157,11 +157,11 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-500_2']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-sure-dv-wodis']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
-    p.data_creation.data_points = 500
+    p.data_creation.data_points = 1000
     p.data_creation.data_points_per_file = int(5) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

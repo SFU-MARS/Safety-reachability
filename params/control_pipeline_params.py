@@ -43,7 +43,7 @@ def create_params():
                           linear_coeffs=np.zeros((6), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=31,
+    p.binning_parameters = DotMap(num_bins=61,
                                   min_speed=p.system_dynamics_params.v_bounds[0],
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 

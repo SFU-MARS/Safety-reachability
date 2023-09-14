@@ -247,6 +247,11 @@ class VoxelMap4d(object):
         """
         Check if a given set of positions and headings are within the voxel map or not.
         """
+        heading_nk1 = tf.clip_by_value(
+            heading_nk1,
+            clip_value_min=-np.pi + 1e-9,
+            clip_value_max=np.pi - self.dtheta - 1e-9
+        )
         voxel_space_position_nk1_x, voxel_space_position_nk1_y, voxel_space_heading_nk1, voxel_space_speed_nk1 \
             = self.grid_world_to_voxel_world(position_nk2, heading_nk1, speed_nk1)
 
@@ -269,5 +274,6 @@ class VoxelMap4d(object):
         valid_1 = tf.logical_and(valid_x, valid_y)
         valid_2 = tf.logical_and(valid_1, valid_theta)
         valid_3 = tf.logical_and(valid_2, valid_v)
+        print ("voxel_validation", str(np.min(valid_3)))
 
         return valid_3

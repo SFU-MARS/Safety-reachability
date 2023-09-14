@@ -36,6 +36,8 @@ from sbpd.sbpd_renderer import SBPDRenderer
 from itertools import combinations_with_replacement as combinations_w_r
 from time import time
 from systems.dubins_car import DubinsCar
+from math import log
+
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
     def __init__(self, degree):
@@ -163,81 +165,114 @@ class BaseModel(object):
         if self.p.loss.loss_type == 'mse':
 
 
-
             sample = 1  #600 , 50
 
-            feat_train_st = [standardize(X_tr)for X_tr in feat_train_sc]
-            # poly = PolynomialFeatures(1)
-            # X_kerneled = [ poly.fit_transform(X)for X in feat_train_st]
-            # X_kerneled = np.array(X_kerneled)
-            X_kerneled = [self.poly_layer(X) for X in feat_train_st]
-            stimators_coeffs =[]
-            sample_weights =[]
+            biases = nn_output[:, :4]
+            scales = nn_output[:, 4:8]
+            kernel_weights = nn_output[:, 8:]
 
-            for X, y , output in zip(X_kerneled, processed_data['labels'], nn_output):
-                try:
+            def normalize(X, biases, scales):
+                if isinstance(X, np.ndarray):
+                    X = tf.convert_to_tensor(X)
+                # expand for all waypoints
+                return tf.expand_dims(scales, 1) * (tf.cast(X, dtype=tf.float32) + tf.expand_dims(biases, 1))
 
+            # X_norm = [normalize(X, bias, scale) for X, bias, scale in zip(feat_train_sc, biases, scales) ]
+            X_norm = normalize(feat_train_sc, biases, scales)
 
-                    n_sample0 = np.size(np.where(y == -1)[0])
-                    n_sample1 = np.size(np.where(y == 1)[0])
-                    sample_weight = {-1: n_sample1, 1: n_sample0}
-                    clf = svm.SVC(kernel='linear', class_weight=sample_weight)
-                    clf.fit(X[:,1:], np.squeeze(y))
-                    stimators_coeff= np.concatenate((np.expand_dims(clf.intercept_,axis=1), clf.coef_) , axis=1)
+            # poly = PolynomialFeatures(3)
+            # X_kerneled = [  poly.fit_transform(X).astype(np.float32) for X in X_norm ]
+            # X_kerneled = tf.convert_to_tensor(np.array(X_kerneled))
 
+            X_kerneled = [
+                self.polyfeatures(X) for X in X_norm
+            ]
+            X_kerneled = tf.stack(X_kerneled, axis=0)
 
-                except ValueError:
-                    # if tf.reduce_mean([K.dot(tf.convert_to_tensor(tf.expand_dims(x1, axis=0), dtype=tf.float32), tf.expand_dims(output, axis=1)) [0][0] * y
-                    #                    for x1, output, y in zip(X_kerneled, nn_output,  processed_data['labels'])]) > 0 :
-                    clf.intercept_ = np.array([-100 if n_sample1 > n_sample0 else 100])
-                    clf.coef_1 = np.zeros((1, X.shape[1]-1))
-                    stimators_coeff = np.concatenate((np.expand_dims(clf.intercept_, axis=1), clf.coef_1), axis=1)
-                    # else:
-                    #     stimators_coeff = np.expand_dims(-output, axis=0)
-                stimators_coeffs.append(stimators_coeff)
-                sample_weights.append(sample_weight)
-
+            # sample = 1  #600 , 50
+            #
+            # feat_train_st = [standardize(X_tr)for X_tr in feat_train_sc]
+            # # poly = PolynomialFeatures(1)
+            # # X_kerneled = [ poly.fit_transform(X)for X in feat_train_st]
+            # # X_kerneled = np.array(X_kerneled)
+            # X_kerneled = [self.poly_layer(X) for X in feat_train_st]
+            # stimators_coeffs =[]
+            # sample_weights =[]
+            #
+            # for X, y , output in zip(X_kerneled, processed_data['labels'], nn_output):
+            #     try:
+            #
+            #
+            #         n_sample0 = np.size(np.where(y == -1)[0])
+            #         n_sample1 = np.size(np.where(y == 1)[0])
+            #         sample_weight = {-1: n_sample1, 1: n_sample0}
+            #         clf = svm.SVC(kernel='linear', class_weight=sample_weight)
+            #         clf.fit(X[:,1:], np.squeeze(y))
+            #         stimators_coeff= np.concatenate((np.expand_dims(clf.intercept_,axis=1), clf.coef_) , axis=1)
+            #
+            #
+            #     except ValueError:
+            #         # if tf.reduce_mean([K.dot(tf.convert_to_tensor(tf.expand_dims(x1, axis=0), dtype=tf.float32), tf.expand_dims(output, axis=1)) [0][0] * y
+            #         #                    for x1, output, y in zip(X_kerneled, nn_output,  processed_data['labels'])]) > 0 :
+            #         clf.intercept_ = np.array([-100 if n_sample1 > n_sample0 else 100])
+            #         clf.coef_1 = np.zeros((1, X.shape[1]-1))
+            #         stimators_coeff = np.concatenate((np.expand_dims(clf.intercept_, axis=1), clf.coef_1), axis=1)
+            #         # else:
+            #         #     stimators_coeff = np.expand_dims(-output, axis=0)
+            #     stimators_coeffs.append(stimators_coeff)
+            #     sample_weights.append(sample_weight)
+            #
 
                 # prediction_loss = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output, axis=0)) for
                 #                 stimator_coeff, output in zip(stimators_coeffs, nn_output)]
 
 
-            feat_train_sc_1 = tf.concat(
-                (feat_train_sc,
-                 tf.ones((feat_train_sc.shape[0], feat_train_sc.shape[1], 1))),
-                axis=2)
-            X = feat_train_sc_1
+            # feat_train_sc_1 = tf.concat(
+            #     (feat_train_sc,
+            #      tf.ones((feat_train_sc.shape[0], feat_train_sc.shape[1], 1))),
+            #     axis=2)
+            # X = feat_train_sc_1
             # predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
             #              x1, output in
             #              zip(X, nn_output)]
             #
-            predicted = [K.dot(tf.convert_to_tensor(x1, dtype=tf.float32), tf.expand_dims(output, axis=1)) for
+
+            predicted = [K.dot(x1, tf.expand_dims(output, axis=1)) for
                          x1, output in
-                         zip(X_kerneled, nn_output)]
-
-            prediction_loss = [-tf.reduce_mean((label+1)/2*tf.log(tf.sigmoid(prediction0 + 1e-9)) + (1 - (label+1)/2) * tf.log(1 - tf.sigmoid(prediction0) + 1e-9)) for
-                               label, prediction0 in zip(processed_data['labels'], predicted)]
+                         zip(X_kerneled, kernel_weights)]
 
 
 
+            weights = []
 
-
-            #
             for prediction0, label in zip(predicted, processed_data['labels']):
                 # prediction0 = prediction.numpy()
 
+                label=(-label+1) /2
+                n_sample0 =np.size(np.where(label == 1)[0])
+                n_sample1 = np.size(np.where(label == 0)[0])
+                # sample_weights  = (11 / 9 + label) * 9 / 2
+                # weight= weightb (weightS+ytrue)
+                # if (n_sample1 != 0 and n_sample0 != 0):
+                #     # r = math.sqrt(n_sample0 / n_sample1)
+                #     r = n_sample0 / n_sample1
+                #     weightS = (r + 1) / (r - 1)
+                #     weightb =  1 / (weightS - 1)
+                #     sample_weights = (weightS - label) * weightb
+                # else:
+                sample_weights = tf.ones(label.shape)
+                # sample_weights = np.array([n_sample0 / n_sample1 if i == 0 else 1.0 for i in label])
                 prediction = tf.sigmoid(prediction0)
                 # prediction = prediction0
 
                 output_total.append(prediction)
                 prediction = prediction.numpy()
-                prediction[np.where(prediction >= 0.5)] = 1
-                prediction[np.where(prediction < 0.5)] = 0
+                # reverse for scores calculation
+                prediction[np.where(prediction >= 0.5)] = 0
+                prediction[np.where(prediction < 0.5)] = 1
                 prediction_total.append(prediction)
-                label = (label+1)/2
-
-                # should be swap with lower one
-
+                print("label: ", label.transpose())
+                print("prediction: ", prediction.transpose())
                 accuracy = np.count_nonzero(prediction == label) / np.size(label)
                 # accuracy_total.append(accuracy)
                 # prediction_loss1 = tf.losses.mean_squared_error(prediction0,label)
@@ -249,27 +284,44 @@ class BaseModel(object):
 
 
                 # accuracy = balanced_accuracy_score(label, prediction)
-                precision = precision_score (label, prediction)
-                recall = recall_score(label, prediction)
+
+                F1 = metrics.f1_score(label, prediction, zero_division =0)
+                if F1==0:
+                    F1=1
+                F1_total.append(F1)
                 if not tf.is_nan(accuracy):
                     accuracy_total.append(accuracy) # look at other metrics maybe auc
                 else:
-                    tn = np.sum((label == 0) and (prediction == 0))
-                    accuracy_total.append(tn /np.sum(label == 0))
+                    tn = np.sum((label == 1) and (prediction == 1))
+                    accuracy_total.append(tn /np.sum(label == 1))
                 if not tf.is_nan(precision):
                     precision_total.append(precision)
                 if not tf.is_nan(recall):
                     recall_total.append(recall)
                 # for label1 , prediction1 in zip(label, prediction):
-                correct_count = np.sum((label == 0) & (prediction == 0))
-                percentage= correct_count / np.sum(label == 0)
+                correct_count = np.sum((label == 1) & (prediction == 1))
+                percentage= correct_count / np.sum(label == 1)
                 if not tf.is_nan(percentage):
                     percentage_total.append(percentage)
+
+                weights.append(sample_weights)
+
+            weights = tf.stack(weights)
+
+
+            # cce = tf.losses.log_loss ()
+            prediction_losses =  [tf.reduce_mean( tf.losses.log_loss((label+1)/2,  tf.sigmoid(prediction0), tf.cast(weigth, tf.float32)) ) for label, prediction0, weigth  in zip(processed_data['labels'], predicted, weights)]
+            #
+            # prediction_losses =  [tf.reduce_mean( bin_cross_entropy((label+1)/2,  tf.sigmoid(prediction0) )) for label, prediction0, weigth  in zip(processed_data['labels'], predicted, weights)]
+            # prediction_losses = [-tf.reduce_mean((label+1)/2*tf.log(prediction0 + 1e-9) + (1 - (label+1)/2) * tf.log(1 - prediction0 + 1e-9)) for
+            #                    label, prediction0 in zip(processed_data['labels'], predicted)]
+
+            prediction_loss = tf.reduce_mean(tf.boolean_mask(prediction_losses, tf.is_finite(prediction_losses)))
 
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
             # 2d plots
-            pdf = PdfPages("output_fov_sample40_FRS_1image.pdf")
+            # pdf = PdfPages("output_fov_sample40_FRS_1image.pdf")
             for WP, prediction, label, C1, image, start_nk3, goal, wp, control in zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
@@ -279,6 +331,8 @@ class BaseModel(object):
                     all_waypoint_sampled,
                     raw_data['vehicle_controls_nk2'][:, 0]
                     ):
+                stamp = time()/1e9
+                pdf = PdfPages(f"output_all_{stamp:.2f}.pdf")
 
                 # camera_pos_13 = config.heading_nk1()[0]
                 # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
@@ -290,12 +344,13 @@ class BaseModel(object):
                 #
                 # plt.imshow(np.squeeze(top))
                 # plt.show()
-
+                label = (-label + 1) / 2
                 fig = plt.figure()
+
                 ax1 = fig.add_subplot(221)
                 ax1.imshow(image.astype(np.uint8))
                 plt.grid()
-                plt.show()
+                # plt.show()
 
                 x = WP[:, 0:1]
                 x1 = np.expand_dims(x, axis=2)
@@ -316,7 +371,7 @@ class BaseModel(object):
                 wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
                 wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
                 wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
-                color = ['red' if l == -1 else 'green' for l in label]
+                color = ['red' if l == 1 else 'green' for l in label]
                 ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
                 # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
                 theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
@@ -339,7 +394,6 @@ class BaseModel(object):
                 #               wrong[:, 2], s=80, edgecolors="k")
                 # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
 
-                color = ['red' if l == -1 else 'green' for l in label]
                 # mycmap = ListedColormap(["red", "green"])
 
                 # ax2.scatter3D(WP[:, 0], WP[:, 1],
@@ -393,7 +447,7 @@ class BaseModel(object):
                 theta = WP[:, 2]
                 u, v = 1 * (np.cos(theta), np.sin(theta))
                 accuracy = np.count_nonzero(prediction == label) / np.size(label)
-                color_result = ['red' if l == -1 else 'green' for l in prediction]
+                color_result = ['red' if l == 1 else 'green' for l in prediction]
                 wrong = WP[np.where(prediction != label)[0]]
                 ax4.scatter(wrong[:, 0], wrong[:, 1], s=60, edgecolors="k")
                 ax4.scatter(x, y
@@ -561,7 +615,7 @@ class BaseModel(object):
                 #     sample_weights = (weightS - label) * weightb
                 # else:
                 sample_weights = tf.ones(label.shape)
-                # sample_weights = np.array([n_sample0 / n_sample1 if i == 1 else 1.0 for i in label])
+                sample_weights = np.array([n_sample0 / n_sample1 if i == -1 else 1.0 for i in label])
                 # class_weights[np.where(label == 1)[0]] = 1.0 / n_sample1
                 # class_weights[np.where(label == -1)[0]] = 1.0 / n_sample0
                 output_total.append(prediction0) # for loss
@@ -570,8 +624,8 @@ class BaseModel(object):
                 prediction[np.where(prediction >= 0)] = 1
                 prediction[np.where(prediction < 0)] = -1
                 prediction_total.append(prediction)
-                print(label.transpose())
-                print(prediction.transpose())
+                print("label: ", label.transpose())
+                print("prediction: ",prediction.transpose())
                 accuracy = accuracy_score(label, prediction)
                 # accuracy = balanced_accuracy_score(np.squeeze(label), np.squeeze(prediction),sample_weights)
                 # accuracy = balanced_accuracy_score(label, prediction)
@@ -600,8 +654,12 @@ class BaseModel(object):
             # stimators_coeffs = [clf.get_params(estimator) for estimator in estimators]
             #hinge_losses = [tf.losses.mean_squared_error(stimator_coeff, np.expand_dims(output,axis=0)) for stimator_coeff,output in  zip(stimators_coeffs, nn_output)]
 
-            hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 + wx * y)), axis=0) for wx, y, sample_weight in
-                                 zip(output_total, processed_data['labels'], weights)] #reduce.mean?
+            # hinge_losses = [tf.reduce_mean(tf.multiply(sample_weight, tf.maximum(0, 1 + wx * y)), axis=0) for wx, y, sample_weight in
+            #                      zip(output_total, processed_data['labels'], tf.cast(weights, tf.float32))] #reduce.mean?
+            hinge_losses = [tf.reduce_mean(tf.losses.hinge_loss(wx, y, sample_weight)) for
+                            wx, y, sample_weight in
+                            zip(output_total, processed_data['labels'], tf.expand_dims(tf.cast(weights, tf.float32),axis=-1))]
+            # tf.losses.hinge_loss
 
             # hinge_losses_1 = [tf.reduce_sum(tf.maximum(0, 1 - wx * y), axis=0) for wx, y in
             #                      zip(output_total, processed_data['labels'])]
@@ -630,9 +688,9 @@ class BaseModel(object):
             renderer = SBPDRenderer.get_renderer(self.p.simulator_params.obstacle_map_params.renderer_params)
 
             # 2d plots
-            stamp = time()
-            pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
-            Vc= np.load('optimized_dp-master/V_safe2.npy')
+
+            # pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
+            # Vc= np.load('optimized_dp-master/V_safe2.npy')
 
             for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
@@ -644,14 +702,16 @@ class BaseModel(object):
                     all_waypoint_sampled,
                     processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
 
+
+                stamp = time()/1e5
+                pdf = PdfPages(f"output_all_{stamp:.2f}.pdf")
                 label = -label
 
-                #
-                # robot
+                #             # robot
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
                 fig = plt.figure()
-                ax4 = fig.add_subplot()
+                ax4 = fig.add_subplot(224)
                 # fig, ax4 = plt.subplots()
                 ax4.imshow(np.squeeze(top))
                 ax4.plot(0, (crop_size[0] - 1) / 2, 'k*')
@@ -663,10 +723,10 @@ class BaseModel(object):
 
 
                 ## plotting traj
-
-                traj_x = (traj[:10,:,  0] / dx + 0)
-                traj_y = (traj[:10,:, 1] / dx + (crop_size[0] - 1) / 2)
-                theta = np.pi / 2 + traj[:10, :, 2]
+                list = np.where(label==-1)[0]
+                traj_x = (traj[list,:,  0] / dx + 0)
+                traj_y = (traj[list,:, 1] / dx + (crop_size[0] - 1) / 2)
+                theta = np.pi / 2 + traj[list, :, 2]
                 j = 0
                 for i, _ in enumerate(traj_x):
                     # s = 1  # Segment length
@@ -674,28 +734,29 @@ class BaseModel(object):
                     u, v = u, v = 10* np.cos(theta[i, -1]), np.sin(theta[i, -1])
                     # print ("value: ", str(value[i,-1]))
                     q = ax4.quiver(traj_x[i,-1], traj_y[i,-1], u, v)
-                    plt.annotate(value[i,-1], xy=(traj_x[i,-1], traj_y[i,-1] + 0.5))
+                    plt.annotate(np.min(value[i,:]), xy=(traj_x[i,-1], traj_y[i,-1] + 0.5))
+                pdf.savefig(fig)
+                # plt.show()
 
-                plt.show()
-                
-                ###plotting value fuction in waypoint near area
+                ##plotting value fuction in waypoint near area
 
-                X_10 = wp[:10, 0] / dx
-                Y_10 = wp[:10, 1] / dx
-                WP_10 = WP[:10]
+                # X_10 = wp[list,: ]
+                # # Y_10 = wp[:10, 1] / dx
+                # WP_10 = WP[list]
+                #
+                # for X,WP_1 in zip(X_10, WP_10):
+                #     V_neighbor = Vc[int(X[0] / dx) - 10:int(X[0] / dx) + 10, int(X[1] / dx) - 10:int(X[1] / dx) + 10, int(X[2] / (6.28 / 31)),
+                #                  int(X[3] / (0.9 / 31))]
+                #     fig, ax5 = plt.subplots(1, 1)
+                #     ax5.set_title(
+                #         "waypoint: " + str(int(WP_1[0] / dx)) + " , " + str(int(WP_1[1] / dx + (crop_size[0] - 1) / 2))+" , "+ str(WP_1[2]) + " , "+ str(WP_1[3]) )
+                #     plt.imshow(V_neighbor, vmin=np.min(V_neighbor), vmax=np.max(V_neighbor))
+                #     plt.plot(10, 10, 'k*')
+                #     plt.colorbar()
+                #     pdf.savefig(fig)
+                # # plt.show()
 
-                for X, Y, WP_1 in zip(X_10, Y_10, WP_10):
-                    V_neighbor = Vc[int(X) - 10:int(X) + 10, int(Y) - 10:int(Y) + 10, int(robot_head / (6.28 / 31)),
-                                 int(speed / (0.6 / 31))]
-                    fig, ax = plt.subplots(1, 1)
-                    ax.set_title(
-                        "waypoint: " + str(int(WP_1[0] / dx)) + " , " + str(int(WP_1[1] / dx + (crop_size[0] - 1) / 2)))
-                    plt.imshow(V_neighbor, vmin=-1.1, vmax=0.5)
-                    plt.plot(10, 10, 'k*')
-                    plt.colorbar()
-                plt.show()
-
-
+                ax1 = fig.add_subplot(221)
                 x_min, x_max = 0, crop_size[0]*dx
                 y_min, y_max = -dx* (crop_size[0] - 1)/2 , dx* (crop_size[0] -1)/2
                 h= 0.05
@@ -733,7 +794,7 @@ class BaseModel(object):
                      zip(X_grid_kerneled, kernel_weights)]
                 Z = np.array(Z)
 
-                ax4.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
+                ax1.contourf(xx/dx+0, yy/dx+(crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)), cmap=plt.get_cmap("RdBu"),  alpha=0.5)
                 # plt.show()
                 #
                 # x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
@@ -743,8 +804,8 @@ class BaseModel(object):
 
 
                 # fig = plt.figure()
-                ax1 = fig.add_subplot(221)
-                ax1.imshow(image.astype(np.uint8))
+                ax2 = fig.add_subplot(222)
+                ax2.imshow(image.astype(np.uint8))
                 plt.grid()
 
                 x = WP[:, 0:1]
@@ -780,7 +841,7 @@ class BaseModel(object):
                 # fig = plt.figure()
 
                 # ax2 = fig.add_subplot(222, projection='3d')
-                ax2 = fig.add_subplot(222)
+
                 # prediction = prediction.numpy()
                 # prediction[np.where(prediction >= 0)] = 1
                 # prediction[np.where(prediction < 0)] = -1
@@ -796,22 +857,25 @@ class BaseModel(object):
                 #               WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
                 # ax2.scatter(WP[:, 0], WP[:, 1]
                 #               , c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
-                ax2.scatter(WP[:, 0], WP[:, 1]
-                            , marker='o', alpha=0.6, color=color)
-                # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
-                x = WP[:, 0]
-                y = WP[:, 1]
-                theta = WP[:, 2]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
 
-                q = ax2.quiver(x, y, u, v)
-                ax2.set_title('ground truth')
-                # plt.xlim(-0.5, len(x[0]) - 0.5)
-                # plt.ylim(-0.5, len(x) - 0.5)
-                # plt.xticks(range(len(x[0])))
-                # plt.yticks(range(len(x)))
-
-                # plt.show()
+                ##temp
+                # ax3 = fig.add_subplot(223)
+                # ax3.scatter(WP[:, 0], WP[:, 1]
+                #             , marker='o', alpha=0.6, color=color)
+                # # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
+                # x = WP[:, 0]
+                # y = WP[:, 1]
+                # theta = WP[:, 2]  # theta of the arrow
+                # u, v = 1 * (np.cos(theta), np.sin(theta))
+                #
+                # q = ax3.quiver(x, y, u, v)
+                # ax3.set_title('ground truth')
+                # # plt.xlim(-0.5, len(x[0]) - 0.5)
+                # # plt.ylim(-0.5, len(x) - 0.5)
+                # # plt.xticks(range(len(x[0])))
+                # # plt.yticks(range(len(x)))
+                #
+                # # plt.show()
 
                 from obstacles.sbpd_map import SBPDMap
                 # fig = plt.figure()
@@ -903,7 +967,8 @@ class BaseModel(object):
                 # plt.show()
 
                 pdf.savefig(fig)
-            pdf.close()
+                pdf.close()
+            # pdf.close()
             plt.close('all')
             # end of 2d plot
             # print("regularization_loss: " + str(regularization_loss.numpy()))
@@ -1074,6 +1139,11 @@ def standardize(X_tr):
     for i in range(np.shape(X_tr)[1]):
         X_tr[:,i] = (X_tr[:,i] - np.mean(X_tr[:,i]))/np.std(X_tr[:,i])
     return X_tr
+
+
+def bin_cross_entropy(p, q):
+    n = len(p)
+    return -sum(p[i]*log(q[i]+1e-9) + (1-p[i])*log(1-q[i] + 1e-9) for i in range(n)) / n
 
 
 if __name__ == '__main__':

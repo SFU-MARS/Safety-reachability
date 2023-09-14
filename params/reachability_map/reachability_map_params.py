@@ -27,10 +27,10 @@ def create_params():
     # System dynamics (state constraints and discretization)
     p.theta_dim = int(31)
     p.v_dim = int(31)
-    p.v_dv = float(0.6/31)
+    p.v_dv = float(0.9/31)
     p.wMax = float(1.1)
     p.aMax = float(.4)
-    p.v_high = float(.7)
+    p.v_high = float(.8)
     #p.v_low = float(0.)
     p.v_low = float(-.1)
 
@@ -65,7 +65,7 @@ def create_reachability_data_dir_params(p):
         p.avoid_map_4d_path = '/data_tmp/avoid_map_4d/v1/'
         # p.avoid_map_4d_name = 'TTR_grid_All_Anjians_test.npy'
         # p.avoid_map_4d_name = 'ttr_avoid_map_4d_whole_area3_no_dist.npy'
-        p.avoid_map_4d_name = 'V_safe2.npy'
+        p.avoid_map_4d_name = 'V_safe2_wodisturb.npy'
         # Configure map tmp
         p.reach_avoid_4d_map_tmp_path = '/data_tmp/tmp/v1/reach_avoid_map_4d.mat'
         p.avoid_4d_map_tmp_path = '/data_tmp/tmp/v1/avoid_map_4d_clipped.mat'
