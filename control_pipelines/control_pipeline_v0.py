@@ -578,7 +578,7 @@ class ControlPipelineV0(ControlPipelineBase):
         p = self.params.waypoint_params
 
         FRS = np.load(
-            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result3/FRS_v{:.2f}_H6.npy'.format(
+            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result4/FRS_v{:.2f}_H2.npy'.format(
                 v0))
         if v0<0.05:
             # Load value from my map
@@ -594,7 +594,7 @@ class ControlPipelineV0(ControlPipelineBase):
         n = len(result[0])
         wx_n_all = 0 + result[0] * 5 / 100
         wy_n_all = -5 + result[1] * 10 / 100
-        wv_n_all = 0 + result[3] * 0.6 / 61
+        wv_n_all = 0 + result[3] * 0.7 / 61
         wtheta_n_all = -math.pi + result[2] * 2 * math.pi / 36
         indx = np.random.choice(n, self.waypoint_grid.n, replace=False)
         wx_n = wx_n_all [indx]

@@ -20,7 +20,7 @@ class VoxelMap4d(object):
         self.voxel_function_4d = function_array_4d
 
     def compute_voxel_function(self, position_nk2, heading_nk1, speed_nk1, invalid_value=100.,
-                                method="nearest_neighbor"):
+                                method="nearest_neighbor"): # "nearest_neighbor"):
         if method == "nearest_neighbor":
             return self.compute_voxel_function_NN(position_nk2, heading_nk1, speed_nk1, invalid_value=100.)
         elif method == "interpolation":

@@ -39,7 +39,7 @@ obstacles = np.tile(
 
 
 # Velocity constraint - negative level set [0., 0.7]
-velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.7), Upper_Half_Space(g, 3, 0.0))
+velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.8), Upper_Half_Space(g, 3, -0.1))
 
 # Combine it with the original obstacle map
 Initial_value_f = Union(-velocity_constr, obstacles)
@@ -58,5 +58,5 @@ compMethods = { "TargetSetMode": "minVWithV0"}
 
 # Solve the HJ pde
 result = HJSolver(my_car, g, Initial_value_f, tau, compMethods, po2, saveAllTimeSteps=False )
-np.save("V_safe2_wodisturb.npy", result)
+np.save("V_safe2_wodisturb_wslack.npy", result)
 

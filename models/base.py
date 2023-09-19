@@ -74,6 +74,22 @@ class BaseModel(object):
         self.sigma_sq=0.1
         self.poly_layer = PolynomialFeaturesLayer(degree=3)
 
+
+    def vz_values(self, start_nk3):
+        y = np.linspace(-2.5, 2.5, 100)
+        x = np.linspace(0, 5, 100)
+        theta = np.zeros_like(x)
+        xx, yy = np.meshgrid(x, y)
+        xy = np.stack((xx, yy), axis=-1).reshape((-1, 2))
+        xyt = np.zeros((xy.shape[0], 3))
+        xyt[:, :2] = xy
+        start = np.tile(start_nk3, (np.shape(xyt)[0], 1))
+        with tf.device('cpu'):
+            start = tf.convert_to_tensor(np.expand_dims(start, 1), dtype=tf.float32)
+            xyt = tf.convert_to_tensor(np.expand_dims(xyt, 1), dtype=tf.float32)
+            xyt_world = DubinsCar.convert_position_and_heading_to_ego_coordinates(start, xyt)
+
+
     def make_architecture(self):
         """
         Create the NN architecture for the model.
@@ -691,6 +707,8 @@ class BaseModel(object):
 
             # pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
             # Vc= np.load('optimized_dp-master/V_safe2.npy')
+            # V_safe2_wodisturb
+
 
             for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos,robot_head, value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
@@ -701,6 +719,9 @@ class BaseModel(object):
                     raw_data['vehicle_state_nk3'],
                     all_waypoint_sampled,
                     processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13,raw_data['value_function'] )):#, predicted_contour):
+
+                self.vz_values(start_nk3)
+
 
 
                 stamp = time()/1e5
