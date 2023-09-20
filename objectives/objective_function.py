@@ -97,8 +97,10 @@ class ObjectiveFunction(object):
 
             img_[voxel_space_position_nk1_x[0], voxel_space_position_nk1_y[0]] = np.expand_dims(obj[k], -1)
             plt.matshow(img_)
-            plt.colorbar()
-            plt.title(str(k) + 'start @ '+ 'heading: ' + str(t.numpy()[0][0])+'speed: '+str(v.numpy()[0][0]))
+            plt.colorbar(location='bottom',shrink=0.7)
+            plt.title(str(k) + 'start @ '+ 'heading: ' + str(np.rad2deg(t.numpy()[0][0]))+'speed: '+str(v.numpy()[0][0])+'\n'+
+                      'end @ '+ 'heading: ' + str(np.rad2deg(t.numpy()[0][-1]))+'speed: '+str(v.numpy()[0][-1]), fontdict={'fontsize': 8} )
+
             # plt.title(str(k))
             fig = plt.gcf()
             pp.savefig(fig)
@@ -107,7 +109,7 @@ class ObjectiveFunction(object):
             img_ = np.copy(img)
             img_[voxel_space_position_nk1_x[0], voxel_space_position_nk1_y[0]] = np.expand_dims(obj[k], -1) + 15
             plt.matshow(img_)
-            plt.colorbar()
+            plt.colorbar(location='bottom',shrink=0.7)
             if np.any(obj[k] < 0):
                 unsafe+=1
             plt.title(str(k) + ' unsafe:'+ str(np.any(obj[k] < 0)))
@@ -145,7 +147,7 @@ class ObjectiveFunction(object):
         """
         Evaluate the entire objective function corresponding to a system trajectory.
         """
-        # vz = self.vz_values(trajectory)
+        vz = self.vz_values(trajectory)
         objective_values_by_tag = self.evaluate_function_by_objective(trajectory)
         objective_function_values = 0.
         labels=[]

@@ -20,6 +20,6 @@ def create_params():
                                     size_maxpool_filters=2)
 
     # Location of the resnet50 weights
-    p.arch.resnet50_weights_path = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/resnet50_weights/resnet101_weights_tf_dim_ordering_tf_kernels_notop.h5'
+    p.arch.resnet50_weights_path = '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
     return p

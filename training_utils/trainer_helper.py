@@ -126,7 +126,7 @@ class TrainerHelper(object):
                     # tape.watch(training_batch)
                     # counter1=0
 
-                    loss = model.compute_loss_function(training_batch, param, c, is_training=True,
+                    loss = model.compute_loss_function(training_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=True,
                                                        return_loss_components=False)
                     # print ("final loss: "+ str(loss.numpy()))
 
@@ -319,12 +319,12 @@ class TrainerHelper(object):
         """
 
         regn_loss_training, prediction_loss_training, _, accuracy_training, precision_training, recall_training, percentage_training, F1_training = model.compute_loss_function(
-            training_batch, param, c, is_training=False, return_loss_components=True)
+            training_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=False, return_loss_components=True)
         # regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(
         #     training_batch, param, c, is_training=False, return_loss_components=True)
 
         regn_loss_validation, prediction_loss_validation, _, accuracy_validation, precision_validation, recall_validation, percentage_validation, F1_validation = model.compute_loss_function(
-            validation_batch, param, c, is_training=False, return_loss_components=True)
+            validation_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=False, return_loss_components=True)
         # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
         #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation
@@ -362,11 +362,11 @@ class TrainerHelper(object):
         Record the average loss for the batch and update the metric.
         """
         regn_loss_training, prediction_loss_training, _, accuracy_training = model.compute_loss_function(training_batch,
-                                                                                                         param, c,
+                                                                                                         param, c, model.waypoint_bias, model.waypoint_scale,
                                                                                                          is_training=False,
                                                                                                          return_loss_components=True)
         regn_loss_validation, prediction_loss_validation, _, accuracy_validation = model.compute_loss_function(
-            validation_batch, param, c, is_training=False, return_loss_components=True)
+            validation_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation
         training_loss_metric1(accuracy_training)
         # print(training_loss_metric)

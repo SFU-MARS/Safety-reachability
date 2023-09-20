@@ -82,7 +82,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(1000) #int(200)
+    p.trainer.num_samples = int(90) #int(200)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -142,7 +142,7 @@ def create_params():
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/tmp4-seperate4']
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/0729-stack3-last-10b']
-    # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1003-after-shuffling2']
+    # p.data_creation.data_dir = ['/local-scratch/tara/proiniynject/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1003-after-shuffling2']
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/1115-SVM4-all1'] #test 2 datapoint IN EACH FILE
     # p.data_creation.data_dir = [

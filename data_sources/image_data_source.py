@@ -380,7 +380,72 @@ class ImageDataSource(DataSource):
         
         # TODO: This could be made faster. This could potentially load a new pickle file everytime it is called
         # which may slow things down
-        
+
+        # if start_index == 0:
+        #     self.training_info_dict['num_samples'] = 0
+        #
+        # # Get the index of the current data file to use
+        # num_samples = np.cumsum(self.training_dataset['num_samples_n1'])
+        # file_idx = np.where(start_index < num_samples)[0][0]
+        #
+        # # Get the indices used to shuffle the data inside this data file
+        # data_shuffle_idxs = self.training_shuffle_idxs[file_idx]
+        #
+        # # Number of samples in this data file
+        # n = self.training_dataset['num_samples_n1'][file_idx, 0]
+        #
+        # # Load the pickle file into memory if necessary
+        # self._load_data_into_info_dict(self.training_dataset, file_idx,
+        #                                self.training_info_dict)
+        # # np.mean(self.training_info_dict['data']['start_pose'], axis=0) # [[0.3496886  0.06099968]]
+        # # np.var(self.training_info_dict['data']['start_pose'], axis=0) #[[0.02119822 3.3798633]]
+        # # self.training_info_dict['data']['image']=(self.training_info_dict['data']['image']-np.mean(self.training_info_dict['data']['image'], axis=0))/np.std(self.training_info_dict['data']['image'], axis=0)
+        # # self.training_info_dict['data']['image'] = (np.clip(self.training_info_dict['data']['image'],-1.,1.) +1.) / 2.
+        # # _load_data_into
+        # # Get the start index relative to the start of this data_files data
+        # start_index += -self.training_info_dict['num_samples'] + n
+        #
+        # # The whole batch can be loaded from one data file
+        # if start_index + self.p.trainer.batch_size <= n:
+        #
+        #     # Get the training batch
+        #     training_batch = self.get_data_from_indices(self.training_info_dict['data'],
+        #                                                 data_shuffle_idxs[
+        #                                                 start_index: start_index + self.p.trainer.batch_size])
+        #     # training_batch = self.training_info_dict['data']
+        #
+        # else:  # The batch is split over two data_files
+        #
+        #     # Get the remaining data from the first data_file
+        #     training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
+        #                                                  data_shuffle_idxs[
+        #                                                  start_index: start_index + self.p.trainer.batch_size])
+        #     # training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
+        #     #                                              data_shuffle_idxs[start_index: start_index+1])
+        #
+        #     remaining_num_samples = self.p.trainer.batch_size - self._get_n(training_batch0)
+        #
+        #     # The index of the next data file
+        #     file_idx += 1
+        #
+        #     # The indices used to shuffle the data inside this file
+        #     data_shuffle_idxs = self.training_shuffle_idxs[file_idx]
+        #
+        #     # Load the next data_file into memory
+        #     self._load_data_into_info_dict(self.training_dataset, file_idx,
+        #                                    self.training_info_dict)
+        #
+        #     # Get the rest of the batch from the second data_file
+        #     training_batch1 = self.get_data_from_indices(self.training_info_dict['data'],
+        #                                                  data_shuffle_idxs[:remaining_num_samples])
+        #
+        #     # Join the two sub-batches of data
+        #     training_batch = {}
+        #     for tag in self.actual_data_tags:
+        #         training_batch[tag] = np.concatenate([training_batch0[tag], training_batch1[tag]],
+        #                                              axis=0)
+        # return training_batch
+        #
         # Choose a random data_file from the validation set
         file_idx = np.random.choice(len(self.validation_dataset['filename'][:, 0]))
         # file_idx = 1

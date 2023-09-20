@@ -148,8 +148,8 @@ class TrainerFrontendHelper(object):
             for c in C:
 
                 for param in params:
-
-
+            #
+            #
                     self.maybe_restore_checkpoint()
             # for param in params:
             # Start the training

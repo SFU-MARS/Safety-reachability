@@ -29,7 +29,7 @@ def create_params(simulator_params):
 
 
                     # Weight regularization co-efficient
-                    regn=1e-6,
+                    regn=1e-11,
 
                     lam=.1,
 
@@ -65,7 +65,7 @@ def create_params(simulator_params):
                         learning_schedule=2,
         
                         # Learning schedule adjustment parameters
-                        lr_decay_frequency=10,
+                        lr_decay_frequency=1,
                         lr_decay_factor=0.95,
         
                         # Checkpoint settings
