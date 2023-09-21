@@ -27,8 +27,8 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         #     tf.keras.layers.Dense(35, activation = 'tanh')
         #     # Output layer
         # ])
-        self.waypoint_scale = tf.contrib.eager.Variable(tf.ones([1, 4]), name="waypoint_scale", trainable=True)
-        self.waypoint_bias = tf.contrib.eager.Variable(tf.zeros([1, 4]), name="waypoint_scale", trainable=True)
+        self.waypoint_scale = tf.contrib.eager.Variable(tf.ones([1, 4]), name="waypoint_scale", trainable=False)
+        self.waypoint_bias = tf.contrib.eager.Variable(tf.zeros([1, 4]), name="waypoint_scale", trainable=False)
 
         # model.compile(
         #     optimizer=tf.train.AdamOptimizer(learning_rate=self.p.trainer.lr * 10))  # ,loss='mean_squared_error'))
