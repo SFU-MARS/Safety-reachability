@@ -33,8 +33,8 @@ def create_params():
     p.avoid_obstacle_objective = DotMap(#obstacle_margin0=0.25,
                                         #obstacle_margin1=0.45,
 
-                                        obstacle_margin0=0.3*3,
-                                        obstacle_margin1=0.5*3,
+                                        obstacle_margin0=0.3*1.5,
+                                        obstacle_margin1=0.5*1.5,
 
                                         power=3,
                                         obstacle_cost=1.0)

@@ -79,6 +79,9 @@ class VisualNavigationDataSource(ImageDataSource):
             # Reset the data dictionary
             data = self.reset_data_dictionary(self.p)
 
+            simulator.params.reset_params.start_config.position.reset_type = 'random'
+            simulator.params.reset_params.start_config.heading.reset_type = 'random'
+
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 start = time.time()
                 # Reset the simulator
@@ -97,7 +100,19 @@ class VisualNavigationDataSource(ImageDataSource):
 
                 end = time.time()
                 elapsed = end - start
-                print("The episode", self.episode_counter, "takes time", elapsed)
+                print(
+                    "The episode", self.episode_counter, "takes time", elapsed,
+                    "start position:", simulator.start_config._position_nk2.numpy(),
+                    "heading:", np.rad2deg(simulator.start_config._heading_nk1.numpy()),
+                    "velocity:", simulator.start_config._speed_nk1.numpy(),
+                )
+
+                simulator.params.reset_params.start_config.position.reset_type = 'custom'
+                simulator.params.reset_params.start_config.position.start_pos = simulator.start_config._position_nk2.numpy().reshape((2,))
+
+                simulator.params.reset_params.start_config.heading.reset_type = 'custom'
+                simulator.params.reset_params.start_config.heading.start_heading \
+                    = simulator.start_config._heading_nk1.numpy().reshape((1,))[0]
 
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)

@@ -75,7 +75,7 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(params.binning_parameters.min_speed, params.binning_parameters.max_speed,
                                             params.binning_parameters.num_bins)  # Divide velocity bins
-        print('self.start_velocities:', self.start_velocities)
+        # print('self.start_velocities:', self.start_velocities)
         self.helper = ControlPipelineV0Helper()
         self.instance_variables_loaded = False
         super(ControlPipelineV0, self).__init__(params)

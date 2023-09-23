@@ -25,6 +25,7 @@ def create_params(simulator_params):
     p.loss = DotMap(
                     # Type of the loss function
                     loss_type='mse_hinge',
+                    # loss_type='mse',
                     # loss_type='hinge',
 
 

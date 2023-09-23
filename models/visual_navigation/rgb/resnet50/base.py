@@ -50,7 +50,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         if not self.p.model.arch.finetune_resnet_weights:
             variables = list(filter(lambda x: 'resnet50' not in x.name, variables))
 
-        return variables + [self.waypoint_bias, self.waypoint_scale] # + self.kernel_model.variables
+        return variables # + [self.waypoint_bias, self.waypoint_scale] # + self.kernel_model.variables
 
     def predict_nn_output(self, data, is_training=None):
         """

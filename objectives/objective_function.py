@@ -147,7 +147,7 @@ class ObjectiveFunction(object):
         """
         Evaluate the entire objective function corresponding to a system trajectory.
         """
-        vz = self.vz_values(trajectory)
+        # vz = self.vz_values(trajectory)
         objective_values_by_tag = self.evaluate_function_by_objective(trajectory)
         objective_function_values = 0.
         labels=[]
@@ -184,6 +184,8 @@ class ObjectiveFunction(object):
                     # labels = np.reshape(np.array(label_11), (1, -1))
                     # labels = np.expand_dims(np.reshape(np.array(label_11), (-1, 1)), axis=0)
                     labels = np.reshape(np.array(label_11), (-1, 1))
+                    print ("percentage:", (labels == -1).sum() / labels.size)
+
 
         return objective_function_values,objective_values,  labels
 

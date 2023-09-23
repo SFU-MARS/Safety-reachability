@@ -227,12 +227,42 @@ class BaseModel(object):
         for X, y, output in zip(X_kerneled, processed_data['labels'], kernel_weights):
             try:
 
-                n_sample0 = np.size(np.where(y == -1)[0])
-                n_sample1 = np.size(np.where(y == 1)[0])
-                sample_weight = {-1: n_sample1 / (n_sample1 + n_sample0), 1: n_sample0 / (n_sample1 + n_sample0)}
+                n_sample0 = np.size(np.where(y == 1)[0])
+                n_sample1 = np.size(np.where(y == -1)[0])
+
+                # sample_weights  = (11 / 9 + label) * 9 / 2
+                # weight= weightb (weightS+ytrue)
+                # if (n_sample1 != 0 and n_sample0 != 0):
+                #     # r = math.sqrt(n_sample0 / n_sample1)
+                #     r = n_sample0 / n_sample1
+                #     weightS = (r + 1) / (r - 1)
+                #     weightb =  1 / (weightS - 1)
+                #     sample_weights = (weightS - label) * weightb
+                # else:
+                # sample_weights = tf.ones(label.shape)
+
+                sample0_ratio = n_sample0 / (n_sample1 + n_sample0)
+                print(f'initial sample0_ratio: {sample0_ratio}')
+                if sample0_ratio > 0.75:
+                    sample0_ratio = sample0_ratio ** 2
+                elif sample0_ratio < 0.25:
+                    sample0_ratio = sample0_ratio ** 0.5
+                print(f'final sample0_ratio: {sample0_ratio}')
+                sample1_ratio = 1 - sample0_ratio
+
+                # debug
+                # sample1_ratio = sample0_ratio = 1
+
+                sample_weight = {-1: sample0_ratio, 1: sample1_ratio}
                 clf = svm.SVC(kernel='linear', class_weight=sample_weight)
                 clf.fit(X[:, 1:], np.squeeze(y))
                 stimators_coeff = np.concatenate((np.expand_dims(clf.intercept_, axis=1), clf.coef_), axis=1)
+
+                sample_weight = np.array(
+                    [sample0_ratio if i == -1 else sample1_ratio for i in y])
+                sample_weight = sample_weight / np.sum(sample_weight) * y.shape[0]
+                # sample_weight = np.ones_like(sample_weight)
+                sample_weights.append(sample_weight)
 
 
             except ValueError:
@@ -248,7 +278,7 @@ class BaseModel(object):
             kernel_losses.append(self.cosine_distance(stimators_coeff, tf.expand_dims(output, axis=0), axis=-1))
             # kernel_losses.append(tf.nn.l2_loss(stimators_coeff - tf.expand_dims(output, axis=0)))
 
-            sample_weights.append(sample_weight)
+
 
         # debug using the SVM weights
         # kernel_weights = tf.concatenate(stimators_coeffs, 0)
@@ -270,31 +300,16 @@ class BaseModel(object):
                      x1, output in
                      zip(X_kerneled, kernel_weights)]
 
+        LABEL_UNSAFE = 0
+        LABEL_SAFE = 1
         def remap_labels(label):
             return (label + 1) / 2
 
-        weights = []
-
-        for prediction0, label in zip(predicted, processed_data['labels']):
+        for prediction0, label, sample_weight in zip(predicted, processed_data['labels'], sample_weights):
             # prediction0 = prediction.numpy()
 
             label = remap_labels(label)
-            n_sample0 = np.size(np.where(label == 1)[0])
-            n_sample1 = np.size(np.where(label == 0)[0])
-            # sample_weights  = (11 / 9 + label) * 9 / 2
-            # weight= weightb (weightS+ytrue)
-            # if (n_sample1 != 0 and n_sample0 != 0):
-            #     # r = math.sqrt(n_sample0 / n_sample1)
-            #     r = n_sample0 / n_sample1
-            #     weightS = (r + 1) / (r - 1)
-            #     weightb =  1 / (weightS - 1)
-            #     sample_weights = (weightS - label) * weightb
-            # else:
-            # sample_weights = tf.ones(label.shape)
-            sample_weights = np.array(
-                [n_sample0 / (n_sample1 + n_sample0) if i == 0 else n_sample1 / (n_sample1 + n_sample0) for i in label])
-            sample_weights = sample_weights / np.sum(sample_weights) * label.shape[0]
-            sample_weights = np.ones_like(sample_weights)
+
             prediction = tf.sigmoid(prediction0)
             # prediction = prediction0
 
@@ -306,7 +321,7 @@ class BaseModel(object):
             prediction_binary[np.where(prediction < 0.5)] = 0
             prediction = prediction_binary
             prediction_total.append(prediction)
-            # print('sample_weights: ', sample_weights)
+            print('sample_weight: ', sample_weight)
             print("label: ", label.transpose())
             print("prediction: ", prediction.transpose())
             # print("logits: ", prediction0.numpy().transpose())
@@ -314,34 +329,37 @@ class BaseModel(object):
             # accuracy_total.append(accuracy)
             # prediction_loss1 = tf.losses.mean_squared_error(prediction0,label)
             # prediction_total.append(prediction_loss1)
-            precision = precision_score(label, prediction)
-            recall = recall_score(label, prediction)
+
+            POS_LABEL = LABEL_UNSAFE
+            NEG_LABEL = LABEL_SAFE
+
+            precision = precision_score(label, prediction, pos_label=POS_LABEL)
+            recall = recall_score(label, prediction, pos_label=POS_LABEL)
             precision_total.append(precision)
             recall_total.append(recall)
 
             # accuracy = balanced_accuracy_score(label, prediction)
 
-            F1 = metrics.f1_score(label, prediction, zero_division=0)
+            F1 = metrics.f1_score(label, prediction, pos_label=POS_LABEL, zero_division=0)
             if F1 == 0:
                 F1 = 1
             F1_total.append(F1)
             if not tf.is_nan(accuracy):
                 accuracy_total.append(accuracy)  # look at other metrics maybe auc
             else:
-                tn = np.sum((label == 1) and (prediction == 1))
-                accuracy_total.append(tn / np.sum(label == 1))
-            if not tf.is_nan(precision):
+                tn = np.sum((label == NEG_LABEL) and (prediction == NEG_LABEL))
+                accuracy_total.append(tn / np.sum(label == NEG_LABEL))
+            if (not tf.is_inf(precision)) and not (tf.is_nan(precision)):
                 precision_total.append(precision)
-            if not tf.is_nan(recall):
+            if (not tf.is_inf(recall)) and (not tf.is_nan(recall)):
                 recall_total.append(recall)
             # for label1 , prediction1 in zip(label, prediction):
-            correct_count = np.sum((label == 0) & (prediction == 0))
-            percentage = correct_count / np.sum(label == 0)
-            if not tf.is_nan(percentage):
+            correct_count = np.sum((label == POS_LABEL) & (prediction == POS_LABEL))
+            percentage = correct_count / np.sum(label == POS_LABEL)
+            if (not tf.is_inf(percentage)) and (not tf.is_nan(percentage)):
                 percentage_total.append(percentage)
-            weights.append(sample_weights)
 
-        weights = tf.stack(weights)
+        weights = tf.stack(sample_weights)
 
         mse_losses = [tf.reduce_mean(
             tf.losses.log_loss(remap_labels(label), tf.sigmoid(prediction0), tf.cast(weight, tf.float32))) for
@@ -365,7 +383,7 @@ class BaseModel(object):
         elif self.p.loss.loss_type == 'hinge':
             prediction_loss = hinge_loss
         elif self.p.loss.loss_type == 'mse_hinge':
-            prediction_loss = mse_loss + hinge_losses
+            prediction_loss = mse_loss + hinge_loss
         else:
             raise ValueError('unknown loss: ' + self.p.loss.loss_type)
 
@@ -637,7 +655,7 @@ class BaseModel(object):
         #
         # regularization_loss_svm = 0
         # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
-        regularization_loss_svm = 0 * tf.nn.l2_loss(nn_output.numpy()[:, 1:])
+        regularization_loss_svm = 1e-1 * tf.nn.l2_loss(nn_output.numpy()[:, 1:])
         regularization_loss = regularization_loss + regularization_loss_svm
 
         #     grad += 0 if v[0] > 1 else -y * x
