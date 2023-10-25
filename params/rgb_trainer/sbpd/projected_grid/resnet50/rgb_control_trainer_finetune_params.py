@@ -25,9 +25,9 @@ def create_rgb_trainer_params():
     # Ensure the renderer is using area3
     # TODO: When generating our own data, choose area 3, area4, area5
     #  When testing, choosing area 1
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area4'
     # TODO: area3: thread='v1'; area4: thread='v2'; area5a: thread='v3'
-    simulator_params.reachability_map_params.thread = 'v1'
+    simulator_params.reachability_map_params.thread = 'v2'
     # specify reachability data dir name according to building_name and thread
     create_reachability_data_dir_params(simulator_params.reachability_map_params)
 

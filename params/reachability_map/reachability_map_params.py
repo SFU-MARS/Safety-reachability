@@ -77,7 +77,8 @@ def create_reachability_data_dir_params(p):
         p.reach_avoid_map_4d_name = 'area4_start_%.2f_%.2f_goal_%.2f_%.2f.npy'
         # Configure avoid map 4d
         p.reach_avoid_4d_map_tmp_path = '/data_tmp/tmp/v2/reach_avoid_map_4d.mat'
-        p.avoid_map_4d_name = 'ttr_avoid_map_4d_whole_area4_no_dist.npy'
+        # p.avoid_map_4d_name = 'ttr_avoid_map_4d_whole_area4_no_dist.npy'
+        p.avoid_map_4d_name = 'V_area4_25x25_safe2_wodisturb_wslack.npy'
         # Configure map tmp
         p.avoid_4d_map_tmp_path = '/data_tmp/tmp/v2/avoid_map_4d_clipped.mat'
         p.tmp_path = '/tmp/v2/'

@@ -4,7 +4,6 @@ from params.obstacle_map.sbpd_obstacle_map_params import create_params as create
 from params.simulator.simulator_params import create_params as create_simulator_params
 from params.reachability_map.reachability_map_params import create_params as create_reachability_map_params
 
-
 def create_params():
     p = create_simulator_params()
 

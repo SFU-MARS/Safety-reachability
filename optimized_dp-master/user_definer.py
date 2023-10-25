@@ -15,6 +15,9 @@ import scipy.io as sio
 import matplotlib.pyplot as plt
 import matplotlib
 
+import argparse
+from pathlib import Path
+
 """ USER INTERFACES
 - Define grid
 
@@ -25,18 +28,34 @@ import matplotlib
 - Run
 """
 
-g = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
-         4, np.array([600, 521, 31, 31]), [2])
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-i','--input-file',
+    type=Path,
+    default="/local-scratch/tara/project/WayPtNav-reachability/obstacle_grid_2d.npy",
+)
+parser.add_argument(
+    '-o','--output-file',
+    type=Path,
+    default='V_safe2_wodisturb_wslack.npy',
+)   
+args = parser.parse_args()
+
 my_car = DubinsCar4D_new2()
+num_bins = 23
 
 # Load value from my map
-obstacle_2d=np.load("/local-scratch/tara/project/WayPtNav-reachability/obstacle_grid_2d.npy")
+obstacle_2d=np.load(args.input_file)
 # obstacles = np.load("obstacle_grid_4d_ver2.npy")
 obstacles = np.tile(
     np.expand_dims(obstacle_2d, (-2, -1)),
-    (1,1,31,31)
+    (1,1,num_bins,num_bins)
 )
 
+print('obstacle_size', obstacle_2d.shape)
+
+g = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
+        4, np.array([*obstacle_2d.shape[:2], num_bins, num_bins]), [2])
 
 # Velocity constraint - negative level set [0., 0.7]
 velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.8), Upper_Half_Space(g, 3, -0.1))
@@ -58,5 +77,5 @@ compMethods = { "TargetSetMode": "minVWithV0"}
 
 # Solve the HJ pde
 result = HJSolver(my_car, g, Initial_value_f, tau, compMethods, po2, saveAllTimeSteps=False )
-np.save("V_safe2_wodisturb_wslack.npy", result)
+np.save(args.output_file, result)
 

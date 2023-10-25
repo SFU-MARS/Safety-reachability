@@ -17,7 +17,8 @@ def create_rgb_trainer_params():
 
     # Seed
     # simulator_params.seed = 10
-    simulator_params.seed = 5
+    simulator_params.seed = 17 # 5
+    # simulator_params.seed = 9 
 
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
@@ -83,7 +84,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(250000) #int(200)
+    p.trainer.num_samples = int(15) #int(250000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
@@ -114,8 +115,8 @@ def create_params():
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
     ## p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-05-08_15-36-57/checkpoints_g1.0000_c1//ckpt-30"
     # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-03-06_23-09-09/checkpoints/ckpt-4"
-    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/log/generate/session_2023-02-27_15-44-14/checkpoints/ckpt-10"
-    # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-09-20_01-36-47/checkpoints_g1.0000_c1/ckpt-30"
+    # p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/log/generate/session_2023-02-27_15-44-14/checkpoints/ckpt-10"
+    p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-09-27_13-41-12/checkpoints_g1.0000_c1/ckpt-1"
 
     # Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
@@ -157,7 +158,10 @@ def create_params():
     # p.data_creation.data_dir = [
     #     '/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/0222-30wp-two groups']
     p.data_creation.data_dir = [
-            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-sure-dv-wodis-wslack-futher30-v1']    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
+            # '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area4/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-sure-dv-wodis-wslack-futher33-v1',
+            '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-sure-dv-wodis-wslack-futher30-v1-10samples-samev'
+            # '/local-scratch/tara/project/WayPtNav-reachability/Database/LB_WayPtNav_Data/Generated-Data/area4/anjian0-newv6_FRS-M-5image-4d-sample-spline200-2-safe2-sure-dv-wodis-wslack-futher33-v2',
+    ]    # / localscratch / ttoufigh/ anjian0-newv6_FRS-1/
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 

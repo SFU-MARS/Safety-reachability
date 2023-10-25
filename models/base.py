@@ -404,10 +404,11 @@ class BaseModel(object):
             # V_safe2_wodisturb
             dx = 0.05
 
-            for img_idx, (WP, prediction, label, C1, image, start_nk3, goal, traj, wp, speed, robot_pos, robot_head,
+            for img_idx, (WP, prediction, label, C1, stimators_coeff, image, start_nk3, goal, traj, wp, speed, robot_pos, robot_head,
                           value) in enumerate(zip(
                     processed_data['Action_waypoint'], prediction_total, processed_data['labels'],
                     nn_output.numpy(),
+                    stimators_coeffs,
                     raw_data['img_nmkd'][:, :, :, :3],
                     raw_data['start_state'],
 
@@ -448,8 +449,9 @@ class BaseModel(object):
                     u, v = 10 * np.cos(theta[i, -1]), np.sin(theta[i, -1])
                     # print ("value: ", str(value[i,-1]))
                     q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
+                    ax1.set_title(f'speed: {speed[0]:.3f}')
                     # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
-                pdf.savefig(fig)
+                # pdf.savefig(fig)
                 plt.grid()
                 # plt.show()
 
@@ -518,15 +520,17 @@ class BaseModel(object):
                 from obstacles.sbpd_map import SBPDMap
                 # fig = plt.figure()
                 ax3 = fig.add_subplot(223)
-                obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
-                obstacle_map.render(ax3)
-                start = start_nk3[0]
-                ax3.plot(start[0], start[1], 'k*')  # robot
-                goal_pos_n2 = goal
-                # ax3.plot(goal_pos_n2[0], goal_pos_n2[1], 'b*')
-                pos_nk2 = wp[:, :2]
-                # ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
-                ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], marker='o', alpha=0.6, color=color)
+
+                # obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
+                # obstacle_map.render(ax3)
+                # start = start_nk3[0]
+                # ax3.plot(start[0], start[1], 'k*')  # robot
+                # goal_pos_n2 = goal
+                # # ax3.plot(goal_pos_n2[0], goal_pos_n2[1], 'b*')
+                # pos_nk2 = wp[:, :2]
+                # # ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+                # ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], marker='o', alpha=0.6, color=color)
+
                 # x = pos_nk2[:, 0]
                 # y = pos_nk2[:, 1]
                 # theta = wp[:, 2]
@@ -543,7 +547,12 @@ class BaseModel(object):
 
                 # ax1 = fig.add_subplot(221)
                 x_min, x_max = 0, crop_size[0] * dx
-                y_min, y_max = -dx * (crop_size[0] - 1) / 2, dx * (crop_size[0] - 1) / 2
+                y_min, y_max = -dx * (crop_size[0]) / 2, dx * (crop_size[0]) / 2
+                # add some slack
+                x_min -= 0.25
+                y_min -= 0.25
+                x_max += 0.25
+                y_max += 0.25
                 h = 0.05
                 xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
                                      np.arange(y_min, y_max, h))
@@ -576,13 +585,29 @@ class BaseModel(object):
                 #             ta = ta.write([idx, jdx, kdx], v)
                 # X_grid_kerneled = ta
                 # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
-                Z = [-np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
+                Z = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
                      x1, output in
                      zip(X_grid_kerneled, kernel_weights)]
                 Z = np.array(Z)
 
-                ax4.contourf(xx / dx + 0, yy / dx + (crop_size[0] - 1) / 2, np.reshape(np.squeeze(Z), np.shape(xx)),
+                ax3.contourf(xx  + 0, yy , np.reshape(np.squeeze(Z), np.shape(xx)),
                              cmap=plt.get_cmap("RdBu"), alpha=0.5)
+
+                Z = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.reshape(output, [-1, 1]))) for
+                     x1, output in
+                     zip(X_grid_kerneled, stimators_coeffs)]
+                Z = np.array(Z)
+                ax4.contourf(xx + 0, yy , np.reshape(np.squeeze(Z), np.shape(xx)),
+                             cmap=plt.get_cmap("RdBu"), alpha=0.5)
+
+                ax4.scatter(WP[:, 0], WP[:, 1]
+                            , marker='o', alpha=0.6, color=color)
+                # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
+                x = WP[:, 0]
+                y = WP[:, 1]
+                theta = WP[:, 2]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+                ax4.quiver(x, y, u, v)
 
                 # commented for better plot
                 # x = WP[:, 0]
@@ -655,7 +680,7 @@ class BaseModel(object):
         #
         # regularization_loss_svm = 0
         # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
-        regularization_loss_svm = 1e-1 * tf.nn.l2_loss(nn_output.numpy()[:, 1:])
+        regularization_loss_svm = 1e-2 * tf.nn.l2_loss(nn_output.numpy()[:, 1:]) #1e-1
         regularization_loss = regularization_loss + regularization_loss_svm
 
         #     grad += 0 if v[0] > 1 else -y * x
@@ -678,9 +703,9 @@ class BaseModel(object):
         F1_mean = np.mean(np.array(F1_total))
         print("F1 in this batch: " + str(F1_mean))
 
-        kernel_losses = 1e-1 * tf.reduce_mean(kernel_losses)
-        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss + kernel_losses
-        print("kernel_losses: ", kernel_losses.numpy())
+        kernel_loss = 1e-2 * tf.reduce_mean(kernel_losses) # 1e-1
+        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss + kernel_loss
+        print("kernel_losses: ", kernel_loss.numpy())
         print("regularization_loss: "+str(regularization_loss.numpy()))
         print("prediction_loss: " + str(prediction_loss.numpy()))
         print("log_loss: ", mse_loss.numpy())

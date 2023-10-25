@@ -72,7 +72,7 @@ class VisualNavigationDataSource(ImageDataSource):
             self.p.simulator_params)  # Get obstacle map and free_xy_map. (x,y)
 
         # Generate the data
-        counter = 1
+        counter = 0
         num_points = 0
         self.episode_counter = 0
         while num_points < self.p.data_creation.data_points:  # if num_points less than total set up
@@ -107,12 +107,12 @@ class VisualNavigationDataSource(ImageDataSource):
                     "velocity:", simulator.start_config._speed_nk1.numpy(),
                 )
 
-                simulator.params.reset_params.start_config.position.reset_type = 'custom'
-                simulator.params.reset_params.start_config.position.start_pos = simulator.start_config._position_nk2.numpy().reshape((2,))
-
-                simulator.params.reset_params.start_config.heading.reset_type = 'custom'
-                simulator.params.reset_params.start_config.heading.start_heading \
-                    = simulator.start_config._heading_nk1.numpy().reshape((1,))[0]
+                # simulator.params.reset_params.start_config.position.reset_type = 'custom'
+                # simulator.params.reset_params.start_config.position.start_pos = simulator.start_config._position_nk2.numpy().reshape((2,))
+                #
+                # simulator.params.reset_params.start_config.heading.reset_type = 'custom'
+                # simulator.params.reset_params.start_config.heading.start_heading \
+                #     = simulator.start_config._heading_nk1.numpy().reshape((1,))[0]
 
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)
