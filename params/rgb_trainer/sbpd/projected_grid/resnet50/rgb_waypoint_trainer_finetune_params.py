@@ -84,14 +84,14 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(5000) #int(250000)
+    p.trainer.num_samples = int(1000) #int(5000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
     # p.trainer.num_samples = int(295)
 
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 10
+    p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
     # p.trainer.num_epochs = 5
     p.trainer.num_epochs = 300
@@ -115,9 +115,9 @@ def create_params():
     # p.trainer.ckpt_path = '/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2022-06-22_16-56-28/checkpoints/ckpt-5'
     ## p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-05-08_15-36-57/checkpoints_g1.0000_c1//ckpt-30"
     # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-03-06_23-09-09/checkpoints/ckpt-4"
-    # p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/log/generate/session_2023-02-27_15-44-14/checkpoints/ckpt-10"
-    p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-09-27_13-41-12/checkpoints_g1.0000_c1/ckpt-1"
-
+    p.trainer.ckpt_path = "/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/log/generate/session_2023-02-27_15-44-14/checkpoints/ckpt-10"
+    # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-09-27_13-41-12/checkpoints_g1.0000_c1/ckpt-1"
+    # p.trainer.ckpt_path ="/local-scratch/tara/project/WayPtNav-reachability/log/train/session_2023-11-02_21-58-48/checkpoints_g1.0000_c1/ckpt-4"
     # Change the data_dir
     # TODO: data dir name is a hack. Allowable name is xxx/area3/xxxx. The second last name
     #  should be the building name

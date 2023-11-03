@@ -126,7 +126,7 @@ class TrainerHelper(object):
                     # tape.watch(training_batch)
                     # counter1=0
 
-                    loss = model.compute_loss_function(training_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=True,
+                    loss = model.compute_loss_function(training_batch, param, c, is_training=True,
                                                        return_loss_components=False)
                     # print ("final loss: "+ str(loss.numpy()))
 
@@ -152,7 +152,7 @@ class TrainerHelper(object):
                 #     grads1.append(grad)
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
-                print("model.vars: " + str( model.get_trainable_vars()))
+                # print("model.vars: " + str( model.get_trainable_vars()))
                 # train_op = self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                 #                                global_step=tf.train.get_or_create_global_step())
                 # tf.estimator.EstimatorSpec(mode=tf.estimator.ModeKeys.TRAIN, loss=loss, train_op=train_op)
@@ -327,12 +327,12 @@ class TrainerHelper(object):
         """
 
         regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training, precision_training, recall_training, percentage_training, F1_training = model.compute_loss_function(
-            training_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=False, return_loss_components=True)
+            training_batch, param, c,  is_training=False, return_loss_components=True)
         # regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(
         #     training_batch, param, c, is_training=False, return_loss_components=True)
 
         regn_loss_validation, prediction_loss_validation, total_loss_validation, accuracy_validation, precision_validation, recall_validation, percentage_validation, F1_validation = model.compute_loss_function(
-            validation_batch, param, c, model.waypoint_bias, model.waypoint_scale, is_training=False, return_loss_components=True)
+            validation_batch, param, c, is_training=False, return_loss_components=True)
         # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
         #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation

@@ -148,7 +148,7 @@ class BaseModel(object):
         y_pred = tf.nn.l2_normalize(y_pred, axis=axis)
         return tf.losses.cosine_distance(y_true, y_pred, axis=axis)
 
-    def compute_loss_function(self, raw_data, param,c, waypoint_bias, waypoint_scale, is_training=None, return_loss_components=False,
+    def compute_loss_function(self, raw_data, param, c, is_training=None, return_loss_components=False,
                               return_loss_components_and_output=False):
         """
         Compute the loss function for a given dataset.
@@ -158,7 +158,10 @@ class BaseModel(object):
         processed_data  = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
         # processed_data = tf.Variable(processed_data)
 
-        nn_output= self.predict_nn_output(processed_data['inputs'], is_training=is_training)
+        nn_output, waypoint_scale, waypoint_bias = self.predict_nn_output(
+            processed_data['inputs'] + [tf.constant([[1]], dtype=processed_data['inputs'][0].dtype)],
+            is_training=is_training
+        )
         # print ("nn before" +str(nn_output1))
         # if  np.all(nn_output1[:, :1])!=0:
         # nn_output = nn_output1 / (nn_output1[:, :1]+1e-5)
@@ -592,6 +595,13 @@ class BaseModel(object):
 
                 ax3.contourf(xx  + 0, yy , np.reshape(np.squeeze(Z), np.shape(xx)),
                              cmap=plt.get_cmap("RdBu"), alpha=0.5)
+                ax3.scatter(WP[:, 0], WP[:, 1]
+                            , marker='o', alpha=0.6, color=color)
+                x = WP[:, 0]
+                y = WP[:, 1]
+                theta = WP[:, 2]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+                ax3.quiver(x, y, u, v)
 
                 Z = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.reshape(output, [-1, 1]))) for
                      x1, output in
@@ -602,11 +612,6 @@ class BaseModel(object):
 
                 ax4.scatter(WP[:, 0], WP[:, 1]
                             , marker='o', alpha=0.6, color=color)
-                # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
-                x = WP[:, 0]
-                y = WP[:, 1]
-                theta = WP[:, 2]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
                 ax4.quiver(x, y, u, v)
 
                 # commented for better plot

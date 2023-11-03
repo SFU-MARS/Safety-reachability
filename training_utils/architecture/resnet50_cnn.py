@@ -86,8 +86,32 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
 
     # Generate a Keras model
 
+    class VariableLayer(tf.keras.layers.Layer):
+        def __init__(self, var_name):
+            super(VariableLayer, self).__init__()
+            self.var_name = var_name
 
-    model = tf.keras.Model(inputs=[input_image, input_flat], outputs=x)
+        def build(self, input_shape):
+            # common vector of weights
+            self.weight = self.add_weight(
+                name=self.var_name, shape=[1,4], trainable=True,
+                initializer=tf.constant_initializer(1 if 'scale' in self.var_name else 0)
+            )
+
+        def call(self, inputs):
+            return self.weight * inputs
+
+    # waypoint_scale = tf.contrib.eager.Variable(tf.ones([1, 4]), name="waypoint_scale", trainable=True)
+    # waypoint_bias = tf.contrib.eager.Variable(tf.zeros([1, 4]), name="waypoint_bias", trainable=True)
+
+    input_dummy = layers.Input(shape=(1,), dtype=dtype)
+    waypoint_scale = VariableLayer("waypoint_scale")(input_dummy)
+    waypoint_bias = VariableLayer("waypoint_bias")(input_dummy)
+
+    model = tf.keras.Model(
+        inputs=[input_image, input_flat, input_dummy],
+        outputs=[x, waypoint_scale, waypoint_bias]
+    )
     # model = tf.keras.Model(inputs=[input_image], outputs=x)
     model.load_weights(params.resnet50_weights_path, by_name=True)
     # model.load_weights(params.resnet50_weights_path)
