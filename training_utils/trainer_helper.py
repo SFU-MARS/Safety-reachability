@@ -138,6 +138,13 @@ class TrainerHelper(object):
                 # [var.name for var in tape.watched_variables()]
                 grads = tape.gradient(loss, model.get_trainable_vars())
 
+                # import json
+                # print(json.dumps({
+                #     v.name: (
+                #         tf.reduce_min(g).numpy().item(), tf.reduce_max(g).numpy().item(), tf.reduce_mean(g).numpy().item()
+                #     ) for g, v in zip(grads, model.get_trainable_vars())
+                # }, indent=4))
+
                 # print ("grads: "+ str(grads))
                 # for grad in grads:
                 #     if grad == None:
@@ -145,6 +152,7 @@ class TrainerHelper(object):
                 #     grads1.append(grad)
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
+                print("model.vars: " + str( model.get_trainable_vars()))
                 # train_op = self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                 #                                global_step=tf.train.get_or_create_global_step())
                 # tf.estimator.EstimatorSpec(mode=tf.estimator.ModeKeys.TRAIN, loss=loss, train_op=train_op)
@@ -328,14 +336,14 @@ class TrainerHelper(object):
         # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
         #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation
-        # training_loss_metric(prediction_loss_training)
-        training_loss_metric(total_loss_training)
+        training_loss_metric(prediction_loss_training)
+        # training_total_loss_metric(total_loss_training)
 
         # print(training_loss_metric)
 
         # print(training_loss_metric)
-        # validation_loss_metric(prediction_loss_validation)
-        validation_loss_metric(total_loss_validation)
+        validation_loss_metric(prediction_loss_validation)
+        # validation_total_loss_metric(total_loss_validation)
 
         if not tf.is_nan(accuracy_training):
             training_acc_metric(accuracy_training)
@@ -444,7 +452,11 @@ class TrainerHelper(object):
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
                 # self.lr.assign(self.lr * self.p.lr_decay_factor)
-                self.lr0 = 1e-4
+
+                self.lr0 = 1e-3
+                # if not hasattr(self, 'lr0'):
+                #     self.lr0 = self.p.lr
+
                 self.lr.assign(self.lr0 * (1 / (epoch + 1)))
             # else:
             #     return

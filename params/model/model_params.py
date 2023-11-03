@@ -34,7 +34,7 @@ def create_params():
                              num_hidden_layers=6,
                              
                              # Number of neurons per hidden layer
-                             num_neurons_per_layer=128,
+                             num_neurons_per_layer=512, #128
                              
                              # Activation function for the hidden layer
                              hidden_layer_activation_func=tf.keras.activations.relu,
@@ -43,7 +43,7 @@ def create_params():
                              output_layer_activation_func=tf.keras.activations.linear,
                              
                              # Whether to use dropout in the fully connected layers
-                             use_dropout=True,
+                             use_dropout=False,
                              
                              # Dropout rate (in case dropout is used)
                              dropout_rate=0.2,

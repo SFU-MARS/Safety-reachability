@@ -63,7 +63,7 @@ def create_params():
     p = create_rgb_trainer_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 35 + 4 + 4 #3*4 kernel 3
+    p.model.num_outputs = 35# + 4 + 4 #3*4 kernel 3
     # p.model.num_outputs = 3 # (x, y ,theta)
 
 
@@ -71,11 +71,11 @@ def create_params():
     p.model.num_inputs.image_size = [224, 224, 3]
 
     # Finetune the resnet weights
-    p.model.arch.finetune_resnet_weights = True
+    p.model.arch.finetune_resnet_weights = True # True
 
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
-    p.trainer.lr = 1e-4
+    p.trainer.lr = 1e-5
     p.trainer.batch_size = 5#48 original, changed after error 36
     # p.trainer.batch_size = 32#60
     #
@@ -84,7 +84,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(15) #int(250000)
+    p.trainer.num_samples = int(5000) #int(250000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)

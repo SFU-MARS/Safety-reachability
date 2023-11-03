@@ -135,7 +135,7 @@ class TrainerFrontendHelper(object):
             # Maybe restore a checkpoint
             self.maybe_restore_checkpoint()
 
-            C= [1 , 1e-1,  1e-2, 1e-3, 1e-4]#, 1e0, 1e1, 1e2,  1e3, 1e4]
+            C= [1]#, 1e-1,  1e-2, 1e-3, 1e-4]#, 1e0, 1e1, 1e2,  1e3, 1e4]
             # C= [2**(-3), 2**(0), 2**(3)]
             # params =  [1e-4, 1e-3, 1e-2, 1e-1,1,  1e1,1e2] # gamma
             # params = [1, 1e-1, 1e-2, 1e-3]
@@ -150,7 +150,7 @@ class TrainerFrontendHelper(object):
                 for param in params:
             #
             #
-                    self.maybe_restore_checkpoint()
+                    # self.maybe_restore_checkpoint()
             # for param in params:
             # Start the training
 

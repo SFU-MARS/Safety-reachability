@@ -60,7 +60,7 @@ def create_params(simulator_params):
                         # optimizer=tf.keras.optimizers.Adagrad,
         
                         # Learning rate
-                        lr=1e-3,
+                        lr=1e-4,
                         # lr=1e-3,
                         # Learning schedule
                         learning_schedule=2,

@@ -26,7 +26,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
                             name='resnet50',
                             include_top=False,
                             pooling=None)
-        resnet50.trainable = True
+        resnet50.trainable = params.finetune_resnet_weights # True
 
         # Used to control batch_norm during training vs test time
         is_training = tf.contrib.eager.Variable(True, dtype=tf.bool, name='is_training')
@@ -44,6 +44,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     if params.dim_red_conv_2d.use:
         # Convolutional layer
         x = layers.Conv2D(
+                    name='dim_red_conv',
                     filters=params.dim_red_conv_2d.num_outputs,
                     kernel_size=params.dim_red_conv_2d.filter_size,
                     strides=params.dim_red_conv_2d.stride,
@@ -56,19 +57,32 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
                                  padding='valid')(x)
 
     # Flatten the image
-    x = layers.Flatten()(x)
+    x = layers.Flatten(name='img_flatten')(x)
+    # input_flat1 = simple_mlp(num_inputs=1, num_outputs=1, params=params)(input_flat)
+    # x = layers.Concatenate(axis=1)([x, input_flat1])
      # = simple_mlp(input_flat)
     # Concatenate the image and the flat outputs
-    x = layers.Concatenate(axis=1)([x, input_flat])
 
+    # x = layers.Add(name='add_input_flat')([x,input_flat])
+    x = layers.Concatenate(axis=1)(
+        [
+            x,
+            layers.Concatenate(axis=1)([input_flat]*x.shape[-1])
+        ]
+    )
+    num_neurons = [1024, 512, 256, 256, 128, 64]
     # Fully connectecd hidden layers
     for i in range(params.num_hidden_layers):
-        x = layers.Dense(params.num_neurons_per_layer, activation=params.hidden_layer_activation_func)(x)
+        x = layers.Dense(
+            num_neurons[i], # params.num_neurons_per_layer,
+            name=f'fc_{i}',
+            activation=params.hidden_layer_activation_func
+        )(x)
         if params.use_dropout:
-            x = layers.Dropout(rate=params.dropout_rate)(x)
+            x = layers.Dropout(rate=params.dropout_rate, name=f'fc_dropout_{i}')(x)
 
     # Output layer
-    x = layers.Dense(num_outputs, activation=params.output_layer_activation_func)(x)
+    x = layers.Dense(num_outputs, activation=params.output_layer_activation_func, name='output_layer')(x)
 
     # Generate a Keras model
 

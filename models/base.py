@@ -189,7 +189,7 @@ class BaseModel(object):
 
         biases = nn_output[:, :4]
         scales = nn_output[:, 4:8]
-        kernel_weights = nn_output[:, 8:]
+        kernel_weights = nn_output#[:, 8:]
 
         # debug
         biases = waypoint_bias  # tf.zeros_like(biases)
@@ -710,8 +710,10 @@ class BaseModel(object):
         print("prediction_loss: " + str(prediction_loss.numpy()))
         print("log_loss: ", mse_loss.numpy())
         print("hinge_loss: ", hinge_loss.numpy())
-        print("bias: ", waypoint_bias.numpy())
-        print("scale: ", waypoint_scale.numpy())
+        # print("bias: ", waypoint_bias.numpy())
+        # print("scale: ", waypoint_scale.numpy())
+        print("bias: ", biases.numpy())
+        print("scale: ", scales.numpy())
 
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss, total_loss, nn_output#, grad_dir

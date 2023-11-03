@@ -36,6 +36,6 @@ def simple_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     x = layers.Dense(num_outputs, activation=params.output_layer_activation_func)(x)
 
     # Generate a Keras model
-    model = tf.keras.Model(inputs=[input_image, input_flat], outputs=x)
+    model = tf.keras.Model(inputs=[input_image, input_flat1], outputs=x)
     
     return model , is_training
