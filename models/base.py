@@ -37,6 +37,7 @@ from itertools import combinations_with_replacement as combinations_w_r
 from time import time
 from systems.dubins_car import DubinsCar
 from math import log
+from utils import depth_utils
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -109,16 +110,16 @@ class BaseModel(object):
         # Additional parameters for the projected grid from the image space to the world coordinates
         p.projected_grid_params = DotMap(
             # Focal length in meters
-            f=0.01,
+            f=1,
 
             # Half-field of view
             fov=0.7853981633974483,
 
             # Height of the camera from the ground in meters
-            h=80/100,
+            h=80/100.0,
 
             # Tilt of the camera
-            tilt=0.7853981633974483
+            tilt=-0.7853981633974483
         )
         return p
 
@@ -425,39 +426,29 @@ class BaseModel(object):
 
                 # camera_pos_13 = config.heading_nk1()[0]
                 # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
-                #
-                # # image of current state
-                # rgb_image_1mk3 = r._get_rgb_image(camera_grid_world_pos_12, camera_pos_13)
-                #
-                # img1 = r._get_topview(camera_grid_world_pos_12, camera_pos_13)
-                #
+
+                # image of current state
+                # rgb_image_1mk3 = r._get_rgb_image(robot_pos, robot_head)
+
+                # img1 = r._get_topview(robot_pos, robot_head)
+
                 # plt.imshow(np.squeeze(top))
                 # plt.show()
                 label = remap_labels(label)
                 fig = plt.figure()
 
-                ax1 = fig.add_subplot(221)
+                ax1 = fig.add_subplot(231)
                 crop_size = [100, 100]
                 top = renderer._get_topview(robot_pos, robot_head, crop_size)
                 ax1.imshow(np.squeeze(top))
                 ## plotting traj
                 # list = np.where(label == -1)[0]
-                traj_x = (traj[:10, :, 0] / dx + 0)
-                traj_y = (traj[:10, :, 1] / dx + (crop_size[0] - 1) / 2)
-                theta = -np.pi / 2 + traj[:10, :, 2]
-                j = 0
-                for i, _ in enumerate(traj_x):
-                    # s = 1  # Segment length
-                    plt.plot(traj_x[i], traj_y[i])
-                    u, v = 10 * np.cos(theta[i, -1]), np.sin(theta[i, -1])
-                    # print ("value: ", str(value[i,-1]))
-                    q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
-                    ax1.set_title(f'speed: {speed[0]:.3f}')
-                    # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
+
                 # pdf.savefig(fig)
                 plt.grid()
                 # plt.show()
 
+                ax5 = fig.add_subplot(235)
                 x = WP[:, 0:1]
                 x1 = np.expand_dims(x, axis=2)
                 y = WP[:, 1:2]
@@ -469,26 +460,71 @@ class BaseModel(object):
                 # y1 = np.expand_dims( np.expand_dims(np.expand_dims(y, axis=0), axis=1), axis=2)
                 # t1 = np.expand_dims( np.expand_dims(np.expand_dims(t, axis=0), axis=1), axis=2)
                 p = self.create_params()
+                p.projected_grid_params.f = image.shape[1] / 2 / np.tan(p.projected_grid_params.fov)
+                plt.imshow(image.astype(np.uint8))
 
-                # Initialize and Create a grid
-                grid = p.grid(p)
-                # wp_image = grid.generate_imageframe_waypoints_from_worldframe_waypoints(x1, y1, t1)
-                # wp_image_x = (wp_image[0][:, 0, 0] + 1) * 224 / 2
-                # wp_image_y = (wp_image[1][:, 0, 0] + 1) * 224 / 2
+                T = np.eye(4)
+                T[:3, :3] = depth_utils.get_r_matrix([1., 0., 0.], angle=p.projected_grid_params.tilt)
+                T[1, -1] = p.projected_grid_params.h
+
+                xyzw = np.zeros((x1.shape[0], 4))
+                xyzw[:, 0] = -np.squeeze(y)
+                xyzw[:, 2] = -np.squeeze(x)
+                xyzw[:, 3] = 1
+
+                xyz_cam = (T @ xyzw.T).T[:, :3]
+                uv = xyz_cam[:, :2] / xyz_cam[:, 2:3]
+                # OpenGL coord to OpenCV
+                uv[:, 1] *= -1
+                uv[:, 0] = (p.projected_grid_params.f * uv[:, 0]) + (image.shape[1] - 1) / 2.0
+                uv[:, 1] = (p.projected_grid_params.f * uv[:, 1]) + (image.shape[0] - 1) / 2.0
+
+                x = uv[:, 0]
+                y = uv[:, 1]
+
+                valid_indices = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+                valid_indices = np.where(valid_indices)[0]
+                valid_indices = valid_indices[:10]
+                x = x[valid_indices]
+                y = y[valid_indices]
+                label_valid = label[valid_indices]
+                color_valid = ['red' if l == 0 else 'green' for l in label_valid]
                 color = ['red' if l == 0 else 'green' for l in label]
-                # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                # # ax1.scatter(wp_image_x, wp_image_y, marker="x", color=color, s=10)
-                # theta = np.pi / 2 + WP[:, 2:3]  # theta of the arrow
-                # u, v = 1 * (np.cos(theta), np.sin(theta))
-                # q = ax1.quiver(wp_image_x, wp_image_y, u, v)
+
+                traj_x = (traj[valid_indices, :, 0] / dx + 0)
+                traj_y = (traj[valid_indices, :, 1] / dx + (crop_size[0] - 1) / 2)
+                theta = -np.pi / 2 + traj[valid_indices, :, 2]
+                j = 0
+                for i, _ in enumerate(traj_x):
+                    # s = 1  # Segment length
+                    u, v = 10 * np.cos(theta[i, -1]), np.sin(theta[i, -1])
+                    # print ("value: ", str(value[i,-1]))
+                    q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
+                    ax1.set_title(f'speed: {speed[0]:.3f}')
+                    ax1.plot(traj_x[i], traj_y[i])
+                    ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
+                    # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
+
+                wp_image_x = x # (x + 1) * (image.shape[1] - 1) / 2
+                wp_image_y = y # (y + 1) * (image.shape[0] - 1) / 2
+                wp_image_x = wp_image_x.astype(np.uint8)
+                wp_image_y = wp_image_y.astype(np.uint8)
+
+                ax5.scatter(wp_image_x, wp_image_y, marker="x", s=10, color=color_valid)
+                image_int = image.astype(np.uint8)
+                ax5.imshow(image_int)
+
+                theta = np.pi / 2 + WP[valid_indices, 2:3]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+                q = ax5.quiver(wp_image_x, wp_image_y, u, v)
                 # ax1.set_title('v , w: ' + str(control))
-                # plt.show()
+                # plt.savefig('/tmp/plot.png')
 
                 # matplotlib.use('Qt4Agg')
                 # fig = plt.figure()
 
                 # ax2 = fig.add_subplot(222, projection='3d')
-                ax2 = fig.add_subplot(222)
+                ax2 = fig.add_subplot(232)
                 # prediction = prediction.numpy()
                 # prediction[np.where(prediction >= 0)] = 1
                 # prediction[np.where(prediction < 0)] = -1
@@ -522,7 +558,7 @@ class BaseModel(object):
 
                 from obstacles.sbpd_map import SBPDMap
                 # fig = plt.figure()
-                ax3 = fig.add_subplot(223)
+                ax3 = fig.add_subplot(233)
 
                 # obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
                 # obstacle_map.render(ax3)
@@ -546,7 +582,7 @@ class BaseModel(object):
                 # u, v =  1 * (np.cos(theta_world), np.sin(theta_world))
                 # q = ax3.quiver(pos_nk2[:, 0], pos_nk2[:, 1], u, v)
                 # plt.show()
-                ax4 = fig.add_subplot(224)
+                ax4 = fig.add_subplot(234)
 
                 # ax1 = fig.add_subplot(221)
                 x_min, x_max = 0, crop_size[0] * dx
@@ -850,6 +886,36 @@ def bin_cross_entropy(p, q):
 
 
 if __name__ == '__main__':
+    import open3d as o3d
+    T = np.eye(4)
+    T[:3, :3] = depth_utils.get_r_matrix([1.,0.,0.], angle=np.deg2rad(-45))
+    T[1, -1] = 0.8
+
+    crop_size = [100, 100]
+    dx = 0.05
+    x_min, x_max = 0, crop_size[0] * dx
+    y_min, y_max = -dx * (crop_size[0]) / 2, dx * (crop_size[0]) / 2
+    # add some slack
+    x_min -= 0.25
+    y_min -= 0.25
+    x_max += 0.25
+    y_max += 0.25
+    h = 0.05
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    X_grid = np.c_[xx.ravel(), yy.ravel()]
+    xyz = np.zeros((X_grid.shape[0], 3))
+    xyz[:, 0] = -X_grid[:, 1]
+    xyz[:, 2] = -X_grid[:, 0]
+
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(xyz)
+    o3d.io.write_point_cloud('/tmp/pcd.ply', pcd)
+
+    camera = o3d.geometry.TriangleMesh.create_coordinate_frame(1).transform(T)
+    o3d.io.write_triangle_mesh('/tmp/camera.ply', camera)
+    exit(0)
+
     tf.enable_eager_execution()
     X = tf.constant(np.random.rand(20, 4).astype(np.float32))
     # X = tf.constant(np.asarray(range(1, 5)).reshape(1, 4).astype(np.float32))
