@@ -72,7 +72,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # data[1] = tf.constant(data[1])
             # data[1] = tf.cast(data[1], tf.float32)
             # data[0] = tf.cast(data[0], tf.float32)
-            preds = self.arch.predict_on_batch(data)
+            preds = self.arch(data) # self.arch.predict_on_batch(data)
 
             # preds=self.arch(data)
         else:

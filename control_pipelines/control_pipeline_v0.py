@@ -578,7 +578,7 @@ class ControlPipelineV0(ControlPipelineBase):
         p = self.params.waypoint_params
 
         FRS = np.load(
-            '/local-scratch/tara/project/WayPtNav-reachability/optimized_dp-master/FRS_result4/FRS_v{:.2f}_H2.npy'.format(
+            './optimized_dp-master/FRS_result4/FRS_v{:.2f}_H2.npy'.format(
                 v0))
         if v0<0.05:
             # Load value from my map

@@ -153,6 +153,12 @@ class BaseModel(object):
         """
         Compute the loss function for a given dataset.
         """
+        # print interval in sec
+        PRINT_INTERVAL = 60
+        if not hasattr(self, 'last_print_stamp'):
+            self.last_print_stamp = 0
+        curr_stamp = time()
+
         # Create the NN inputs and labels
 
         processed_data  = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
@@ -165,7 +171,8 @@ class BaseModel(object):
         # print ("nn before" +str(nn_output1))
         # if  np.all(nn_output1[:, :1])!=0:
         # nn_output = nn_output1 / (nn_output1[:, :1]+1e-5)
-        print("nn after" + str(nn_output))
+        if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+            print("nn after" + str(nn_output))
         # else:
         #     nn_output = nn_output1
         # nn_output = nn_output1[:, :-1]
@@ -245,12 +252,14 @@ class BaseModel(object):
                 # sample_weights = tf.ones(label.shape)
 
                 sample0_ratio = n_sample0 / (n_sample1 + n_sample0)
-                print(f'initial sample0_ratio: {sample0_ratio}')
+                if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+                    print(f'initial sample0_ratio: {sample0_ratio}')
                 if sample0_ratio > 0.75:
                     sample0_ratio = sample0_ratio ** 2
                 elif sample0_ratio < 0.25:
                     sample0_ratio = sample0_ratio ** 0.5
-                print(f'final sample0_ratio: {sample0_ratio}')
+                if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+                    print(f'final sample0_ratio: {sample0_ratio}')
                 sample1_ratio = 1 - sample0_ratio
 
                 # debug
@@ -324,9 +333,10 @@ class BaseModel(object):
             prediction_binary[np.where(prediction < 0.5)] = 0
             prediction = prediction_binary
             prediction_total.append(prediction)
-            print('sample_weight: ', sample_weight)
-            print("label: ", label.transpose())
-            print("prediction: ", prediction.transpose())
+            if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+                print('sample_weight: ', sample_weight)
+                print("label: ", label.transpose())
+                print("prediction: ", prediction.transpose())
             # print("logits: ", prediction0.numpy().transpose())
             accuracy = np.count_nonzero(prediction == label) / np.size(label)
             # accuracy_total.append(accuracy)
@@ -683,42 +693,40 @@ class BaseModel(object):
             plt.close('all')
 
         #
-        # regularization_loss_svm = 0
+        regularization_loss_svm = 0
         # regularization_loss_svm =  tf.reduce_mean(nn_output.numpy()[:, 1:] ** 2 / 2)
-        regularization_loss_svm = 1e-2 * tf.nn.l2_loss(nn_output.numpy()[:, 1:]) #1e-1
+        # regularization_loss_svm = 1e-2 * tf.nn.l2_loss(nn_output[:, :]) #1e-1
         regularization_loss = regularization_loss + regularization_loss_svm
 
         #     grad += 0 if v[0] > 1 else -y * x
         # grad_dir = grad / tf.linalg.norm(grad)
 
         percentage_mean = np.mean(np.array(percentage_total))
-        print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
-
         accuracy_mean = np.mean(np.array(accuracy_total))
-        print("correctly predicted total: " + str(accuracy_total))
-        print("correctly predicted in this batch: " + str(accuracy_mean))
 
         precision_mean = np.mean(np.array(precision_total))
-        print("precision in this batch: " + str(precision_mean))
 
         recall_mean = np.mean(np.array(recall_total))
-        print("recall in this batch: " + str(recall_mean))
 
 
         F1_mean = np.mean(np.array(F1_total))
-        print("F1 in this batch: " + str(F1_mean))
 
         kernel_loss = 1e-2 * tf.reduce_mean(kernel_losses) # 1e-1
         total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss + kernel_loss
-        print("kernel_losses: ", kernel_loss.numpy())
-        print("regularization_loss: "+str(regularization_loss.numpy()))
-        print("prediction_loss: " + str(prediction_loss.numpy()))
-        print("log_loss: ", mse_loss.numpy())
-        print("hinge_loss: ", hinge_loss.numpy())
-        # print("bias: ", waypoint_bias.numpy())
-        # print("scale: ", waypoint_scale.numpy())
-        print("bias: ", biases.numpy())
-        print("scale: ", scales.numpy())
+
+        if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+            print("kernel_losses: ", kernel_loss.numpy())
+            print("regularization_loss: "+str(regularization_loss.numpy()))
+            print("prediction_loss: " + str(prediction_loss.numpy()))
+            print("log_loss: ", mse_loss.numpy())
+            print("hinge_loss: ", hinge_loss.numpy())
+            # print("bias: ", waypoint_bias.numpy())
+            # print("scale: ", waypoint_scale.numpy())
+            print("bias: ", biases) # .numpy())
+            print("scale: ", scales) # .numpy())
+
+        if (curr_stamp - self.last_print_stamp) > PRINT_INTERVAL:
+            self.last_print_stamp = curr_stamp
 
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss, total_loss, nn_output#, grad_dir
@@ -788,7 +796,10 @@ class BaseModel(object):
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)
         
-        return self.arch.predict_on_batch(data)
+        if is_training:
+            return self.arch(data)
+        else:
+            return self.arch.predict_on_batch(data)
 
     def predict_nn_output_with_postprocessing(self, data, is_training=None):
         """

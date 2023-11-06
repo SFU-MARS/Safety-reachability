@@ -15,7 +15,7 @@ def tf_session_config():
     config.gpu_options.allow_growth = True
 
     # Allows for tensors to be copied onto cpu when no cuda gpu kernel is available
-    device_policy = tf.contrib.eager.DEVICE_PLACEMENT_SILENT
+    device_policy = 2 # tf.contrib.eager.DEVICE_PLACEMENT_SILENT
 
     tf_config = {'config': config,
                  'device_policy': device_policy}
