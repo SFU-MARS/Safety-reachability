@@ -38,6 +38,7 @@ from time import time
 from systems.dubins_car import DubinsCar
 from math import log
 from utils import depth_utils
+import cv2
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -99,7 +100,7 @@ class BaseModel(object):
                                num_outputs=self.p.model.num_outputs,
                                params=self.p.model.arch)
 
-    def create_params(self):
+    def create_params(self, image_width):
         p = DotMap()
         p.grid = ProjectedImageSpaceGrid
         # Parameters for the uniform sampling grid
@@ -121,6 +122,8 @@ class BaseModel(object):
             # Tilt of the camera
             tilt=-0.7853981633974483
         )
+        p.projected_grid_params.f = fov_to_focal(p.projected_grid_params.fov, image_width)
+
         return p
 
     @staticmethod
@@ -391,6 +394,35 @@ class BaseModel(object):
         else:
             raise ValueError('unknown loss: ' + self.p.loss.loss_type)
 
+        percentage_mean = np.mean(np.array(percentage_total))
+        print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
+
+        accuracy_mean = np.mean(np.array(accuracy_total))
+        print("correctly predicted total: " + str(accuracy_total))
+        print("correctly predicted in this batch: " + str(accuracy_mean))
+
+        precision_mean = np.mean(np.array(precision_total))
+        print("precision in this batch: " + str(precision_mean))
+
+        recall_mean = np.mean(np.array(recall_total))
+        print("recall in this batch: " + str(recall_mean))
+
+
+        F1_mean = np.mean(np.array(F1_total))
+        print("F1 in this batch: " + str(F1_mean))
+
+        kernel_loss = 1e-2 * tf.reduce_mean(kernel_losses) # 1e-1
+        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss + kernel_loss
+        print("kernel_losses: ", kernel_loss.numpy())
+        print("regularization_loss: "+str(regularization_loss.numpy()))
+        print("prediction_loss: " + str(prediction_loss.numpy()))
+        print("log_loss: ", mse_loss.numpy())
+        print("hinge_loss: ", hinge_loss.numpy())
+        # print("bias: ", waypoint_bias.numpy())
+        # print("scale: ", waypoint_scale.numpy())
+        print("bias: ", biases.numpy())
+        print("scale: ", scales.numpy())
+
         if False:
             all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
 
@@ -407,6 +439,7 @@ class BaseModel(object):
             # Vc= np.load('optimized_dp-master/V_safe2.npy')
             # V_safe2_wodisturb
             dx = 0.05
+            crop_size = [100, 100]
 
             for img_idx, (WP, prediction, label, C1, stimators_coeff, image, start_nk3, goal, traj, wp, speed, robot_pos, robot_head,
                           value) in enumerate(zip(
@@ -435,126 +468,8 @@ class BaseModel(object):
                 # plt.imshow(np.squeeze(top))
                 # plt.show()
                 label = remap_labels(label)
-                fig = plt.figure()
-
-                ax1 = fig.add_subplot(231)
-                crop_size = [100, 100]
-                top = renderer._get_topview(robot_pos, robot_head, crop_size)
-                ax1.imshow(np.squeeze(top))
-                ## plotting traj
-                # list = np.where(label == -1)[0]
-
-                # pdf.savefig(fig)
-                plt.grid()
-                # plt.show()
-
-                ax5 = fig.add_subplot(235)
-                x = WP[:, 0:1]
-                x1 = np.expand_dims(x, axis=2)
-                y = WP[:, 1:2]
-                y1 = np.expand_dims(y, axis=2)
-                t = WP[:, 2:3]
-                t1 = np.expand_dims(t, axis=2)
-                #
-                # x1= np.expand_dims(np.expand_dims(np.expand_dims(x, axis=0),axis=1), axis=2)
-                # y1 = np.expand_dims( np.expand_dims(np.expand_dims(y, axis=0), axis=1), axis=2)
-                # t1 = np.expand_dims( np.expand_dims(np.expand_dims(t, axis=0), axis=1), axis=2)
-                p = self.create_params()
-                p.projected_grid_params.f = image.shape[1] / 2 / np.tan(p.projected_grid_params.fov)
-                plt.imshow(image.astype(np.uint8))
-
-                T = np.eye(4)
-                T[:3, :3] = depth_utils.get_r_matrix([1., 0., 0.], angle=p.projected_grid_params.tilt)
-                T[1, -1] = p.projected_grid_params.h
-
-                xyzw = np.zeros((x1.shape[0], 4))
-                xyzw[:, 0] = -np.squeeze(y)
-                xyzw[:, 2] = -np.squeeze(x)
-                xyzw[:, 3] = 1
-
-                xyz_cam = (T @ xyzw.T).T[:, :3]
-                uv = xyz_cam[:, :2] / xyz_cam[:, 2:3]
-                # OpenGL coord to OpenCV
-                uv[:, 1] *= -1
-                uv[:, 0] = (p.projected_grid_params.f * uv[:, 0]) + (image.shape[1] - 1) / 2.0
-                uv[:, 1] = (p.projected_grid_params.f * uv[:, 1]) + (image.shape[0] - 1) / 2.0
-
-                x = uv[:, 0]
-                y = uv[:, 1]
-
-                valid_indices = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
-                valid_indices = np.where(valid_indices)[0]
-                valid_indices = valid_indices[:10]
-                x = x[valid_indices]
-                y = y[valid_indices]
-                label_valid = label[valid_indices]
-                color_valid = ['red' if l == 0 else 'green' for l in label_valid]
                 color = ['red' if l == 0 else 'green' for l in label]
-
-                traj_x = (traj[valid_indices, :, 0] / dx + 0)
-                traj_y = (traj[valid_indices, :, 1] / dx + (crop_size[0] - 1) / 2)
-                theta = -np.pi / 2 + traj[valid_indices, :, 2]
-                j = 0
-                for i, _ in enumerate(traj_x):
-                    # s = 1  # Segment length
-                    u, v = 10 * np.cos(theta[i, -1]), np.sin(theta[i, -1])
-                    # print ("value: ", str(value[i,-1]))
-                    q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
-                    ax1.set_title(f'speed: {speed[0]:.3f}')
-                    ax1.plot(traj_x[i], traj_y[i])
-                    ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
-                    # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
-
-                wp_image_x = x # (x + 1) * (image.shape[1] - 1) / 2
-                wp_image_y = y # (y + 1) * (image.shape[0] - 1) / 2
-                wp_image_x = wp_image_x.astype(np.uint8)
-                wp_image_y = wp_image_y.astype(np.uint8)
-
-                ax5.scatter(wp_image_x, wp_image_y, marker="x", s=10, color=color_valid)
-                image_int = image.astype(np.uint8)
-                ax5.imshow(image_int)
-
-                theta = np.pi / 2 + WP[valid_indices, 2:3]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-                q = ax5.quiver(wp_image_x, wp_image_y, u, v)
-                # ax1.set_title('v , w: ' + str(control))
-                # plt.savefig('/tmp/plot.png')
-
-                # matplotlib.use('Qt4Agg')
-                # fig = plt.figure()
-
-                # ax2 = fig.add_subplot(222, projection='3d')
-                ax2 = fig.add_subplot(232)
-                # prediction = prediction.numpy()
-                # prediction[np.where(prediction >= 0)] = 1
-                # prediction[np.where(prediction < 0)] = -1
-                # wrong = WP[np.where(prediction != label)[0]]
-                # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
-                #               wrong[:, 2], s=80, edgecolors="k")
-                # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
-
-                # mycmap = ListedColormap(["red", "green"])
-
-                # ax2.scatter3D(WP[:, 0], WP[:, 1],
-                #               WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
-                # ax2.scatter(WP[:, 0], WP[:, 1]
-                #               , c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
-                ax2.scatter(WP[:, 0], WP[:, 1]
-                            , marker='o', alpha=0.6, color=color)
-                # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
-                x = WP[:, 0]
-                y = WP[:, 1]
-                theta = WP[:, 2]  # theta of the arrow
-                u, v = 1 * (np.cos(theta), np.sin(theta))
-
-                q = ax2.quiver(x, y, u, v)
-                ax2.set_title('ground truth')
-                # plt.xlim(-0.5, len(x[0]) - 0.5)
-                # plt.ylim(-0.5, len(x) - 0.5)
-                # plt.xticks(range(len(x[0])))
-                # plt.yticks(range(len(x)))
-
-                # plt.show()
+                fig = plt.figure()
 
                 from obstacles.sbpd_map import SBPDMap
                 # fig = plt.figure()
@@ -585,21 +500,10 @@ class BaseModel(object):
                 ax4 = fig.add_subplot(234)
 
                 # ax1 = fig.add_subplot(221)
-                x_min, x_max = 0, crop_size[0] * dx
-                y_min, y_max = -dx * (crop_size[0]) / 2, dx * (crop_size[0]) / 2
-                # add some slack
-                x_min -= 0.25
-                y_min -= 0.25
-                x_max += 0.25
-                y_max += 0.25
-                h = 0.05
-                xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                                     np.arange(y_min, y_max, h))
-                hh, ss = np.tile(0, np.shape(xx)), np.tile(speed, np.shape(xx)),
-                X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
-                X_grid = tf.expand_dims(X_grid, axis=0)
+                X_grid, xx, yy, hh, ss = get_uniform_grid(crop_size, dx, speed)
+
                 # X_grid = [normalize(X, bias) for X, bias in zip(X_grid, biases)]
-                X_grid = normalize(
+                X_grid_norm = normalize(
                     X_grid,
                     biases[0:1],
                     scales[0:1]
@@ -611,7 +515,7 @@ class BaseModel(object):
                 # X_grid_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
                 # X_grid_kerneled = np.array(X_grid_kerneled)
                 X_grid_kerneled = [
-                    self.polyfeatures(tf.constant(X)) for X in X_grid
+                    self.polyfeatures(tf.constant(X)) for X in X_grid_norm
                 ]
                 X_grid_kerneled = tf.stack(X_grid_kerneled, axis=0)
 
@@ -624,31 +528,42 @@ class BaseModel(object):
                 #             ta = ta.write([idx, jdx, kdx], v)
                 # X_grid_kerneled = ta
                 # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
-                Z = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
+                Z_pred = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
                      x1, output in
                      zip(X_grid_kerneled, kernel_weights)]
-                Z = np.array(Z)
+                Z_pred = np.array(Z_pred)
 
-                ax3.contourf(xx  + 0, yy , np.reshape(np.squeeze(Z), np.shape(xx)),
-                             cmap=plt.get_cmap("RdBu"), alpha=0.5)
-                ax3.scatter(WP[:, 0], WP[:, 1]
-                            , marker='o', alpha=0.6, color=color)
+                ax3.contourf(
+                    *transform_to_vis_coord(xx + 0, yy),
+                    np.reshape(np.squeeze(Z_pred), np.shape(xx)),
+                    cmap=plt.get_cmap("RdBu"), alpha=0.5)
+                ax3.scatter(
+                    *transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+                    marker='o', alpha=0.6, color=color
+                )
                 x = WP[:, 0]
                 y = WP[:, 1]
                 theta = WP[:, 2]  # theta of the arrow
                 u, v = 1 * (np.cos(theta), np.sin(theta))
-                ax3.quiver(x, y, u, v)
+                ax3.quiver(
+                    *transform_to_vis_coord(x, y), *transform_to_vis_coord(u, v)
+                )
+                ax3.set_title("Our model")
 
-                Z = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.reshape(output, [-1, 1]))) for
+                Z_svm = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.reshape(output, [-1, 1]))) for
                      x1, output in
                      zip(X_grid_kerneled, stimators_coeffs)]
-                Z = np.array(Z)
-                ax4.contourf(xx + 0, yy , np.reshape(np.squeeze(Z), np.shape(xx)),
-                             cmap=plt.get_cmap("RdBu"), alpha=0.5)
+                Z_svm = np.array(Z_svm)
+                ax4.contourf(
+                    *transform_to_vis_coord(xx + 0, yy),
+                    np.reshape(np.squeeze(Z_svm), np.shape(xx)),
+                    cmap=plt.get_cmap("RdBu"), alpha=0.5
+                )
 
-                ax4.scatter(WP[:, 0], WP[:, 1]
-                            , marker='o', alpha=0.6, color=color)
-                ax4.quiver(x, y, u, v)
+                ax4.scatter(*transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+                            marker='o', alpha=0.6, color=color)
+                ax4.quiver(*transform_to_vis_coord(x, y), *transform_to_vis_coord(u, v))
+                ax4.set_title("SVM")
 
                 # commented for better plot
                 # x = WP[:, 0]
@@ -697,6 +612,163 @@ class BaseModel(object):
                 #               np.expand_dims(th_filtered, axis=1), alpha=1, color='gray')
                 # plt.show()
 
+                ax5 = fig.add_subplot(235)
+                x = WP[:, 0:1]
+                x1 = np.expand_dims(x, axis=2)
+                y = WP[:, 1:2]
+                y1 = np.expand_dims(y, axis=2)
+                t = WP[:, 2:3]
+                t1 = np.expand_dims(t, axis=2)
+                #
+                # x1= np.expand_dims(np.expand_dims(np.expand_dims(x, axis=0),axis=1), axis=2)
+                # y1 = np.expand_dims( np.expand_dims(np.expand_dims(y, axis=0), axis=1), axis=2)
+                # t1 = np.expand_dims( np.expand_dims(np.expand_dims(t, axis=0), axis=1), axis=2)
+                p = self.create_params(image.shape[1])
+                plt.imshow(image.astype(np.uint8))
+
+                # camera to world transformation
+                T_world_cam = get_T_world_cam(p.projected_grid_params.tilt, p.projected_grid_params.h)
+                # world to camera transformation
+                T_cam_world = np.linalg.inv(T_world_cam)
+
+                uv = project_to_camera(x, y, T_cam_world, p.projected_grid_params.f, image.shape)
+
+                x = uv[:, 0]
+                y = uv[:, 1]
+
+                valid_indices = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+                valid_indices = np.where(valid_indices)[0]
+                # valid_indices = valid_indices[:10]
+                x = x[valid_indices]
+                y = y[valid_indices]
+                label_valid = label[valid_indices]
+                color_valid = ['red' if l == 0 else 'green' for l in label_valid]
+
+                ax5.scatter(x.astype(int), y.astype(int), marker="x", s=10, color=color_valid)
+                ax5.set_title("First-person view")
+
+                image_int = image.astype(np.uint8)
+                ax5.imshow(image_int)
+
+                theta = traj[valid_indices, -1, 2]
+                uv = project_theta_to_cam(theta, T_cam_world)
+                ax5.quiver(x, y, 10*uv[:, 0], 10*uv[:, 1])
+
+                xyhs = X_grid.numpy()[0, :, :]
+                uv = project_to_camera(
+                    xyhs[:, 0], xyhs[:, 1],
+                    T_cam_world, p.projected_grid_params.f, image.shape
+                )
+
+                x = uv[:, 0]
+                y = uv[:, 1]
+
+                valid_indices_grid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+                valid_indices_grid = np.where(valid_indices_grid)[0]
+                x = x[valid_indices_grid]
+                y = y[valid_indices_grid]
+
+                ax6 = fig.add_subplot(236)
+                ax6.imshow(image_int)
+                ax6.scatter(
+                    x.astype(int), y.astype(int),
+                    marker="o", s=1, alpha=0.25,
+                    color=['red' if i == -1 else 'green' for i in np.squeeze(Z_pred)[valid_indices_grid]]
+                )
+
+                # ax5.contourf(
+                #     x, y,
+                #     Z_svm.reshape((-1,))[valid_indices_grid],
+                #     cmap=plt.get_cmap("RdBu"), alpha=0.5
+                # )
+
+                ax1 = fig.add_subplot(231)
+                top = renderer._get_topview(robot_pos, robot_head, crop_size)
+                top_cw_90 = cv2.rotate(np.squeeze(top), cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+                ax1.imshow(top_cw_90)
+
+                ## plotting traj
+                # list = np.where(label == -1)[0]
+                # pdf.savefig(fig)
+                plt.grid()
+                # plt.show()
+
+                traj_x, traj_y = transform_to_vis_coord(
+                    traj[valid_indices, :, 0], traj[valid_indices, :, 1]
+                )
+                traj_x = (traj_x / dx + 0) + ((crop_size[1] - 1) / 2)
+                traj_y = (crop_size[0] - 1) - (traj_y / dx)
+
+                theta = (np.pi / 2) + traj[valid_indices, :, 2]
+                j = 0
+                for i, _ in enumerate(traj_x):
+                    # s = 1  # Segment length
+                    u, v = 10 * np.cos(theta[i, -1]), 10 * np.sin(theta[i, -1])
+
+                    # print ("value: ", str(value[i,-1]))
+                    q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
+                    ax1.set_title(f'Top-down, speed:{speed[0]:.3f}')
+                    #robot is facing right
+                    # ax1.plot(traj_x[i], traj_y[i])
+                    # ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
+                    #robot is facing front
+                    ax1.plot(traj_x[i], traj_y[i])
+                    ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
+                    # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
+
+                theta = np.pi / 2 + WP[valid_indices, 2:3]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+                # ax1.set_title('v , w: ' + str(control))
+                # plt.savefig('/tmp/plot.png')
+
+                # matplotlib.use('Qt4Agg')
+                # fig = plt.figure()
+
+                # ax2 = fig.add_subplot(222, projection='3d')
+                ax2 = fig.add_subplot(232)
+                # prediction = prediction.numpy()
+                # prediction[np.where(prediction >= 0)] = 1
+                # prediction[np.where(prediction < 0)] = -1
+                # wrong = WP[np.where(prediction != label)[0]]
+                # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
+                #               wrong[:, 2], s=80, edgecolors="k")
+                # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
+
+                # mycmap = ListedColormap(["red", "green"])
+
+                # ax2.scatter3D(WP[:, 0], WP[:, 1],
+                #               WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+                # ax2.scatter(WP[:, 0], WP[:, 1]
+                #               , c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+
+                ax2.scatter(
+                    *transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+                    marker='o', alpha=0.6, color=color
+                )
+                # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
+                x = WP[:, 0]
+                y = WP[:, 1]
+                theta = WP[:, 2]  # theta of the arrow
+                u, v = 1 * (np.cos(theta), np.sin(theta))
+
+                ax2.scatter(
+                    *transform_to_vis_coord(x[valid_indices], y[valid_indices]),
+                    s=80, facecolors='none', edgecolors='c'
+                )
+
+                q = ax2.quiver(
+                    *transform_to_vis_coord(x, y),
+                    *transform_to_vis_coord(u, v)
+                )
+                ax2.set_title('Ground truth')
+                # plt.xlim(-0.5, len(x[0]) - 0.5)
+                # plt.ylim(-0.5, len(x) - 0.5)
+                # plt.xticks(range(len(x[0])))
+                # plt.yticks(range(len(x)))
+
+                # plt.show()
+
                 # ax.plot_surface(xx, y1, zz, alpha=1, color='gray', linewidth=0)
                 # plt.show()
                 # if z< np.pi/2 and z> -np.pi/2:
@@ -727,34 +799,6 @@ class BaseModel(object):
         #     grad += 0 if v[0] > 1 else -y * x
         # grad_dir = grad / tf.linalg.norm(grad)
 
-        percentage_mean = np.mean(np.array(percentage_total))
-        print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
-
-        accuracy_mean = np.mean(np.array(accuracy_total))
-        print("correctly predicted total: " + str(accuracy_total))
-        print("correctly predicted in this batch: " + str(accuracy_mean))
-
-        precision_mean = np.mean(np.array(precision_total))
-        print("precision in this batch: " + str(precision_mean))
-
-        recall_mean = np.mean(np.array(recall_total))
-        print("recall in this batch: " + str(recall_mean))
-
-
-        F1_mean = np.mean(np.array(F1_total))
-        print("F1 in this batch: " + str(F1_mean))
-
-        kernel_loss = 1e-2 * tf.reduce_mean(kernel_losses) # 1e-1
-        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss + kernel_loss
-        print("kernel_losses: ", kernel_loss.numpy())
-        print("regularization_loss: "+str(regularization_loss.numpy()))
-        print("prediction_loss: " + str(prediction_loss.numpy()))
-        print("log_loss: ", mse_loss.numpy())
-        print("hinge_loss: ", hinge_loss.numpy())
-        # print("bias: ", waypoint_bias.numpy())
-        # print("scale: ", waypoint_scale.numpy())
-        print("bias: ", biases.numpy())
-        print("scale: ", scales.numpy())
 
         if return_loss_components_and_output:
             return regularization_loss, prediction_loss, total_loss, nn_output#, grad_dir
@@ -884,12 +928,80 @@ def bin_cross_entropy(p, q):
     n = len(p)
     return -sum(p[i]*log(q[i]+1e-9) + (1-p[i])*log(1-q[i] + 1e-9) for i in range(n)) / n
 
+def get_T_world_cam(tilt, height):
+    T_world_cam = np.eye(4)
+    T_world_cam[:3, :3] = depth_utils.get_r_matrix([1., 0., 0.], angle=tilt)
+    T_world_cam[1, -1] = height
+
+    return T_world_cam
+
+
+def transform_grid_to_world(x, y):
+    xyzw = np.zeros((x.shape[0], 4))
+    # In grid coordinate: X = front, Y = left, Z = up
+    # In world coordinate: X = right, Y = up, Z = back
+    xyzw[:, 0] = -np.squeeze(y)
+    xyzw[:, 2] = -np.squeeze(x)
+    xyzw[:, 3] = 1
+
+    return xyzw
+
+
+def project_to_camera(x, y, T_cam_world, f, image_shape):
+    xyzw = transform_grid_to_world(x, y)
+
+    xyz_cam = (T_cam_world @ xyzw.T).T[:, :3]
+    uv = xyz_cam[:, :2] / -xyz_cam[:, 2:3]
+    # OpenGL coord to OpenCV
+    uv[:, 1] *= -1
+    uv[:, 0] = (f * uv[:, 0]) + (image_shape[1] - 1) / 2.0
+    uv[:, 1] = (f * uv[:, 1]) + (image_shape[0] - 1) / 2.0
+
+    return uv
+
+
+def project_theta_to_cam(theta, T_cam_world):
+    u, v = np.cos(theta), np.sin(theta)
+    uvw = transform_grid_to_world(u, v)[:, :3]
+    uvw = (T_cam_world[:3, :3] @ uvw.T).T
+    uv = uvw[:, :2]
+    uv = uv / np.linalg.norm(uv, axis=-1, keepdims=True)
+
+    return uv
+
+
+def fov_to_focal(fov_half, width):
+    return width / 2 / np.tan(fov_half)
+
+
+def transform_to_vis_coord(x, y):
+    # compatible with FPV RGB image (robot front along y-axis instead of x)
+    return -y, x
+
+
+def get_uniform_grid(crop_size, dx, speed, theta=0):
+    x_min, x_max = 0, crop_size[0] * dx
+    y_min, y_max = -dx * (crop_size[0]) / 2, dx * (crop_size[0]) / 2
+    # add some slack
+    x_min -= 0.25
+    y_min -= 0.25
+    x_max += 0.25
+    y_max += 0.25
+    h = 0.05
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    hh, ss = np.tile(theta, np.shape(xx)), np.tile(speed, np.shape(xx)),
+    X_grid = np.c_[xx.ravel(), yy.ravel(), hh.ravel(), ss.ravel()]
+    X_grid = tf.expand_dims(X_grid, axis=0)
+
+    return X_grid, xx, yy, hh, ss
+
 
 if __name__ == '__main__':
     import open3d as o3d
-    T = np.eye(4)
-    T[:3, :3] = depth_utils.get_r_matrix([1.,0.,0.], angle=np.deg2rad(-45))
-    T[1, -1] = 0.8
+
+    T_world_cam = get_T_world_cam(np.deg2rad(-45), 0.8)
+    T_cam_world = np.linalg.inv(T_world_cam)
 
     crop_size = [100, 100]
     dx = 0.05
@@ -912,8 +1024,10 @@ if __name__ == '__main__':
     pcd.points = o3d.utility.Vector3dVector(xyz)
     o3d.io.write_point_cloud('/tmp/pcd.ply', pcd)
 
-    camera = o3d.geometry.TriangleMesh.create_coordinate_frame(1).transform(T)
+    camera = o3d.geometry.TriangleMesh.create_coordinate_frame(1).transform(T_world_cam)
     o3d.io.write_triangle_mesh('/tmp/camera.ply', camera)
+
+    o3d.visualization.draw_geometries([pcd, camera])
     exit(0)
 
     tf.enable_eager_execution()
