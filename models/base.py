@@ -471,9 +471,24 @@ class BaseModel(object):
                 color = ['red' if l == 0 else 'green' for l in label]
                 fig = plt.figure()
 
-                from obstacles.sbpd_map import SBPDMap
+                # ax1 = fig.add_subplot(221)
+                X_grid, xx, yy, hh, ss = get_uniform_grid(crop_size, dx, speed)
+                min_x = min(X_grid.numpy()[0, :, 0].min(), WP[:, 0].min())
+                min_y = min(X_grid.numpy()[0, :, 1].min(), WP[:, 1].min())
+                max_x = max(X_grid.numpy()[0, :, 0].max(), WP[:, 0].max())
+                max_y = max(X_grid.numpy()[0, :, 1].max(), WP[:, 1].max())
+
+                min_x, min_y = transform_to_vis_coord(min_x, min_y)
+                max_x, max_y = transform_to_vis_coord(max_x, max_y)
+
+                # min and max can be flipped during the transformation
+                min_x, max_x = min(min_x, max_x), max(min_x, max_x)
+                min_y, max_y = min(min_y, max_y), max(min_y, max_y)
+
                 # fig = plt.figure()
                 ax3 = fig.add_subplot(233)
+                ax3.set_xlim(min_x, max_x)
+                ax3.set_ylim(min_y, max_y)
 
                 # obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
                 # obstacle_map.render(ax3)
@@ -498,9 +513,8 @@ class BaseModel(object):
                 # q = ax3.quiver(pos_nk2[:, 0], pos_nk2[:, 1], u, v)
                 # plt.show()
                 ax4 = fig.add_subplot(234)
-
-                # ax1 = fig.add_subplot(221)
-                X_grid, xx, yy, hh, ss = get_uniform_grid(crop_size, dx, speed)
+                ax4.set_xlim(min_x, max_x)
+                ax4.set_ylim(min_y, max_y)
 
                 # X_grid = [normalize(X, bias) for X, bias in zip(X_grid, biases)]
                 X_grid_norm = normalize(
@@ -727,6 +741,8 @@ class BaseModel(object):
 
                 # ax2 = fig.add_subplot(222, projection='3d')
                 ax2 = fig.add_subplot(232)
+                ax2.set_xlim(min_x, max_x)
+                ax2.set_ylim(min_y, max_y)
                 # prediction = prediction.numpy()
                 # prediction[np.where(prediction >= 0)] = 1
                 # prediction[np.where(prediction < 0)] = -1
