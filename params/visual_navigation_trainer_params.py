@@ -73,7 +73,7 @@ def create_params(simulator_params):
                         max_num_ckpts_to_keep=int(1e2),
                         ckpt_save_frequency=1,
                         ckpt_path='',
-                        restore_from_ckpt=False,
+                        restore_from_ckpt=True,
 
                         # Callback settings
                         callback_frequency=20,

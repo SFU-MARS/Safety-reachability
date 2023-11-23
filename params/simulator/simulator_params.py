@@ -82,7 +82,7 @@ def create_params():
                                                     reset_type='zero',
                                                     # reset_type='random',
                                                     # bounds=[0.0, 0.6]
-                                                    bounds = [0.3, 0.3]
+                                                    bounds = [0.0, 0.6]
                                                 ),
                                                 ang_speed=DotMap(
                                                     # For description of reset types see heading parameters above.

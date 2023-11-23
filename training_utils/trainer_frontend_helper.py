@@ -145,6 +145,7 @@ class TrainerFrontendHelper(object):
             # 'C': [1e0, 1e1, 1e2, 1e3, 1e4],
             # 'gamma': [1e-4, 1e-3, 1e-2, 1e-1]}
             # for C in Cs:
+
             for c in C:
 
                 for param in params:
@@ -184,6 +185,8 @@ class TrainerFrontendHelper(object):
     
             # Load the checkpoint
             self.trainer.restore_checkpoint(model=self.model)
+
+
 
     def create_params(self, param_file):
         """

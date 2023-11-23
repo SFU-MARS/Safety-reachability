@@ -1,4 +1,6 @@
 from training_utils.trainer_frontend_helper import TrainerFrontendHelper
+from systems.dubins_car import DubinsCar
+from data_sources.data_source import DataSource
 from utils import utils
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -7,6 +9,8 @@ from utils.image_utils import plot_image_observation
 import numpy as np
 import pickle
 import sys
+import time
+import tensorflow.contrib.eager as tfe
 
 
 class VisualNavigationTrainer(TrainerFrontendHelper):
@@ -137,44 +141,147 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         super(VisualNavigationTrainer, self).test()
 
         with tf.device(self.p.device):
-            simulator_datas = []
+            # Shuffle the dataset
+            self.data_source.shuffle_datasets()
 
-            # If setting custom goals for the agent force the number of tests to be 1
-            if self.p.test.simulator_params.reset_params.start_config.position.reset_type == 'custom':
-                assert(self.p.test.simulator_params.reset_params.goal_config.position.reset_type == 'custom')
-                simulate_kwargs = {}
-                number_tests = 1
-            else:
-                simulate_kwargs = self._ensure_expert_success_data_exists_if_needed()
-                number_tests = self.p.test.number_tests
+            # Define the metrics to keep a track of average loss over the epoch.
+            training_loss_metric = tfe.metrics.Mean()
+            validation_loss_metric = tfe.metrics.Mean()
+            training_total_loss_metric = tfe.metrics.Mean()
+            validation_total_loss_metric = tfe.metrics.Mean()
 
-            # Optionally initialize the Expert Simulator to be tested
-            if self.p.test.simulate_expert:
-                expert_simulator_params = self.p.simulator_params
-                expert_simulator_data = self._init_simulator_data(expert_simulator_params,
-                                                                  number_tests,
-                                                                  self.p.test.seed,
-                                                                  name='Expert_Simulator',
-                                                                  dirname='expert_simulator',
-                                                                  plot_controls=self.p.test.plot_controls)
-                simulator_datas.append(expert_simulator_data)
+            training_acc_metric = tfe.metrics.Mean()
+            validation_acc_metric = tfe.metrics.Mean()
+            training_rec_metric = tfe.metrics.Mean()
+            validation_rec_metric = tfe.metrics.Mean()
+            training_pre_metric = tfe.metrics.Mean()
+            validation_pre_metric = tfe.metrics.Mean()
+            training_new_metric = tfe.metrics.Mean()
+            validation_new_metric = tfe.metrics.Mean()
+            training_F1 = tfe.metrics.Mean()
+            validation_F1 = tfe.metrics.Mean()
 
-            # Initialize the NN Simulator to be tested
-            nn_simulator_params = self._nn_simulator_params()
-            nn_simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                          number_tests,
-                                                          self.p.test.seed,
-                                                          name=self.simulator_name,
-                                                          dirname=self.simulator_name.lower(),
-                                                          plot_controls=self.p.test.plot_controls)
-            simulator_datas.append(nn_simulator_data)
+            # epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
+            self.p.batch_size = 5
+            self.p.training_set_size = 1.0
+            self.p.num_samples = 5000*5
+            num_training_samples =  self.p.batch_size * int((self.p.training_set_size * self.p.num_samples) // self.p.batch_size)
 
-            # Test the simulators
-            metrics_keys, metrics_values = self.simulate(simulator_datas, log_metrics=True,
-                                                         plot_controls=self.p.test.plot_controls,
-                                                         plot_images=self.p.test.plot_images,
-                                                         **simulate_kwargs)
-            return metrics_keys, metrics_values
+            # For loop over the training samples
+            for j in range(0, num_training_samples, self.p.batch_size):
+                # Get a training and a validation batch
+
+                try:
+                    training_batch = self.data_source.generate_training_batch(j)
+                except Exception as e:
+                    print(e)
+                    break
+
+                # plt.imshow(training_batch['image'][0].astype(np.int32))
+                # plt.grid(False)
+                # plt.show()
+
+                sample = 1  # 600
+                ## Uncomment the following lines to use sampling
+                # X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
+                # labels_40 = [x[::sample, :] for x in training_batch['labels']]
+                # training_batch['labels'] = np.array(labels_40)
+                # training_batch['all_waypoint_ego'] = np.array(X_40)
+                #
+                wp_batch= training_batch['all_waypoint']
+                start = training_batch['start_state']
+                traj_batch = training_batch['vehicle_state_nk3']
+                traj = traj_batch[:, 15, :, :]
+                traj_world = DubinsCar.convert_position_and_heading_to_world_coordinates(start, traj).numpy()
+                imgs = self.model.renderer._get_rgb_image(traj_world[0, :, :2] / 0.05, traj_world[0, :, 2:3])
+
+                import matplotlib.pyplot as plt
+                import matplotlib
+                stamp = time.time() / 1e5
+                stamp = f'{stamp:.5f}'
+                for i, img in enumerate(imgs):
+                    # matplotlib.use('TkAgg')
+                    plt.imshow(img.astype(np.uint8))
+                    plt.savefig(f'./traj_imgs_area3/test_{stamp}_{i}.png')
+                    plt.close()
+
+                batch_size = 10
+                imgs_ = [
+                    [imgs[(i * batch_size) + j] for j in range(batch_size)]
+                    for i in range(len(imgs) // batch_size)
+                ] # group of 5 because of batch
+                for i, img in enumerate(imgs_):
+                    img = np.stack(img, axis=0)
+                    training_batch['img_nmkd'] = img
+                    self.model.test_decision_boundary(training_batch, 1, 1, is_training=False,
+                                                 return_loss_components=False, stamp=f'{stamp}_{i}')
+                continue
+                # exit(0)
+
+                (
+                    regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training,
+                    precision_training, recall_training, percentage_training, F1_training
+                ) = self.model.compute_loss_function(training_batch, 1, 1, is_training=True,
+                                                   return_loss_components=True)
+
+                if not tf.is_nan(prediction_loss_training):
+                    training_loss_metric(prediction_loss_training)
+                if not tf.is_nan(accuracy_training):
+                    training_acc_metric(accuracy_training)
+                if not tf.is_nan(recall_training):
+                    training_rec_metric(recall_training)
+                if not tf.is_nan(precision_training):
+                    training_pre_metric(precision_training)
+                if not tf.is_nan(percentage_training):
+                    training_new_metric(percentage_training)
+                if not tf.is_nan(percentage_training):
+                    training_F1(F1_training)
+
+            print("loss_training: ", str(training_loss_metric.result().numpy()))
+            print("acc_training: ", str(training_acc_metric.result().numpy()))
+            print("rec_training: ", training_rec_metric.result().numpy())
+            print("pre_training: ", training_pre_metric.result().numpy())
+            print("unsafe_acc_training: ", str(training_new_metric.result().numpy()))
+            print("F1 training: ", str(training_F1.result().numpy()))
+            exit(0)
+            # simulator_datas = []
+            #
+            # # If setting custom goals for the agent force the number of tests to be 1
+            # if self.p.test.simulator_params.reset_params.start_config.position.reset_type == 'custom':
+            #     assert(self.p.test.simulator_params.reset_params.goal_config.position.reset_type == 'custom')
+            #     simulate_kwargs = {}
+            #     number_tests = 1
+            # else:
+            #     simulate_kwargs = self._ensure_expert_success_data_exists_if_needed()
+            #     number_tests = self.p.test.number_tests
+            #
+            # # Optionally initialize the Expert Simulator to be tested
+            # if self.p.test.simulate_expert:
+            #     expert_simulator_params = self.p.simulator_params
+            #     expert_simulator_data = self._init_simulator_data(expert_simulator_params,
+            #                                                       number_tests,
+            #                                                       self.p.test.seed,
+            #                                                       name='Expert_Simulator',
+            #                                                       dirname='expert_simulator',
+            #                                                       plot_controls=self.p.test.plot_controls)
+            #     simulator_datas.append(expert_simulator_data)
+            #
+            # # Initialize the NN Simulator to be tested
+            # nn_simulator_params = self._nn_simulator_params()
+            # nn_simulator_data = self._init_simulator_data(nn_simulator_params,
+            #                                               number_tests,
+            #                                               self.p.test.seed,
+            #                                               name=self.simulator_name,
+            #                                               dirname=self.simulator_name.lower(),
+            #                                               plot_controls=self.p.test.plot_controls)
+            # simulator_datas.append(nn_simulator_data)
+            #
+            # # Test the simulators
+            # metrics_keys, metrics_values = self.simulate(simulator_datas, log_metrics=True,
+            #                                              plot_controls=self.p.test.plot_controls,
+            #                                              plot_images=self.p.test.plot_images,
+            #                                              **simulate_kwargs)
+            # return metrics_keys, metrics_values
 
     def _ensure_expert_success_data_exists_if_needed(self):
         """
@@ -479,14 +586,21 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         """
         Generate a metric curve using a trained network.
         """
-        # Extract the number of checkpoints to run
-        num_ckpts = self.p.test.metric_curves.end_ckpt - self.p.test.metric_curves.start_ckpt + 1
+        num_ckpts = 1
+        num_seeds = 1
 
-        # Extract the number of seeds to run
-        num_seeds = self.p.test.metric_curves.end_seed - self.p.test.metric_curves.start_seed + 1
+        from data_sources.visual_navigation_data_source import VisualNavigationDataSource
+        self.data_source = VisualNavigationDataSource(self.p)
+        self.data_source.load_dataset()
 
-        # Checkpoint directory
-        ckpt_directory = os.path.join(self.p.trainer.ckpt_path.split('checkpoints')[0], 'checkpoints')
+        # # Extract the number of checkpoints to run
+        # num_ckpts = self.p.test.metric_curves.end_ckpt - self.p.test.metric_curves.start_ckpt + 1
+        #
+        # # Extract the number of seeds to run
+        # num_seeds = self.p.test.metric_curves.end_seed - self.p.test.metric_curves.start_seed + 1
+        #
+        # # Checkpoint directory
+        # ckpt_directory = os.path.join(self.p.trainer.ckpt_path.split('checkpoints')[0], 'checkpoints')
 
         # Call the test function inside a loop and record the metrics
         for i in range(num_ckpts):
@@ -494,11 +608,14 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 # Change the required test and trainer parameters
                 self.p.test.seed = j + self.p.test.metric_curves.start_seed
                 self.p.test.simulate_expert = False
-                self.p.trainer.ckpt_path = os.path.join(ckpt_directory,
-                                                        'ckpt-%i' % (i + self.p.test.metric_curves.start_ckpt))
+                # self.p.trainer.ckpt_path = os.path.join(ckpt_directory,
+                #                                         'ckpt-%i' % (i + self.p.test.metric_curves.start_ckpt))
 
                 # Call the test function
                 metrics_keys_current, metrics_values_current = self.test()
+
+                if metrics_keys_current is None or metrics_values_current is None:
+                    continue
 
                 # Record the metrics
                 if i == 0 and j == 0:
@@ -509,6 +626,8 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                     metrics_data['keys'] = metrics_keys_current[0]
                 metrics_data['values'][j, i, :] = metrics_values_current[0]
 
+            if 'metrics_data' not in locals():
+                return
             self.dump_and_plot_metrics_data(metrics_data)
 
     def dump_and_plot_metrics_data(self, metrics_data):

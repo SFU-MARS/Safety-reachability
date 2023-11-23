@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
-import matplotlib.pyplot as plt
 import os
 import utils
 from tensorflow.python.util.tf_export import tf_export
@@ -65,6 +64,9 @@ class TrainerHelper(object):
             # Define the metrics to keep a track of average loss over the epoch.
             training_loss_metric = tfe.metrics.Mean()
             validation_loss_metric = tfe.metrics.Mean()
+            training_total_loss_metric = tfe.metrics.Mean()
+            validation_total_loss_metric = tfe.metrics.Mean()
+
             training_acc_metric = tfe.metrics.Mean()
             validation_acc_metric = tfe.metrics.Mean()
             training_rec_metric = tfe.metrics.Mean()
@@ -89,45 +91,32 @@ class TrainerHelper(object):
                 # plt.show()
 
                 sample = 1  # 600
-
-                X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
-                labels_40 = [x[::sample, :] for x in training_batch['labels']]
-                training_batch['labels'] = np.array(labels_40)
-                training_batch['all_waypoint_ego'] = np.array(X_40)
-
-                # scaler = StandardScaler()
-                # # feat_train_sc = [scaler.fit_transform(X_train) for X_train in X_40]
-                # scalers =[]
-                # feat_train_sc_batch = []
-                # feat_val_sc_batch = []
-                # #
-                # for X_train in X_40:
-                #     scaler = StandardScaler().fit(X_train)
-                #     feat_train_sc = scaler.transform(X_train)
-                #     scalers.append(scaler)
-                #     feat_train_sc_batch.append(feat_train_sc)
-                # feat_train_sc_batch = np.array(feat_train_sc_batch)
-                # training_batch['all_waypoint_ego'] = feat_train_sc_batch
+                ## Uncomment the following lines to use sampling
+                # X_40 = [x[::sample, :] for x in training_batch['all_waypoint_ego']]
+                # labels_40 = [x[::sample, :] for x in training_batch['labels']]
+                # training_batch['labels'] = np.array(labels_40)
+                # training_batch['all_waypoint_ego'] = np.array(X_40)
+                #
                 validation_batch = data_source.generate_validation_batch()
                 X_40_v = [x[::sample, :] for x in validation_batch['all_waypoint_ego']]
                 labels_40_v = [x[::sample, :] for x in validation_batch['labels']]
                 validation_batch['labels'] = np.array(labels_40_v)
                 validation_batch['all_waypoint_ego'] = np.array(X_40_v)
-                # #
-                # for scaler , X_val   in zip (scalers, X_40_v ):
-                #     feat_val_sc = scaler.transform(X_val)
-                #     feat_val_sc_batch.append(feat_val_sc)
-                # feat_val_sc_batch = np.array(feat_val_sc_batch)
-                # validation_batch['all_waypoint_ego'] = feat_val_sc_batch
                 #
+
 
                 with tf.GradientTape() as tape:
                     tape.watch(model.get_trainable_vars())
                     # tape.watch(training_batch)
                     # counter1=0
 
-                    loss = model.compute_loss_function(training_batch, param, c, is_training=True,
+                    # loss = model.compute_loss_function(training_batch, param, c, is_training=True,
+                    #                                    return_loss_components=False)
+                    #
+                    loss = model.test_decision_boundary(training_batch, param, c, is_training=True,
                                                        return_loss_components=False)
+
+
                     # print ("final loss: "+ str(loss.numpy()))
 
                     # behavior during training versus inference (e.g. Dropout).
@@ -150,8 +139,10 @@ class TrainerHelper(object):
                 #     if grad == None:
                 #         grad = tf.constant([0])
                 #     grads1.append(grad)
+
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                                                global_step=tf.train.get_or_create_global_step())
+
                 # print("model.vars: " + str( model.get_trainable_vars()))
                 # train_op = self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
                 #                                global_step=tf.train.get_or_create_global_step())
@@ -336,13 +327,15 @@ class TrainerHelper(object):
         # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
         #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation
-        training_loss_metric(prediction_loss_training)
+        if not tf.is_nan(prediction_loss_training):
+            training_loss_metric(prediction_loss_training)
         # training_total_loss_metric(total_loss_training)
 
         # print(training_loss_metric)
 
         # print(training_loss_metric)
-        validation_loss_metric(prediction_loss_validation)
+        if not tf.is_nan(prediction_loss_validation):
+            validation_loss_metric(prediction_loss_validation)
         # validation_total_loss_metric(total_loss_validation)
 
         if not tf.is_nan(accuracy_training):
@@ -451,13 +444,13 @@ class TrainerHelper(object):
             # self.lr.assign(self.lr/(1 + (epoch / 2)))
             # Decay the learning rate by the decay factor after every few epochs
             if epoch % self.p.lr_decay_frequency == 0:
-                # self.lr.assign(self.lr * self.p.lr_decay_factor)
+                self.lr.assign(self.lr * self.p.lr_decay_factor)
 
-                self.lr0 = 1e-3
+                # self.lr0 = 1e-5
                 # if not hasattr(self, 'lr0'):
                 #     self.lr0 = self.p.lr
 
-                self.lr.assign(self.lr0 * (1 / (epoch + 1)))
+                # self.lr.assign(self.lr0 * (1 / (epoch + 1)))
             # else:
             #     return
         else:

@@ -45,6 +45,42 @@ class VisualNavigationModelBase(BaseModel):
         """
         return raw_data['vehicle_controls_nk2'][:, -1]
 
+    def test_nn_inputs_and_outputs(self, raw_data, is_training=None):
+
+        if self.p.data_processing.input_processing_function is not None:
+            raw_data = self.preprocess_nn_input(raw_data, is_training)
+        # their code
+        # Get the input image (n, m, k, d)
+        # batch size n x (m x k pixels) x d channels
+
+        img_nmkd_d = raw_data['img_nmkd']
+        img_nmkd = img_nmkd_d[:, :, :, :3]
+
+        # Concatenate the goal position in an egocentric frame with vehicle's speed information
+        # goal_position = self._goal_position(raw_data)
+        vehicle_controls = self._vehicle_controls(raw_data)
+        # state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
+
+        # Optimal Supervision
+        optimal_labels_n = self._optimal_labels(raw_data)
+
+        # Prepare and return the data dictionary
+        data = {}
+
+        # state_featres_n2 = vehicle_controls[:,0]
+        # state_featres_n2 = raw_data['vehicle_state_nk3'][:, 0, -1]
+        state_featres_n2 = raw_data['vehicle_state_nk3'][:, 0, 0, -1]
+        state_features_n21 = np.reshape(state_featres_n2, (-1, 1))
+        # Action_waypoint = raw_data['all_waypoint_ego']
+        data['inputs'] = [img_nmkd, state_features_n21]
+        # data['inputs'] = [img_nmkd]
+        # data['inputs'] = [img_nmkd, Action_waypoint]
+        # data['labels'] = raw_data['labels']
+        # speeds = self._wp_speed(raw_data)[:,0:1]
+        # data['Action_waypoint'] = raw_data['all_waypoint_ego']
+        # data['Action_waypoint_withv'] = np.concatenate(raw_data['all_waypoint_ego'], speeds, axis=1)
+        return data
+
     def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
         Create the occupancy grid and other inputs for the neural network.
@@ -167,9 +203,9 @@ class VisualNavigationModelBase(BaseModel):
                 if self.p.data_processing.input_processing_params.version in ['v3']:
                     raw_data['img_nmkd'] = self.image_distortor[1](raw_data['img_nmkd'])
                 # Image Augmenter works with uint8, but we want images to be float32 for the network, hence the casting
-                # raw_data['img_nmkd'] = \ self.image_distortor[0].augment_images(raw_data['img_nmkd'].astype(np.uint8)).astype(np.float32)
-                    raw_data['image'] = \
-                        self.image_distortor[0].augment_images(raw_data['image'].astype(np.uint8)).astype(np.float32)
+                if is_training:
+                    raw_data['img_nmkd'] = self.image_distortor[0].augment_images(raw_data['img_nmkd'].astype(np.uint8)).astype(np.float32)
+
         
         # Normalize images if required
         if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:

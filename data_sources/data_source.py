@@ -166,6 +166,8 @@ class DataSource(object):
         for filename in file_list:
             data_current = self._get_current_data(filename)
             for tag in self.data_tags:
+                if (tag not in data) or (tag not in data_current):
+                    print(tag, 'not found')
                 data[tag].append(data_current[tag])
 
         # Concatenate all the data

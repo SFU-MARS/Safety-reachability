@@ -29,7 +29,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
         resnet50.trainable = params.finetune_resnet_weights # True
 
         # Used to control batch_norm during training vs test time
-        is_training = tf.contrib.eager.Variable(True, dtype=tf.bool, name='is_training')
+        is_training = tf.contrib.eager.Variable(True, dtype=tf.bool, name='is_training') # when testing
         x = resnet50.call(x, is_training,
                           output_layer=params.resnet_output_layer)
 
