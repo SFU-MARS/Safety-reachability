@@ -12,8 +12,8 @@ def create_params():
                              height=64,  # the remaining params are for rgb and depth only
                              z_near=.01,
                              z_far=20.0,
-                             fov_horizontal=90.,
-                             fov_vertical=90.,
+                             fov_horizontal=62.1,
+                             fov_vertical=62.1,
                              img_channels=3,
                              im_resize=1.)
 
@@ -27,7 +27,7 @@ def create_params():
     p.robot_params = DotMap(radius=18,
                             base=10,
                             height=100,
-                            sensor_height=80,
+                            sensor_height=98,
                             camera_elevation_degree=-45,  # camera tilt
                             delta_theta=1.0)
 

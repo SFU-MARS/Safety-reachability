@@ -84,7 +84,7 @@ def create_params():
     # p.trainer.num_samples = int(45) #int(2400)48e4
     # p.trainer.num_samples = int(1 *4) #to have one train and val with 20 wp
     # p.trainer.num_samples = int(100e3) #to have one train and val with 20 wp
-    p.trainer.num_samples = int(1000) #int(5000)
+    p.trainer.num_samples = int(200_000) #int(900*5) #int(5000*5) #int(200_000) #int(5000)
     # p.trainer.num_samples = int(60 * 133)
     # p.trainer.num_samples = int(3780)
     # p.trainer.num_samples = int(1050)
