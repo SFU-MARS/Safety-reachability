@@ -41,6 +41,7 @@ from utils import depth_utils
 from training_utils.data_processing.distort_images import fov_and_tilt_distortion
 import cv2
 import matplotlib
+from pathlib import Path
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -212,13 +213,15 @@ class BaseModel(object):
         processed_data = self.test_nn_inputs_and_outputs(raw_data, is_training=is_training)
 
         # processed_data = tf.Variable(processed_data)
-
+        # start_nn = time()
         nn_output, waypoint_scale, waypoint_bias = self.predict_nn_output(
             processed_data['inputs'] + [tf.constant([[1]], dtype=processed_data['inputs'][0].dtype)],
             is_training=is_training
         )
+        # end_nn = time()
+        # print("time_nn: ", (end_nn - start_nn))
 
-        print("nn after" + str(nn_output))
+        # print("nn after" + str(nn_output))
 
         sample = 1  # 600 , 50
 
@@ -246,9 +249,11 @@ class BaseModel(object):
 
 
         if True:
+            # start_plot = time()
             self.plot_2plots_decision_boundary(biases, kernel_weights, nn_output, normalize, processed_data,
                                         raw_data, remap_labels, sample, scales, stamp=stamp)
-
+            # finish_plot = time()
+            # print("time_plot: ", (finish_plot - start_plot))
         return
 
     def compute_loss_function(self, raw_data, param, c, is_training=None, return_loss_components=False,
@@ -527,7 +532,7 @@ class BaseModel(object):
             raw_data['vehicle_state_nk3'],
             processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13)):
 
-            pdf = PdfPages(f"output_all_{stamp}_{img_idx}.pdf")
+            # pdf = PdfPages(f"output_all_{stamp}_{img_idx}.pdf")
 
             # camera_pos_13 = config.heading_nk1()[0]
             # camera_grid_world_pos_12 = config.position_nk2()[0] []/ dx_m
@@ -536,9 +541,6 @@ class BaseModel(object):
             # rgb_image_1mk3 = r._get_rgb_image(robot_pos, robot_head)
 
             # img1 = r._get_topview(robot_pos, robot_head)
-
-            # plt.imshow(np.squeeze(top))
-            fig = plt.figure()
 
             X_grid, xx, yy, hh, ss = get_uniform_grid(crop_size, dx, speed)
             # ax1 = fig.add_subplot(221)
@@ -587,50 +589,69 @@ class BaseModel(object):
             #             ta = ta.write([idx, jdx, kdx], v)
             # X_grid_kerneled = ta
             # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
-            Z_pred = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
-                      x1, output in
-                      zip(X_grid_kerneled, kernel_weight[np.newaxis, ...])]
-            Z_pred = np.array(Z_pred)
+            # create loop with list of thresholds
+            for threshold in np.arange(0.5, 0.8, 0.1):
+                Z_pred = [tf.sigmoid(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))).numpy() > threshold
+                          for x1, output in
+                          zip(X_grid_kerneled, kernel_weight[np.newaxis, ...])]
+                Z_pred = np.array(Z_pred)
 
 
-            p = self.create_params(image.shape[1])
+                p = self.create_params(image.shape[1])
 
 
-            # camera to world transformation
-            T_world_cam = get_T_world_cam(p.projected_grid_params.tilt, p.projected_grid_params.h)
-            # world to camera transformation
-            T_cam_world = np.linalg.inv(T_world_cam)
+                # camera to world transformation
+                T_world_cam = get_T_world_cam(p.projected_grid_params.tilt, p.projected_grid_params.h)
+                # world to camera transformation
+                T_cam_world = np.linalg.inv(T_world_cam)
 
-            xyhs = X_grid.numpy()[0, :, :]
-            uv = project_to_camera(
-                xyhs[:, 0], xyhs[:, 1],
-                T_cam_world, p.projected_grid_params.f, image.shape
-            )
+                xyhs = X_grid.numpy()[0, :, :]
+                uv = project_to_camera(
+                    xyhs[:, 0], xyhs[:, 1],
+                    T_cam_world, p.projected_grid_params.f, image.shape
+                )
 
-            x = uv[:, 0]
-            y = uv[:, 1]
+                x = uv[:, 0]
+                y = uv[:, 1]
 
-            image_int = image.astype(np.uint8)
+                image_int = image.astype(np.uint8)
 
-            valid_indices_grid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
-            valid_indices_grid = np.where(valid_indices_grid)[0]
-            x = x[valid_indices_grid]
-            y = y[valid_indices_grid]
+                valid_indices_grid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+                valid_indices_grid = np.where(valid_indices_grid)[0]
+                x = x[valid_indices_grid]
+                y = y[valid_indices_grid]
 
-            ax6 = fig.add_subplot(111)
-            ax6.imshow(image_int)
-            ax6.scatter(
-                x.astype(int), y.astype(int),
-                marker="o", s=15, alpha=0.25,
-                color=['red' if i == -1 else 'green' for i in np.squeeze(Z_pred)[valid_indices_grid]]
-            )
+                # tic = time()
+                # # plt.imshow(np.squeeze(top))
+                # fig = plt.figure()
+                #
+                # ax6 = fig.add_subplot(111)
+                # ax6.imshow(image_int)
+                # ax6.scatter(
+                #     x.astype(int), y.astype(int),
+                #     marker="o", s=15, alpha=0.25,
+                #     color=['red' if i == -1 else 'green' for i in np.squeeze(Z_pred)[valid_indices_grid]]
+                # )
+                #
+                # plt.savefig(f"./traj_imgs_area3_batch1/output_all_{stamp}_{img_idx}.png")
+                # # pdf.savefig(fig)
+                # # pdf.close()
+                # plt.close('all')
+                # print("time_matplot: ", (time() - tic))
 
-            plt.savefig(f"./traj_imgs_area3_batch1/output_all_{stamp}_{img_idx}.png")
-            pdf.savefig(fig)
-            pdf.close()
-            plt.close('all')
-
-
+                # tic = time()
+                image_labels = np.zeros_like(image_int)
+                # draw circles at Z_pred
+                for x_, y_, label_ in zip(x.astype(int), y.astype(int), np.squeeze(Z_pred)[valid_indices_grid]):
+                    color = (255, 0, 0) if label_ == 0 else (0, 255, 0)
+                    image_labels = cv2.circle(image_labels, (x_, y_), 2, color, -1)
+                alpha = 0.25
+                image_out = cv2.addWeighted(image_int, 1 - alpha, image_labels, alpha, 0)
+                image_out = cv2.resize(image_out, (512, 512))
+                outdir = f'./traj_imgs_real_8_{threshold:.03f}/'
+                Path(outdir).mkdir(exist_ok=True)
+                cv2.imwrite(f"./{outdir}/output_all_{stamp}_{img_idx:05d}.png", image_out[..., ::-1])
+                # print("time_cv2: ", (time() - tic))
 
     def plot_5_decision_boundary(self, biases, kernel_weights, nn_output, normalize, prediction_total, processed_data,
                                raw_data, remap_labels, sample, scales, stimators_coeffs):

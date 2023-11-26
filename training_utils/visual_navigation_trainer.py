@@ -10,6 +10,8 @@ import numpy as np
 import pickle
 import sys
 import time
+from pathlib import Path
+import cv2
 import tensorflow.contrib.eager as tfe
 
 
@@ -133,6 +135,14 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                                                         self.p.trainer.callback_seed,
                                                         dirname='callbacks')
 
+    @staticmethod
+    def crop_image(img):
+        cx= 304
+        cy= 197
+        cropped_img=img [cy-160:cy+160, cx-160:cx+160, :]
+        img = cv2.resize(cropped_img, (224, 224)).astype(np.float32)
+        return img
+
     def test(self):
         """
         Test a trained network. Optionally test the expert policy as well.
@@ -188,35 +198,58 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 # training_batch['labels'] = np.array(labels_40)
                 # training_batch['all_waypoint_ego'] = np.array(X_40)
                 #
-                wp_batch= training_batch['all_waypoint']
-                start = training_batch['start_state']
-                traj_batch = training_batch['vehicle_state_nk3']
-                traj = traj_batch[:, 15, :, :]
-                traj_world = DubinsCar.convert_position_and_heading_to_world_coordinates(start, traj).numpy()
-                imgs = self.model.renderer._get_rgb_image(traj_world[0, :, :2] / 0.05, traj_world[0, :, 2:3])
 
-                import matplotlib.pyplot as plt
-                import matplotlib
                 stamp = time.time() / 1e5
                 stamp = f'{stamp:.5f}'
-                for i, img in enumerate(imgs):
-                    # matplotlib.use('TkAgg')
-                    plt.imshow(img.astype(np.uint8))
-                    plt.savefig(f'./traj_imgs_area3/test_{stamp}_{i}.png')
-                    plt.close()
 
-                batch_size = 10
-                imgs_ = [
-                    [imgs[(i * batch_size) + j] for j in range(batch_size)]
-                    for i in range(len(imgs) // batch_size)
-                ] # group of 5 because of batch
+                ## decision boundaries for trajectory
+                # wp_batch= training_batch['all_waypoint']
+                # start = training_batch['start_state']
+                # traj_batch = training_batch['vehicle_state_nk3']
+                # traj = traj_batch[:, 15, :, :]
+                # traj_world = DubinsCar.convert_position_and_heading_to_world_coordinates(start, traj).numpy()
+                # imgs = self.model.renderer._get_rgb_image(traj_world[0, :, :2] / 0.05, traj_world[0, :, 2:3])
+                # velocities = [0 for _ in imgs]
+                #
+                # import matplotlib.pyplot as plt
+                # import matplotlib
+                # for i, img in enumerate(imgs):
+                #     # matplotlib.use('TkAgg')
+                #     plt.imshow(img.astype(np.uint8))
+                #     plt.savefig(f'./traj_imgs_area3/test_{stamp}_{i}.png')
+                #     plt.close()
+
+                ## decision boundaries for images
+                imgs_dir = Path('/local-scratch/tara/Downloads/sync_imgs8')
+                imgs = sorted([i for i in imgs_dir.iterdir() if i.is_file() and i.suffix == '.png'])
+                img_velocities = [(i, float(i.stem.split('_')[-1])) for i in imgs]
+                img_velocities = [(i, j) for i, j in img_velocities if j >= 0.0]
+                velocities = [j for _, j in img_velocities]
+                imgs = [
+                    self.crop_image(cv2.imread(str(i)))[..., ::-1].astype(np.float32)
+                    for i, _ in img_velocities
+                ]
+
+                batch_size = 5
+                def batch_list(imgs, batch_size):
+                    return [
+                        [imgs[(i * batch_size) + j] for j in range(batch_size)]
+                        for i in range(len(imgs) // batch_size)
+                    ] # group of 5 because of batch
+
+                imgs_ = batch_list(imgs, batch_size)
+                velocities_ = batch_list(velocities, batch_size)
+
                 for i, img in enumerate(imgs_):
+                    if len(img) < batch_size:
+                        continue
                     img = np.stack(img, axis=0)
                     training_batch['img_nmkd'] = img
+                    training_batch['vehicle_state_nk3'][:, 0, 0, -1] = velocities_[i]
                     self.model.test_decision_boundary(training_batch, 1, 1, is_training=False,
-                                                 return_loss_components=False, stamp=f'{stamp}_{i}')
-                continue
-                # exit(0)
+                                                 return_loss_components=False, stamp=f'{stamp}_{i:05d}')
+                # continue
+                exit(0)
 
                 (
                     regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training,
