@@ -67,6 +67,13 @@ class PolynomialFeaturesLayer(tf.keras.layers.Layer):
         return polynomial_features
 
 
+def normalize(X, biases, scales):
+    if isinstance(X, np.ndarray):
+        X = tf.convert_to_tensor(X)
+    # expand for all waypoints
+    return tf.expand_dims(scales, 1) * (tf.cast(X, dtype=tf.float32) + tf.expand_dims(biases, 1))
+
+
 class BaseModel(object):
     """
     A base class for an input-output model that can be trained.
@@ -233,12 +240,6 @@ class BaseModel(object):
         biases = waypoint_bias  # tf.zeros_like(biases)
         scales = waypoint_scale  # tf.ones_like(scales)
 
-        def normalize(X, biases, scales):
-            if isinstance(X, np.ndarray):
-                X = tf.convert_to_tensor(X)
-            # expand for all waypoints
-            return tf.expand_dims(scales, 1) * (tf.cast(X, dtype=tf.float32) + tf.expand_dims(biases, 1))
-
         # X_norm = [normalize(X, bias, scale) for X, bias, scale in zip(feat_train_sc, biases, scales) ]
 
 
@@ -255,6 +256,215 @@ class BaseModel(object):
             # finish_plot = time()
             # print("time_plot: ", (finish_plot - start_plot))
         return
+
+    def compute_loss_function2(self, raw_data, param, c, is_training=None, return_loss_components=False,
+                              return_loss_components_and_output=False):
+        """
+                Compute the loss function for a given dataset.
+                """
+        # Create the NN inputs and labels
+
+        processed_data = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
+        batch_size = raw_data['img_nmkd'].shape[0]
+        nn_output, waypoint_scale, waypoint_bias, _ = self.predict_nn_output(
+            processed_data['inputs']
+            + [tf.constant([[1]], dtype=processed_data['inputs'][0].dtype)]
+            + [np.zeros((batch_size, 2304 + self.p.model.num_outputs))],
+            is_training=is_training
+        )
+        biases = waypoint_bias  # tf.zeros_like(biases)
+        scales = waypoint_scale  # tf.ones_like(scales)
+
+        waypoint_fc = [i.name for i in self.arch.layers].index('waypoint_fc')
+        waypoint_fc = self.arch.layers[waypoint_fc]
+
+        feat_train_sc = processed_data['Action_waypoint']
+        num_waypoints = feat_train_sc.shape[1]
+
+        X_norm = normalize(feat_train_sc, biases, scales)
+        X_kerneled = self.polyfeatures(
+            tf.reshape(X_norm, (batch_size * num_waypoints, -1))
+        )
+        X_kerneled = tf.reshape(X_kerneled, [batch_size, num_waypoints, -1])
+
+        # create 2nd dimension and tile it with num_waypoints
+        nn_output = tf.expand_dims(nn_output, 1)
+        nn_output = tf.tile(nn_output, [1, num_waypoints, 1])
+
+        nn_input = tf.concat(
+            [nn_output, X_kerneled], axis=-1
+        )
+        predicted = waypoint_fc(tf.reshape(nn_input, [batch_size * num_waypoints, -1]))
+        predicted = tf.reshape(predicted, [batch_size, num_waypoints, -1])
+        print(predicted.shape)
+
+        regularization_loss = 0.
+        kernel_losses = [0]
+        regularization_loss_kernel = 0.
+        model_variables = self.get_trainable_vars()
+        for model_variable in model_variables:
+            regularization_loss += tf.nn.l2_loss(model_variable)  # / model_variable.shape.num_elements()
+
+        regularization_loss = self.p.loss.regn * regularization_loss
+
+        accuracy_total = []
+        prediction_total = []
+        precision_total = []
+        recall_total = []
+        output_total = []
+        percentage_total = []
+        F1_total = []
+
+        sample = 1  # 600 , 50
+        sample_weights = []
+
+        X_kerneled = [X_kerneled[i] for i in range(batch_size)]
+        predicted = [predicted[i] for i in range(batch_size)]
+
+        for X, y in zip(X_kerneled, processed_data['labels']):
+
+            n_sample0 = np.size(np.where(y == 1)[0])
+            n_sample1 = np.size(np.where(y == -1)[0])
+
+            sample0_ratio = n_sample0 / (n_sample1 + n_sample0)
+            if np.isnan(sample0_ratio):
+                print('sample0_ratio nan')
+
+            print(f'initial sample0_ratio: {sample0_ratio}')
+            if sample0_ratio > 0.75:
+                sample0_ratio = sample0_ratio ** 2
+            elif sample0_ratio < 0.25:
+                sample0_ratio = sample0_ratio ** 0.5
+            print(f'final sample0_ratio: {sample0_ratio}')
+            sample1_ratio = 1 - sample0_ratio
+
+            # debug
+            # sample1_ratio = sample0_ratio = 1
+
+            sample_weight = np.array(
+                [sample0_ratio if i == -1 else sample1_ratio for i in y])
+            if np.all(sample_weight == 0):
+                sample_weight[:] = 1.0
+
+            sample_weight = sample_weight / np.sum(sample_weight) * y.shape[0]
+            if np.any(np.isnan(sample_weight)):
+                print('sample_weight nan')
+            # sample_weight = np.ones_like(sample_weight)
+            sample_weights.append(sample_weight)
+
+        LABEL_UNSAFE = 0
+        LABEL_SAFE = 1
+
+        def remap_labels(label):
+            return (label + 1) / 2
+
+        for prediction0, label, sample_weight in zip(predicted, processed_data['labels'], sample_weights):
+            # prediction0 = prediction.numpy()
+
+            label = remap_labels(label)
+
+            prediction = tf.sigmoid(prediction0)
+            # prediction = prediction0
+
+            output_total.append(prediction)
+            prediction = prediction.numpy()
+            # reverse for scores calculation
+            prediction_binary = np.zeros_like(prediction)
+            prediction_binary[np.where(prediction >= 0.5)] = 1
+            prediction_binary[np.where(prediction < 0.5)] = 0
+            prediction = prediction_binary
+            prediction_total.append(prediction)
+            print('sample_weight: ', sample_weight)
+            print("label: ", label.transpose())
+            print("prediction: ", prediction.transpose())
+            # print("logits: ", prediction0.numpy().transpose())
+            accuracy = np.count_nonzero(prediction == label) / np.size(label)
+            # accuracy_total.append(accuracy)
+            # prediction_loss1 = tf.losses.mean_squared_error(prediction0,label)
+            # prediction_total.append(prediction_loss1)
+
+            POS_LABEL = LABEL_UNSAFE
+            NEG_LABEL = LABEL_SAFE
+
+            precision = precision_score(label, prediction, pos_label=POS_LABEL)
+            recall = recall_score(label, prediction, pos_label=POS_LABEL)
+            precision_total.append(precision)
+            recall_total.append(recall)
+
+            # accuracy = balanced_accuracy_score(label, prediction)
+
+            F1 = metrics.f1_score(label, prediction, pos_label=POS_LABEL, zero_division=0)
+            if F1 == 0:
+                F1 = 1
+            F1_total.append(F1)
+            if not tf.is_nan(accuracy):
+                accuracy_total.append(accuracy)  # look at other metrics maybe auc
+            else:
+                tn = np.sum((label == NEG_LABEL) and (prediction == NEG_LABEL))
+                accuracy_total.append(tn / np.sum(label == NEG_LABEL))
+            if (not tf.is_inf(precision)) and not (tf.is_nan(precision)):
+                precision_total.append(precision)
+            if (not tf.is_inf(recall)) and (not tf.is_nan(recall)):
+                recall_total.append(recall)
+            # for label1 , prediction1 in zip(label, prediction):
+            correct_count = np.sum((label == POS_LABEL) & (prediction == POS_LABEL))
+            percentage = correct_count / np.sum(label == POS_LABEL)
+            if (not tf.is_inf(percentage)) and (not tf.is_nan(percentage)):
+                percentage_total.append(percentage)
+        weights = tf.stack(sample_weights)
+
+        if False:
+            self.plot_5_decision_boundary(biases, kernel_weights, nn_output, normalize, prediction_total,
+                                          processed_data,
+                                          raw_data, remap_labels, sample, scales, stimators_coeffs)
+
+        hinge_loss, mse_loss = self.extract_ave_losses(predicted, processed_data, remap_labels, weights=weights)
+
+        if self.p.loss.loss_type == 'mse':
+            prediction_loss = mse_loss
+        elif self.p.loss.loss_type == 'l2_loss':
+            prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
+        elif self.p.loss.loss_type == 'hinge':
+            prediction_loss = hinge_loss
+        elif self.p.loss.loss_type == 'mse_hinge':
+            prediction_loss = mse_loss + hinge_loss
+
+        percentage_mean = np.mean(np.array(percentage_total))
+        # print("percentage of unsafe predicted correclty in this batch: " + str(percentage_mean))
+
+        accuracy_mean = np.mean(np.array(accuracy_total))
+        # print("accuracy total: " + str(accuracy_total))
+        print("accuracy in this batch: " + str(accuracy_mean))
+
+        precision_mean = np.mean(np.array(precision_total))
+        print("precision in this batch: " + str(precision_mean))
+
+        recall_mean = np.mean(np.array(recall_total))
+        print("recall in this batch: " + str(recall_mean))
+
+        F1_mean = np.mean(np.array(F1_total))
+        print("F1 in this batch: " + str(F1_mean))
+
+        total_loss = tf.cast(prediction_loss, dtype=tf.float32) + regularization_loss
+        print("regularization_loss: " + str(regularization_loss.numpy()))
+        print("prediction_loss: " + str(prediction_loss.numpy()))
+        print("log_loss: ", mse_loss.numpy())
+        print("hinge_loss: ", hinge_loss.numpy())
+        print("bias: ", biases.numpy())
+        print("scale: ", scales.numpy())
+
+        regularization_loss_svm = 1e-2 * tf.nn.l2_loss(nn_output.numpy()[:, 1:])  # 1e-1
+        regularization_loss = regularization_loss + regularization_loss_svm
+
+        if return_loss_components_and_output:
+            return regularization_loss, prediction_loss, total_loss, nn_output  # , grad_dir
+        # elif return_loss_components:
+        #     return regularization_loss, prediction_loss, total_loss
+        elif return_loss_components:
+            return regularization_loss, prediction_loss, total_loss, accuracy_mean, precision_mean, recall_mean, percentage_mean, F1_mean
+        else:
+            return total_loss  # , grad_dir
+            # return regularization_loss
 
     def compute_loss_function(self, raw_data, param, c, is_training=None, return_loss_components=False,
                               return_loss_components_and_output=False):
@@ -302,12 +512,6 @@ class BaseModel(object):
         biases = waypoint_bias  # tf.zeros_like(biases)
         scales = waypoint_scale  # tf.ones_like(scales)
 
-        def normalize(X, biases, scales):
-            if isinstance(X, np.ndarray):
-                X = tf.convert_to_tensor(X)
-            # expand for all waypoints
-            return tf.expand_dims(scales, 1) * (tf.cast(X, dtype=tf.float32) + tf.expand_dims(biases, 1))
-
         # X_norm = [normalize(X, bias, scale) for X, bias, scale in zip(feat_train_sc, biases, scales) ]
         X_norm = normalize(feat_train_sc, biases, scales)
 
@@ -351,6 +555,9 @@ class BaseModel(object):
 
                 sample_weight = np.array(
                     [sample0_ratio if i == -1 else sample1_ratio for i in y])
+                if np.all(sample_weight == 0):
+                    sample_weight[:] = 1.0
+
                 sample_weight = sample_weight / np.sum(sample_weight) * y.shape[0]
                 # sample_weight = np.ones_like(sample_weight)
                 sample_weights.append(sample_weight)

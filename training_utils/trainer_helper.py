@@ -110,11 +110,16 @@ class TrainerHelper(object):
                     # tape.watch(training_batch)
                     # counter1=0
 
-                    # loss = model.compute_loss_function(training_batch, param, c, is_training=True,
-                    #                                    return_loss_components=False)
-                    #
-                    loss = model.test_decision_boundary(training_batch, param, c, is_training=True,
+                    loss_function = (
+                        model.compute_loss_function2
+                        if self.p.model_version == 'v2' else model.compute_loss_function
+                    )
+
+                    loss = loss_function(training_batch, param, c, is_training=True,
                                                        return_loss_components=False)
+
+                    # loss = model.test_decision_boundary(training_batch, param, c, is_training=True,
+                    #                                    return_loss_components=False)
 
 
                     # print ("final loss: "+ str(loss.numpy()))
@@ -317,13 +322,26 @@ class TrainerHelper(object):
         Record the average loss for the batch and update the metric.
         """
 
-        regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training, precision_training, recall_training, percentage_training, F1_training = model.compute_loss_function(
-            training_batch, param, c,  is_training=False, return_loss_components=True)
+        loss_function = (
+            model.compute_loss_function2
+            if self.p.model_version == 'v2' else model.compute_loss_function
+        )
+
+        (
+            regn_loss_training, prediction_loss_training, total_loss_training, accuracy_training, precision_training,
+            recall_training, percentage_training, F1_training
+        ) = loss_function(
+            training_batch, param, c,  is_training=False, return_loss_components=True
+        )
         # regn_loss_training, prediction_loss_training, _ = model.compute_loss_function(
         #     training_batch, param, c, is_training=False, return_loss_components=True)
 
-        regn_loss_validation, prediction_loss_validation, total_loss_validation, accuracy_validation, precision_validation, recall_validation, percentage_validation, F1_validation = model.compute_loss_function(
-            validation_batch, param, c, is_training=False, return_loss_components=True)
+        (
+            regn_loss_validation, prediction_loss_validation, total_loss_validation, accuracy_validation,
+            precision_validation, recall_validation, percentage_validation, F1_validation
+        ) = loss_function(
+            validation_batch, param, c, is_training=False, return_loss_components=True
+        )
         # regn_loss_validation, prediction_loss_validation, _= model.compute_loss_function(
         #     validation_batch, param, c, is_training=False, return_loss_components=True)
         # Now add the loss values to the metric aggregation

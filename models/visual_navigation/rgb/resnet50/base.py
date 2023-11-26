@@ -1,5 +1,5 @@
 from models.visual_navigation.base import VisualNavigationModelBase
-from training_utils.architecture.resnet50_cnn import resnet50_cnn
+from training_utils.architecture.resnet50_cnn import resnet50_cnn, resnet50_cnn2
 from training_utils.architecture.simple_cnn import simple_cnn
 import tensorflow as tf
 import numpy as np
@@ -18,10 +18,11 @@ class Resnet50ModelBase(VisualNavigationModelBase):
         #                                                      num_inputs=self.p.model.num_inputs.num_state_features,
         #                                                      num_outputs=self.p.model.num_outputs,
         #                                                      params=self.p.model.arch)
-        self.arch, self.is_batchnorm_training = resnet50_cnn(image_size=self.p.model.num_inputs.image_size,
-                                                             num_inputs=self.p.model.num_inputs.num_state_features,
-                                                             num_outputs=self.p.model.num_outputs,
-                                                             params=self.p.model.arch)
+        model = resnet50_cnn2 if self.p.trainer.model_version == 'v2' else resnet50_cnn
+        self.arch, self.is_batchnorm_training = model(image_size=self.p.model.num_inputs.image_size,
+                                                     num_inputs=self.p.model.num_inputs.num_state_features,
+                                                     num_outputs=self.p.model.num_outputs,
+                                                     params=self.p.model.arch)
         # self.kernel_model = tf.keras.Sequential([
         #     PolynomialKernelLayer(degree=3, trainable=True, input_shape=(4,)),
         #     tf.keras.layers.Dense(35, activation = 'tanh')

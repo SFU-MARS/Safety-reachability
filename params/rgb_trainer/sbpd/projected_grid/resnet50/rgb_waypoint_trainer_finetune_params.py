@@ -75,7 +75,8 @@ def create_params():
     # Change the learning rate and num_samples
     # p.trainer.lr = 2e-1
     p.trainer.lr = 1e-5
-    p.trainer.batch_size = 5#48 original, changed after error 36
+    p.trainer.batch_size = 5 # 5#48 original, changed after error 36
+    p.trainer.model_version = 'v2'
     # p.trainer.batch_size = 32#60
     #
     # Todo: num_samples are too large
