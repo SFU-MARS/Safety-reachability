@@ -189,31 +189,24 @@ def resnet50_cnn2(image_size, num_inputs, num_outputs, params, dtype=tf.float32)
 
     output_network = x
 
-    class MLP(tf.keras.layers.Layer):
-        def __init__(self, params):
-            super(MLP, self).__init__(name='waypoint_fc')
-            self.p = params
+    def mlp(params):
+        # common vector of weights
+        num_neurons = [1024, 512, 256, 256, 128, 64]
+        # Fully connectecd hidden layers
+        layers_ = []
+        for i in range(params.num_hidden_layers):
+            layers_.append(layers.Dense(
+                num_neurons[i],  # params.num_neurons_per_layer,
+                name=f'fc_{i}',
+                activation=params.hidden_layer_activation_func
+            ))
+            if params.use_dropout:
+                layers_.append(layers.Dropout(rate=params.dropout_rate, name=f'fc_dropout_{i}'))
+        layers_.append(layers.Dense(1, activation=params.output_layer_activation_func, name='fc_output_layer'))
+        return tf.keras.Sequential(layers_, name='waypoint_fc')
 
-        def build(self, input_shape):
-            pass
-
-        def call(self, x):
-            # common vector of weights
-            num_neurons = [1024, 512, 256, 256, 128, 64]
-            # Fully connectecd hidden layers
-            for i in range(params.num_hidden_layers):
-                x = layers.Dense(
-                    num_neurons[i],  # params.num_neurons_per_layer,
-                    name=f'fc_{i}',
-                    activation=params.hidden_layer_activation_func
-                )(x)
-                if self.p.use_dropout:
-                    x = layers.Dropout(rate=params.dropout_rate, name=f'fc_dropout_{i}')(x)
-            x = layers.Dense(1, activation=params.output_layer_activation_func, name='fc_output_layer')(x)
-            return x
-
-    input_dummy_waypoint = layers.Input(shape=(x.shape[-1] + num_outputs,), dtype=dtype)
-    output_dummy_waypoint = MLP(params)(input_dummy_waypoint)
+    input_dummy_waypoint = layers.Input(shape=(x.shape[-1] + 30*num_outputs,), dtype=dtype)
+    output_dummy_waypoint = mlp(params)(input_dummy_waypoint)
 
     # Generate a Keras model
 

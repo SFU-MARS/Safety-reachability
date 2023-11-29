@@ -269,7 +269,7 @@ class BaseModel(object):
         nn_output, waypoint_scale, waypoint_bias, _ = self.predict_nn_output(
             processed_data['inputs']
             + [tf.constant([[1]], dtype=processed_data['inputs'][0].dtype)]
-            + [np.zeros((batch_size, 2304 + self.p.model.num_outputs))],
+            + [np.zeros((batch_size, 2304 + 30*self.p.model.num_outputs))],
             is_training=is_training
         )
         biases = waypoint_bias  # tf.zeros_like(biases)
@@ -292,7 +292,7 @@ class BaseModel(object):
         nn_output = tf.tile(nn_output, [1, num_waypoints, 1])
 
         nn_input = tf.concat(
-            [nn_output, X_kerneled], axis=-1
+            [nn_output] + [X_kerneled,]*30, axis=-1
         )
         predicted = waypoint_fc(tf.reshape(nn_input, [batch_size * num_waypoints, -1]))
         predicted = tf.reshape(predicted, [batch_size, num_waypoints, -1])
