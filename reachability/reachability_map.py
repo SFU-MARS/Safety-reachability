@@ -68,12 +68,24 @@ class ReachabilityMap(object):
                     os.path.join(self.p.MATLAB_PATH + self.avoid_map_4d_path + self.avoid_map_4d_name),
                     allow_pickle=True)
 
+                map_resolution = self.dx
+                map_size = np.asarray(brt_4d_avoid_whole.shape[:2]) * map_resolution
+
+                print('avoid_map_4d_name:', brt_4d_avoid_whole.shape)
+                print('map_size:', map_size)
                 # clipped the 4d avoid ttr, make it the same area as 4d reach avoid
                 #self._reset_avoid_4d_map_from_whole(brt_4d_avoid_whole)#!!!!
 
                 # These numbers should be copied from optimized_dp-master/user_definer.py
-                self.grid = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
-                         4, np.array([600, 521, 31, 31]), [2])
+                self.grid = Grid(
+                    np.array([0, 0, -math.pi, -0.1]),
+                    # np.array([30, 26.05, math.pi, 0.7+0.1]),
+                    np.array([*map_size, math.pi, 0.7 + 0.1]),
+                    4,
+                    #  np.array([600, 521, 31, 31])
+                    np.array(brt_4d_avoid_whole.shape),
+                    [2]
+                )
 
                 # We can't clip the map since we're checking BRT for safety
                 self._create_avoid_4d_map_new(brt_4d_avoid_whole)

@@ -25,9 +25,9 @@ def create_params():
     p.clip_extension = np.float32(2.0)
 
     # System dynamics (state constraints and discretization)
-    p.theta_dim = int(31)
-    p.v_dim = int(31)
-    p.v_dv = float(0.9/31)
+    p.theta_dim = int(23)
+    p.v_dim = int(23)
+    p.v_dv = float(0.9/p.v_dim)
     p.wMax = float(1.1)
     p.aMax = float(.4)
     p.v_high = float(.8)
@@ -90,7 +90,7 @@ def create_reachability_data_dir_params(p):
         p.reach_avoid_map_4d_name = "area5a_start_%.2f_%.2f_goal_%.2f_%.2f.npy"
         # Configure avoid map 4d
         p.reach_avoid_4d_map_tmp_path = '/data_tmp/tmp/v3/reach_avoid_map_4d.mat'
-        p.avoid_map_4d_name = 'ttr_avoid_map_4d_whole_area5a_no_dist.npy'
+        p.avoid_map_4d_name = 'area5a_23x23_V_safe2_wodisturb_wslack.npy'
         # Configure map tmp
         p.avoid_4d_map_tmp_path = '/data_tmp/tmp/v3/avoid_map_4d_clipped.mat'
         p.tmp_path = '/tmp/v3/'

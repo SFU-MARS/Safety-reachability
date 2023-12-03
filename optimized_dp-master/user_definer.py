@@ -43,6 +43,7 @@ args = parser.parse_args()
 
 my_car = DubinsCar4D_new2()
 num_bins = 23
+map_resolution = 0.05
 
 # Load value from my map
 obstacle_2d=np.load(args.input_file)
@@ -51,11 +52,18 @@ obstacles = np.tile(
     np.expand_dims(obstacle_2d, (-2, -1)),
     (1,1,num_bins,num_bins)
 )
+map_size = [i * map_resolution for i in obstacle_2d.shape[:2]]
 
 print('obstacle_size', obstacle_2d.shape)
+print('map_size', map_size)
+print('num_bins', num_bins)
 
-g = Grid(np.array([0, 0, -math.pi, -0.1]), np.array([30, 26.05, math.pi, 0.7+0.1]),
-        4, np.array([*obstacle_2d.shape[:2], num_bins, num_bins]), [2])
+g = Grid(
+    np.array([0, 0, -math.pi, -0.1]),
+    # np.array([30, 26.05, math.pi, 0.7+0.1]),
+    np.array([*map_size, math.pi, 0.7+0.1]),
+    4, np.array([*obstacle_2d.shape[:2], num_bins, num_bins]), [2]
+)
 
 # Velocity constraint - negative level set [0., 0.7]
 velocity_constr = Intersection(Lower_Half_Space(g, 3, 0.8), Upper_Half_Space(g, 3, -0.1))

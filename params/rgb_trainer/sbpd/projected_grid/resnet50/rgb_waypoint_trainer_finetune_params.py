@@ -35,10 +35,10 @@ def create_rgb_trainer_params():
     # Ensure the renderer is using area3
     # TODO: When generating our own data, choose area 3, area4, area5
     #  When testing, choosing area 1!
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area3' # area 3 for training
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area5a' # area 3 for training
     # simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'  # area 1 for testing
     # TODO: area3: thread='v1'; area4: thread='v2'; area5a: thread='v3'
-    simulator_params.reachability_map_params.thread = 'v1'
+    simulator_params.reachability_map_params.thread = 'v3'
     # specify reachability data dir name according to building_name and thread
     create_reachability_data_dir_params(simulator_params.reachability_map_params)
 
@@ -165,7 +165,7 @@ def create_params():
 
     # p.data_creation.data_dir = ['/local-scratch/tara/project/WayPtNav-reachability-master-Anjian/Database/LB_WayPtNav_Data/Generated-Data/area3/anjian0-newv-nearest-1.5']
 
-    p.data_creation.data_points = 250000
+    p.data_creation.data_points = 75_000# 250000
     p.data_creation.data_points_per_file = int(5) # in each pickle file, so 1000/100=10 .pkl files, pickle holds coordinates
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

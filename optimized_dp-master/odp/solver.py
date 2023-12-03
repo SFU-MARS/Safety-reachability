@@ -116,7 +116,7 @@ def HJSolver(dynamics_obj, grid, multiple_value, tau, compMethod,
 
     # Tensors input to our computation graph
     V_0 = hcl.asarray(init_value)
-    V_1 = hcl.asarray(np.zeros(tuple(grid.pts_each_dim)))
+    V_1 = hcl.asarray(np.zeros(tuple(grid.pts_each_dim), dtype=np.float32))
 
     # Check which target set or initial value set
     if compMethod["TargetSetMode"] != "minVWithVTarget" and compMethod["TargetSetMode"] != "maxVWithVTarget":
@@ -125,7 +125,7 @@ def HJSolver(dynamics_obj, grid, multiple_value, tau, compMethod,
         l0 = hcl.asarray(target)
 
     # For debugging purposes
-    probe = hcl.asarray(np.zeros(tuple(grid.pts_each_dim)))
+    probe = hcl.asarray(np.zeros(tuple(grid.pts_each_dim), dtype=np.float32))
 
     # Array for each state values
     list_x1 = np.reshape(grid.vs[0], grid.pts_each_dim[0])

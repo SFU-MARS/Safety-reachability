@@ -64,7 +64,7 @@ def Lower_Half_Space(grid, dim, value):
         np.ndarray: implicit surface function of the lower half space
                     of size grid.pts_each_dim
     """
-    data = np.zeros(grid.pts_each_dim)
+    data = np.zeros(grid.pts_each_dim, dtype=np.float32)
     for i in range(grid.dims):
         if i == dim:
             data += grid.vs[i] - value
@@ -83,7 +83,7 @@ def Upper_Half_Space(grid, dim, value):
         np.ndarray: implicit surface function of the lower half space
                     of size grid.pts_each_dim
     """
-    data = np.zeros(grid.pts_each_dim)
+    data = np.zeros(grid.pts_each_dim, dtype=np.float32)
     for i in range(grid.dims):
         if i == dim:
             data += -grid.vs[i] + value
