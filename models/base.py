@@ -25,6 +25,7 @@ from sklearn.metrics import balanced_accuracy_score
 import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "Times New Roman"
 import matplotlib.backends.backend_tkagg as tkagg
 from sklearn.metrics import roc_auc_score
 import numpy as np
@@ -42,6 +43,8 @@ from training_utils.data_processing.distort_images import fov_and_tilt_distortio
 import cv2
 import matplotlib
 from pathlib import Path
+import os
+from mp_env import sbpd, map_utils as mu
 
 
 class PolynomialFeaturesLayer(tf.keras.layers.Layer):
@@ -86,7 +89,18 @@ class BaseModel(object):
         self.sigma_sq=0.1
         self.poly_layer = PolynomialFeaturesLayer(degree=3)
         self.renderer = SBPDRenderer.get_renderer(self.p.simulator_params.obstacle_map_params.renderer_params)
-
+        self.reachability_params = self.p.simulator_params.reachability_map_params
+        self.brt_4d_avoid_whole = np.load(
+            os.path.join(
+                self.reachability_params.MATLAB_PATH + self.reachability_params.avoid_map_4d_path
+                + self.reachability_params.avoid_map_4d_name
+            ),
+            allow_pickle=True
+        )
+        # rotate and flip to make similar to obstacle map
+        self.brt_4d_avoid_whole = self.brt_4d_avoid_whole.transpose((1, 0, 2, 3))
+        # [-1, 1] -> [0, 1]
+        self.brt_4d_avoid_whole = (self.brt_4d_avoid_whole + 1) / 2.0
 
     def vz_values(self, start_nk3):
         y = np.linspace(-2.5, 2.5, 100)
@@ -643,7 +657,7 @@ class BaseModel(object):
         weights = tf.stack(sample_weights)
 
         if False:
-            self.plot_5_decision_boundary(biases, kernel_weights, nn_output, normalize, prediction_total, processed_data,
+            self.plot_3_decision_boundary(biases, kernel_weights, nn_output, normalize, prediction_total, processed_data,
                                         raw_data, remap_labels, sample, scales, stimators_coeffs)
 
         hinge_loss, mse_loss= self.extract_ave_losses(predicted, processed_data, remap_labels, weights=weights)
@@ -1248,6 +1262,459 @@ class BaseModel(object):
             pdf.savefig(fig)
             pdf.close()
         plt.close('all')
+
+    # @staticmethod
+
+    def plot_3_decision_boundary(self, biases, kernel_weights, nn_output, normalize, prediction_total, processed_data,
+                               raw_data, remap_labels, sample, scales, stimators_coeffs):
+        all_waypoint_sampled = [x[::sample, :] for x in raw_data['all_waypoint']]
+        camera_pos_13 = raw_data['start_state'][:, :, 2:3]
+        dx = self.p.simulator_params.reachability_map_params.dMax_avoid_xy
+        camera_grid_world_pos_12 = raw_data['start_state'][:, :,
+                                   :2] / self.p.simulator_params.reachability_map_params.dMax_avoid_xy
+
+        # 2d plots
+        # pdf = PdfPages(f"output_fov_sample40_FRS_4_{stamp:.2f}.pdf")
+        # Vc= np.load('optimized_dp-master/V_safe2.npy')
+        # V_safe2_wodisturb
+        dx = 0.05
+        crop_size = [100, 100]
+        stamp = time() / 1e5
+
+        for img_idx, (
+        WP, kernel_weight, prediction, label, C1, stimators_coeff, image, start_nk3, goal, traj, wp, speed, robot_pos, robot_head,
+        value) in enumerate(zip(
+            processed_data['Action_waypoint'], kernel_weights, prediction_total, processed_data['labels'],
+            nn_output.numpy(),
+            stimators_coeffs,
+            raw_data['img_nmkd'][:, :, :, :3],
+            raw_data['start_state'],
+
+            raw_data['goal_position_n2'],
+            raw_data['vehicle_state_nk3'],
+            all_waypoint_sampled,
+            processed_data['inputs'][1], camera_grid_world_pos_12, camera_pos_13, raw_data['value_function'])):
+
+
+            # pdf = PdfPages(f"output_all_{stamp:.5f}.pdf")
+
+            # camera_pos_13 = config.heading_nk1()[0]
+            # camera_grid_world_pos_12 = config.position_nk2()[0] / dx_m
+
+            # image of current state
+            # rgb_image_1mk3 = r._get_rgb_image(robot_pos, robot_head)
+
+            # img1 = r._get_topview(robot_pos, robot_head)
+
+            # plt.imshow(np.squeeze(top))
+            # plt.show()
+            label = remap_labels(label)
+            color = ['red' if l == 0 else 'green' for l in label]
+            # fig = plt.figure()
+            fig = plt.figure(figsize=(10, 4))
+            fig.suptitle(f'Results @ speed:{speed[0]:.3f}', y=0.95)
+
+            # ax1 = fig.add_subplot(221)
+            min_x = WP[:, 0].min()  # min(WP[:, 0].min(), X_grid.numpy()[0, :, 0].min()
+            min_y = WP[:, 1].min()  # min(WP[:, 1].min(), X_grid.numpy()[0, :, 1].min()
+            max_x = WP[:, 0].max()  # max(WP[:, 0].max(), X_grid.numpy()[0, :, 0].max()
+            max_y = WP[:, 1].max()  # max(WP[:, 1].max(), X_grid.numpy()[0, :, 1].max()
+
+            # add some slack
+            min_x -= 0.25
+            min_y -= 0.25
+            max_x += 0.25
+            max_y += 0.25
+
+            X_grid, xx, yy, hh, ss = get_uniform_grid(crop_size, dx, speed, min_x, min_y, max_x, max_y)
+
+            min_x, min_y = transform_to_vis_coord(min_x, min_y)
+            max_x, max_y = transform_to_vis_coord(max_x, max_y)
+
+            # min and max can be flipped during the transformation
+            min_x, max_x = min(min_x, max_x), max(min_x, max_x)
+            min_y, max_y = min(min_y, max_y), max(min_y, max_y)
+
+            # fig = plt.figure()
+            # ax3 = fig.add_subplot(233)
+            # ax3.set_xlim(min_x, max_x)
+            # ax3.set_ylim(min_y, max_y)
+
+            # obstacle_map = SBPDMap(self.p.simulator_params.obstacle_map_params)
+            # obstacle_map.render(ax3)
+            # start = start_nk3[0]
+            # ax3.plot(start[0], start[1], 'k*')  # robot
+            # goal_pos_n2 = goal
+            # # ax3.plot(goal_pos_n2[0], goal_pos_n2[1], 'b*')
+            # pos_nk2 = wp[:, :2]
+            # # ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+            # ax3.scatter(pos_nk2[:, 0], pos_nk2[:, 1], marker='o', alpha=0.6, color=color)
+
+            # x = pos_nk2[:, 0]
+            # y = pos_nk2[:, 1]
+            # theta = wp[:, 2]
+            # theta of the arrow
+            # u, v = 1 * (np.cos(theta), np.sin(theta))
+
+            # q = ax3.quiver(x, y, u, v)
+            # plt.show()
+
+            # u, v =  1 * (np.cos(theta_world), np.sin(theta_world))
+            # q = ax3.quiver(pos_nk2[:, 0], pos_nk2[:, 1], u, v)
+            # plt.show()
+            # ax4 = fig.add_subplot(234)
+            # ax4.set_xlim(min_x, max_x)
+            # ax4.set_ylim(min_y, max_y)
+
+            # X_grid = [normalize(X, bias) for X, bias in zip(X_grid, biases)]
+            X_grid_norm = normalize(
+                X_grid,
+                biases[0:1],
+                scales[0:1]
+                # biases[img_idx:(img_idx + 1)],
+                # scales[img_idx:(img_idx + 1)]
+            )
+
+            # X_grid = tf.expand_dims(X_grid,axis=0)
+            # X_grid_kerneled = [poly.fit_transform(X).astype(np.float32) for X in X_grid]
+            # X_grid_kerneled = np.array(X_grid_kerneled)
+            X_grid_kerneled = [
+                self.polyfeatures(tf.constant(X)) for X in X_grid_norm
+            ]
+            X_grid_kerneled = tf.stack(X_grid_kerneled, axis=0)
+
+            # ta = tf.TensorArray(tf.float32, size=np.size(X_kerneled), dynamic_size=True, clear_after_read=False)
+            # v = tf.contrib.eager.Variable(1, dtype=tf.float32)
+            # for idx, i in X_kerneled:
+            #     for jdx, j in i:
+            #         for kdx, k in j:
+            #             v.assign_add(k)
+            #             ta = ta.write([idx, jdx, kdx], v)
+            # X_grid_kerneled = ta
+            # # X_grid_kerneled = tf.stack([self.poly_layer(tf.cast(X, tf.float32)) for X in X_grid], axis=0)
+            Z_pred = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.expand_dims(output, axis=1))) for
+                      x1, output in
+                      zip(X_grid_kerneled, kernel_weight[np.newaxis, ...])]
+            Z_pred = np.array(Z_pred)
+
+            # ax3.contourf(
+            #     *transform_to_vis_coord(xx + 0, yy),
+            #     np.reshape(np.squeeze(Z_pred), np.shape(xx)),
+            #     cmap=plt.get_cmap("RdBu"), alpha=0.5)
+            # ax3.scatter(
+            #     *transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+            #     marker='o', alpha=0.6, color=color
+            # )
+            x = WP[:, 0]
+            y = WP[:, 1]
+            theta = WP[:, 2]  # theta of the arrow
+            u, v = 1 * (np.cos(theta), np.sin(theta))
+            # ax3.quiver(
+            #     *transform_to_vis_coord(x, y), *transform_to_vis_coord(u, v)
+            # )
+            # ax3.set_title("Our model")
+
+            Z_svm = [np.sign(K.dot(tf.cast(x1, tf.float32), tf.reshape(output, [-1, 1]))) for
+                     x1, output in
+                     zip(X_grid_kerneled, stimators_coeffs)]
+            Z_svm = np.array(Z_svm)
+            # ax4.contourf(
+            #     *transform_to_vis_coord(xx + 0, yy),
+            #     np.reshape(np.squeeze(Z_svm), np.shape(xx)),
+            #     cmap=plt.get_cmap("RdBu"), alpha=0.5
+            # )
+            #
+            # ax4.scatter(*transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+            #             marker='o', alpha=0.6, color=color)
+            # ax4.quiver(*transform_to_vis_coord(x, y), *transform_to_vis_coord(u, v))
+            # ax4.set_title("SVM")
+
+            # commented for better plot
+            # x = WP[:, 0]
+            # y = WP[:, 1]
+            # theta = WP[:, 2]
+            # u, v = 1 * (np.cos(theta), np.sin(theta))
+            # accuracy = np.count_nonzero(prediction == label) / np.size(label)
+            # color_result = ['red' if l == 1 else 'green' for l in prediction]
+            # wrong = WP[np.where(prediction != label)[0]]
+            # ax4.scatter(wrong[:, 0], wrong[:, 1], s=60, edgecolors="k")
+            # ax4.scatter(x, y
+            #             , marker='o', alpha=0.6, color=color_result)
+            # # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
+            # #               wrong[:, 2], s=80, edgecolors="k")
+            # # safe = WP[np.where(prediction == 1)[0]]
+            # # unsafe = WP[np.where(prediction == -1)[0]]
+            # ax4.set_title('accuracy: ' + str(accuracy))
+            # # ax4.scatter(WP[:, 0], WP[:, 1]
+            # #             , c=np.squeeze(prediction), marker='o', alpha=0.6, cmap=mycmap)
+            # q1 = ax4.quiver(x, y, u, v)
+
+            # ax4.scatter(safe[:, 0], safe[:, 1], s=80, edgecolors="g")
+            # ax4.scatter(unsafe[:, 0], unsafe[:, 1], s=80, edgecolors="r")
+
+            # plt.show()
+
+            # x = WP[:, 0]
+            # x_min, x_max = x.min() - 1, x.max() + 1
+            # x = np.linspace(x_min, x_max, 10)
+            # y = np.linspace(-2, 2, 10)
+            # z = np.linspace(-np.pi / 2, np.pi / 2, 10)
+            # xx, zz = np.meshgrid(x, z)
+            # y1 = (-C1[0] * xx - C1[2] * zz - C1[3]) / C1[1]
+            # y = WP[:, 1]
+            # y_min, y_max = y.min() , y.max()
+            #
+            # ax4 = fig.add_subplot(224, projection='3d')
+            #
+            # y_filtered = y1[np.where(np.logical_and(y1 >= y_min, y1 <= y_max))]
+            # x_filtered = xx[np.where(np.logical_and(y1 >= y_min, y1 <= y_max))]
+            # th_filtered = zz[np.where(np.logical_and(y1 >= y_min, y1 <= y_max))]
+            # # ax4.plot_surface(np.expand_dims(x_filtered, axis=1), np.expand_dims(y_filtered, axis=1),
+            # #                    np.expand_dims(th_filtered, axis=1), alpha=1, color='gray')
+            # # plt.show()
+            # ax4.scatter3D(np.expand_dims(x_filtered, axis=1), np.expand_dims(y_filtered, axis=1),
+            #               np.expand_dims(th_filtered, axis=1), alpha=1, color='gray')
+            # plt.show()
+
+            ax5 = fig.add_subplot(132)
+            x = WP[:, 0:1]
+            x1 = np.expand_dims(x, axis=2)
+            y = WP[:, 1:2]
+            y1 = np.expand_dims(y, axis=2)
+            t = WP[:, 2:3]
+            t1 = np.expand_dims(t, axis=2)
+            #
+            # x1= np.expand_dims(np.expand_dims(np.expand_dims(x, axis=0),axis=1), axis=2)
+            # y1 = np.expand_dims( np.expand_dims(np.expand_dims(y, axis=0), axis=1), axis=2)
+            # t1 = np.expand_dims( np.expand_dims(np.expand_dims(t, axis=0), axis=1), axis=2)
+            p = self.create_params(image.shape[1])
+            plt.imshow(image.astype(np.uint8))
+
+            # camera to world transformation
+            T_world_cam = get_T_world_cam(p.projected_grid_params.tilt, p.projected_grid_params.h)
+            # world to camera transformation
+            T_cam_world = np.linalg.inv(T_world_cam)
+
+            uv = project_to_camera(x, y, T_cam_world, p.projected_grid_params.f, image.shape)
+
+            x = uv[:, 0]
+            y = uv[:, 1]
+
+            valid_indices = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+            valid_indices = np.where(valid_indices)[0]
+            # valid_indices = valid_indices[:10]
+            x = x[valid_indices]
+            y = y[valid_indices]
+            label_valid = label[valid_indices]
+            color_valid = ['red' if l == 0 else 'green' for l in label_valid]
+
+            ax5.scatter(x.astype(int), y.astype(int), marker="x", s=10, color=color_valid)
+            ax5.set_title('b', y=-0.35)
+
+            image_int = image.astype(np.uint8)
+            ax5.imshow(image_int)
+
+            theta = traj[valid_indices, -1, 2]
+            uv = project_theta_to_cam(theta, T_cam_world)
+            ax5.quiver(x, y, 10 * uv[:, 0], 10 * uv[:, 1])
+
+            xyhs = X_grid.numpy()[0, :, :]
+            uv = project_to_camera(
+                xyhs[:, 0], xyhs[:, 1],
+                T_cam_world, p.projected_grid_params.f, image.shape
+            )
+
+            x = uv[:, 0]
+            y = uv[:, 1]
+
+            valid_indices_grid = (x >= 0) & (x < image.shape[1]) & (y >= 0) & (y < image.shape[0])
+            valid_indices_grid = np.where(valid_indices_grid)[0]
+            x = x[valid_indices_grid]
+            y = y[valid_indices_grid]
+
+            ax6 = fig.add_subplot(133)
+            ax6.imshow(image_int)
+            ax6.scatter(
+                x.astype(int), y.astype(int),
+                marker="o", s=1, alpha=0.25,
+                color=['red' if i == -1 else 'green' for i in np.squeeze(Z_pred)[valid_indices_grid]]
+            )
+            ax6.set_title('c', y=-0.3)
+
+            # ax5.contourf(
+            #     x, y,
+            #     Z_svm.reshape((-1,))[valid_indices_grid],
+            #     cmap=plt.get_cmap("RdBu"), alpha=0.5
+            # )
+
+            ax1 = fig.add_subplot(131)
+            top = self.renderer._get_topview(robot_pos, robot_head, crop_size)
+            top_cw_90 = cv2.rotate(np.squeeze(top), cv2.ROTATE_90_COUNTERCLOCKWISE)
+            X= np.arange(0, crop_size[0], 1)
+            Y= np.arange(0, crop_size[1], 1)
+            XX, YY = np.meshgrid(X, Y)
+            Z= top_cw_90
+            levels= 0
+            CS1 = ax1.contour(XX, YY, Z, [levels],origin='upper',  colors='k', linestyles='solid', alpha=1, linewidths=1)
+
+            CS1.collections[0].set_label('obstacle boundary')
+            # ax1.clabel(CS, inline=True, fontsize=10)
+            ax1.imshow(top_cw_90)
+            # ax1.set_title('Simplest default with labels')
+
+            value_contour = self.get_value_topview(robot_pos, robot_head, speed, crop_size)
+            value_contour_cw_90 = cv2.rotate(np.squeeze(value_contour), cv2.ROTATE_90_COUNTERCLOCKWISE)
+            value_contour_adjusted = value_contour_cw_90 * 2 - 1
+            im = ax1.imshow(value_contour_adjusted, cmap=plt.cm.get_cmap("viridis_r")) # 'viridis_r')
+            CS2 = ax1.contour(XX, YY, value_contour_adjusted, [levels], origin='upper', colors='k', linestyles='dashed', alpha=1, linewidths=1)
+            lines = [CS1.collections[0], CS2.collections[0]]
+            labels = ['obstacle boundary', 'BRT (sub-zero level set)']
+            CS2.collections[0].set_label('BRT (sub-zero level set)')
+            # ax1.clabel(CS2, inline=True, fontsize=10)
+            plt.legend(lines, labels)
+            fig.colorbar(im, ax=ax1, shrink=0.75)
+
+            plt.legend(loc='upper right', fontsize='x-small')#, frameon=False)
+
+            ## plotting traj
+            # list = np.where(label == -1)[0]
+            # pdf.savefig(fig)
+            plt.grid()
+            # plt.show()
+            # plt.show()
+
+            traj_x, traj_y = transform_to_vis_coord(
+                traj[valid_indices, :, 0], traj[valid_indices, :, 1]
+            )
+            traj_x = (traj_x / dx + 0) + ((crop_size[1] - 1) / 2)
+            traj_y = (crop_size[0] - 1) - (traj_y / dx)
+
+            theta = (np.pi / 2) + traj[valid_indices, :, 2]
+            j = 0
+
+            for i, _ in enumerate(traj_x):
+                u, v = 10 * np.cos(theta[i, -1]), 10 * np.sin(theta[i, -1])
+                q = ax1.quiver(traj_x[i, -1], traj_y[i, -1], u, v)
+
+                ax1.set_title('a', y=-0.5)
+                ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
+
+            for i in np.random.random_integers(0, len(traj_x)-1, 10):
+                # s = 1  # Segment length
+
+                # print ("value: ", str(value[i,-1]))
+                # robot is facing right
+                # ax1.plot(traj_x[i], traj_y[i])
+                # ax1.scatter([traj_x[i][-1]], [traj_y[i][-1]], marker="x", s=10, color=color_valid[i])
+                # robot is facing front
+                ax1.plot(traj_x[i], traj_y[i])
+                # plt.annotate(np.min(value[i, :]), xy=(traj_x[i, -1], traj_y[i, -1] + 0.5))
+
+            theta = np.pi / 2 + WP[valid_indices, 2:3]  # theta of the arrow
+            u, v = 1 * (np.cos(theta), np.sin(theta))
+            # ax1.set_title('v , w: ' + str(control))
+            # plt.savefig('/tmp/plot.png')
+
+            # matplotlib.use('Qt4Agg')
+            # fig = plt.figure()
+
+            # ax2 = fig.add_subplot(222, projection='3d')
+            # ax2 = fig.add_subplot(232)
+            # ax2.set_xlim(min_x, max_x)
+            # ax2.set_ylim(min_y, max_y)
+            # prediction = prediction.numpy()
+            # prediction[np.where(prediction >= 0)] = 1
+            # prediction[np.where(prediction < 0)] = -1
+            # wrong = WP[np.where(prediction != label)[0]]
+            # ax2.scatter3D(wrong[:, 0], wrong[:, 1],
+            #               wrong[:, 2], s=80, edgecolors="k")
+            # ax2.scatter(wrong[:, 0], wrong[:, 1], s=80, edgecolors="k")
+
+            # mycmap = ListedColormap(["red", "green"])
+
+            # ax2.scatter3D(WP[:, 0], WP[:, 1],
+            #               WP[:, 2], c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+            # ax2.scatter(WP[:, 0], WP[:, 1]
+            #               , c=np.squeeze(label), marker='o', alpha=0.6, cmap=mycmap)
+
+            # ax2.scatter(
+            #     *transform_to_vis_coord(WP[:, 0], WP[:, 1]),
+            #     marker='o', alpha=0.6, color=color
+            # )
+            # # ax2.matplotlib.pyplot.arrow(WP[:, 0], WP[:, 1], math.cos(WP[:, 2]), math.sin(WP[:, 2]))
+            # x = WP[:, 0]
+            # y = WP[:, 1]
+            # theta = WP[:, 2]  # theta of the arrow
+            # u, v = 1 * (np.cos(theta), np.sin(theta))
+            #
+            # ax2.scatter(
+            #     *transform_to_vis_coord(x[valid_indices], y[valid_indices]),
+            #     s=80, facecolors='none', edgecolors='c'
+            # )
+            #
+            # q = ax2.quiver(
+            #     *transform_to_vis_coord(x, y),
+            #     *transform_to_vis_coord(u, v)
+            # )
+            # ax2.set_title('Ground truth')
+            # plt.xlim(-0.5, len(x[0]) - 0.5)
+            # plt.ylim(-0.5, len(x) - 0.5)
+            # plt.xticks(range(len(x[0])))
+            # plt.yticks(range(len(x)))
+
+            # plt.show()
+
+            # ax.plot_surface(xx, y1, zz, alpha=1, color='gray', linewidth=0)
+            # plt.show()
+            # if z< np.pi/2 and z> -np.pi/2:
+            #     z1 = z
+            # elif z> 3*np.pi/2 and z<2*np.pi:
+            #     z1= z - 2*np.pi
+            # else:
+
+            # ax.plot_surface(xx, yy,  np.arctan(np.tan(zc2)), alpha=1, color='gray', linewidth=0)
+            # ax.plot_surface(xx, yy, z, alpha=1, color='gray', linewidth=0)
+            # ax.plot_wireframe(xx, yy, z, alpha=1, color='gray')
+            # ax2.plot_wireframe(xx, y1, zz, alpha=1, color='gray')
+            # wrongs = WP[np.where(prediction != LABELS1)]
+            # ax.scatter3D(wrongs[:, 0], wrongs[:, 1],
+            #              wrongs[:, 2], marker='*')
+
+            # plt.show(
+            # pdf.savefig(fig)
+            # pdf.close()
+            plt.savefig(f"output_{stamp:.5f}_{img_idx}.png")
+        plt.close('all')
+    # @staticmethod
+    def get_value_topview( self, starts_n2, thetas_n1, speed, crop_size=[64, 64]):
+        """
+
+        Render crop_size  topview(s) from the x, y, theta locations
+        in starts and thetas.
+        """
+        # SBPD only supports square top views currently
+        assert(crop_size[0] == crop_size[1])
+        theta_bin = int((thetas_n1+np.pi)/self.reachability_params.theta_dtheta)
+        speed_bin = int((speed-self.reachability_params.v_low)/self.reachability_params.v_dv)
+        traversible_map = self.brt_4d_avoid_whole[:, :, theta_bin, speed_bin] * 1.
+
+        # In the topview the positive x axis points to the right and
+        # the positive y axis points up. The robot is located at
+        # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
+        x_axis_n2 = np.concatenate([np.cos(thetas_n1), np.sin(thetas_n1)], axis=1)
+        y_axis_n2 = -np.concatenate([np.cos(thetas_n1 + np.pi / 2.),
+                                     np.sin(thetas_n1 + np.pi / 2.)], axis=1)
+        robot_loc_2 = np.array([0, (crop_size[0]-1.)/2.])
+
+        crops_nmk = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size[0]],
+                                                starts_n2, x_axis_n2, y_axis_n2, dst_theta=0.,
+                                                dst_loc=robot_loc_2)[0]
+
+        # Invert the crops so that 1.0 corresponds to occupied space
+        # and 0.0 corresponds to free space
+        crops_nmk1 = [(crop_mk[:, :, None]) * 1.0 for crop_mk in crops_nmk]
+        return crops_nmk1
+
 
     # @staticmethod
     def plot_contours(ax, clf, xx, yy, **params):
