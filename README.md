@@ -1,4 +1,4 @@
-WayPtNav-reachability
+Decision boundary learning for safe vision-based robot navigation using deep learning and reachability analysis.
 ==========
 Welcome to WayPtNav-reachability, a codebase for generating robust supervision for learning-based robot visual navigation using Hamilton-Jacobi Reachability (HJ). We are a team of researchers from Simon Fraser University and UC Berkeley.
 
